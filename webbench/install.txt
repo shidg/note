@@ -1,0 +1,13 @@
+##install ctags##
+#yum install ctags -y
+tar zxvf ctags-5.8.tar.gz && cd tar zxvf ctags-5.8
+./configure && make && make install
+
+##install webbench##
+tar zxvf webbench-1.5.tar.gz && cd webbench-1.5
+mkdir -p /usr/local/man/man1 
+#安装程序会把webbench的man手册安装到man1目录下，文件名webbench.1,否则安装为/usr/local/man/man1文件，man webbench将不可用
+make && make install
+
+##usage##
+webbench -c 300 -t 60 http://192.168.0.1/

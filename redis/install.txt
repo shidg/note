@@ -1,0 +1,29 @@
+#tcl##
+#"You need tcl 8.5 or newer in order to run the Redis test"
+tar zxvf tcl8.6.3-src.tar.gz && cd tcl8.6.3/unix
+./configure --prefix=/usr && make && make install
+
+###################################################################
+tar zxvf redis-2.8.17.tar.gz && cd redis-2.8.17
+
+make
+
+##########################make若遇到错误：###############################
+#zmalloc.h:50:31: error: jemalloc/jemalloc.h: No such file or directory
+#zmalloc.h:55:2: error: #error "Newer version of jemalloc required"
+#make[1]: *** [adlist.o] Error 1
+#make[1]: Leaving directory `/data0/src/redis-2.6.2/src'
+#make: *** [all] Error 2
+##解决方案
+#make MAKLOC=libc
+############################################################################
+
+make test 
+make install 默认安装到/usr/local/bin下
+
+#将redis安装到指定位置
+make PREFIX=/path  install
+
+echo "vm.overcommit_memory=1" >> /etc/sysctl.conf
+
+sysctl -p

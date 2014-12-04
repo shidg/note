@@ -1,0 +1,24 @@
+#海蜘蛛启用ssl vpn,服务管理-->VPN(虚拟专用网络)-->SSL VPN
+
+#SSL VPN运行后导出ca.crt和ta.key
+
+#客户端安装openvpn,导出的两个文件放到openvpn安装目录的config目录,并在config目录下创建client.ovpn文件，文件内容如下：
+
+
+client
+dev tun
+proto tcp #协议类型与服务端保持一致
+remote 10.10.67.188 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+
+ca ca.crt
+auth-user-pass  #手动输入用户名密码
+#auth-user-pass pass.txt # 从文件中读取用户名密码
+ns-cert-type server
+tls-auth ta.key 1
+
+#comp-lzo  #是否启用压缩，与服务端保持一致
+verb 3

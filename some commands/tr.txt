@@ -1,0 +1,56 @@
+# tr是translate的简写，亦即翻译，但是遗憾的是，它不能翻译句子，只能翻译单个字符。
+#也就是说 tr只对字符有效，不能操作字符串
+
+# tr不像sed awk一样可以接受文件做参数，它只对输入输出做处理
+tr ab 12 < filename
+cat filename | tr ab 12
+#将a“翻译“成1，将b”翻译“成2，而不是将ab”翻译“成12，记住tr不能对字符串做操作，只针对字符。
+
+
+####[CHAR*]怎么用？
+#这是 SET2 专用的设定，功能是重复指定的字符到与 SET1 相同长度为止
+例子：
+cat number.txt
+1234567890
+tr ’1-5′ ‘[A*]‘ < number.txt
+AAAAA67890
+
+##[CHAR*REPEAT]怎么用？
+
+#这也是SET2专用的设定，功能是将CHAR重复REPEAT次数。
+例子：
+tr ’1-9′ ‘[A*5]BCDE’ < number.txt
+AAAAABCDE0
+
+
+##tr里面包含SET1和SET2，那如果出现两个集合的大小不同的情况，tr如何处理呢？
+第一种情况是SET1>SET2：
+tr 1-5 AB < number.txt
+ABBBB67890
+SET1中多出来的字符都会和SET2中最后一个字符相对应。
+
+第二种情况SET1<SET2：
+tr 1-3 ABCDE < number.txt
+ABC4567890
+SET2中多余的部分将被抛弃。
+
+
+##-s选项
+#-s选项，是专门针对SET1起作用的，意思是如果发现有连续的SET1里的字符，就把它们缩减为1个。
+#一个很经典的应用就是把不规律的空格缩减为一个空格：
+cat spaces.txt
+How   are               you?
+Fine! Thank    you!
+tr -s ‘ ‘ < spaces.txt
+How are you?
+Fine! Thank you!
+
+
+
+##-d选项
+#-d选项是用来删除字符用的。格式是这样的：tr -d charset
+tr -d ‘ ‘ < spaces.txt
+Howareyou?
+Fine!Thankyou!
+#删除所有数字
+tr -d [1-9] < filename

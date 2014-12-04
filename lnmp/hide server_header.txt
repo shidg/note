@@ -1,0 +1,173 @@
+隐藏/屏蔽服务器信息与web软件版本信息
+2013-03-04 11:00:15
+标签：apache
+ 俗话说的好，不怕偷，就怕被惦记着啊！这名话用到服务器上很适合啊。对于黑客来说，入侵第一步，一般都是先扫描，这些扫描包括服务器的类型，提供服务的软件及版本号，然后针对这些系统或软件的相应漏洞进行入侵。那么如何来隐藏这些信息呢？这就是今天的技术内容。
+1、隐藏服务器系统信息
+在缺省情况下，当你登陆到linux系统，它会告诉你该linux发行版的名称、版本、内核版本、服务器的名称。为了不让这些默认的信息泄露出来，我们要进行下面的操作，让它只显示一个"login:"提示符。 
+删除/etc/issue和/etc/issue.net这两个文件。 
+本地登陆输入用户名和密码前显示的信息写在/etc/issue，当然，在这个文件你也可以写入其他的信息。 
+而/etc/issue.net是供telnet这个远端登入显示的信息，默认里面内容与/etc/issue是一样的。不过，这个现在好像没有什么人在用吧！ 
+下面我就简单的了解一下issue文件中的一些代码含义
+\d 本地端时间的日期；
+\l 显示第几个终端机介面；
+\m 显示硬体的等级 (i386/i486/i586/i686...)；
+\n 显示主机的网路名称；
+\o 显示 domain name；
+\r 作业系统的版本 (相当于 uname -r)
+\t 显示本地端时间的时间；
+\s 作业系统的名称；
+\v 作业系统的版本。
+在这里顺便说一下，登陆系统后显示的信息修改方法（PS：如果系统真到了这一步，那已经说明成为了别人的肉机了啊！）。
+
+登陆系统后的信息是写在/etc/motd文件中，默认是空的，你可以在这里面写你想显示的信息。
+2、常用的服务软件版本信息屏蔽
+
+上面讲了如何把服务器的信息屏蔽，那么我在服务器上提供服务的软件版本信息如何隐藏呢？下面介绍目前几个常用的服务软件版本信息屏蔽。
+先来介绍一个命令。
+curl --head http://localhost
+查看服务器提供HTTP服务的相关信息
+这里会显示你的HTTP是什么程序，哪个版本如
+Server: nginx/0.8.36
+还有PHP的相关信息
+X-Powered-By: PHP/5.2.14
+下面就是如何来隐藏这些信息了
+
+隐藏apache版本信息:
+开启 httpd.conf，加入以下两行:
+ServerTokens ProductOnly
+ServerSignature Off
+隐藏Nginx版本信息:
+开启 nginx.conf，在http { }里加上：
+server_tokens off;
+隐藏php-fpm版本信息：
+开启php-fpm配置文件,找到：
+fastcgi_param SERVER_SOFTWARE nginx/$nginx_version;
+改为：
+fastcgi_param SERVER_SOFTWARE nginx0.0.0; #(这个nginx0.0.0就是显示的内容)
+隐藏PHP版本信息：
+开启php.ini，加入:
+expose_php = Off
+完成以上设定后，重新启动 Apache/Nginx 即可。
+ 
+-----------------
+apache 隐藏和伪装 版本信息
+
+1.隐藏Apache版本信息
+
+测试默认 apache 的状态信息
+[root@1314it conf]# curl -Is localhost
+HTTP/1.1 200 OK
+Date: Tue, 16 Nov 2010 04:20:15 GMT
+Server: Apache/2.2.3 (CentOS) DAV/2 PHP/5.1.6 mod_perl/2.0.4 Perl/v5.8.8
+X-Powered-By: PHP/5.1.6
+Connection: close
+Content-Type: text/html; charset=GB2312
+
+[root@1314it conf]#
+
+修改主配置文件 httpd.conf
+ServerSignature Off
+ServerTokens Prod
+
+重启 apache 测试
+
+测试隐藏版本号后 apache 的状态信息
+[root@1314it conf]# curl -Is localhost
+HTTP/1.1 200 OK
+Date: Tue, 16 Nov 2010 04:21:41 GMT
+Server: Apache
+X-Powered-By: PHP/5.1.6
+Connection: close
+Content-Type: text/html; charset=GB2312
+
+[root@1314it conf]#
+
+
+
+
+2.伪装Apache版本信息 (需要修改源代码 并重新编译安装)
+
+获取源码
+修改 include/ap_release.h文件 "Apache" 参数为 "Microsoft-IIS/5.0"
+修改 os/unix/os.h文件 "Unix" 参数为 "Win32"
+
+# 2.2.17 (released 2010-10-19)
+mkdir /tmp/download
+cd /tmp/download
+wget http://labs.renren.com/apache-mirror//httpd/httpd-2.2.17.tar.bz2
+tar -jxf httpd-2.2.17.tar.bz2
+cd httpd-2.2.17
+
+include/ap_release.h
+#define AP_SERVER_BASEPRODUCT "Apache"
+改为
+#define AP_SERVER_BASEPRODUCT "Microsoft-IIS/5.0"
+
+# 使用 sed 流编辑工具修改
+sed -i 's/#define AP_SERVER_BASEPRODUCT \"Apache\"/#define AP_SERVER_BASEPRODUCT \"Microsoft-IIS\/5.0\"/g' include/ap_release.h
+
+os/unix/os.h
+#define PLATFORM "Unix"
+改成
+#define PLATFORM "Win32"
+
+sed -i 's/#define PLATFORM \"Unix\"/#define PLATFORM \"Win32\"/g' os/unix/os.h
+
+./configure
+make
+make install
+
+修改主配置文件 /usr/local/apache2/conf/httpd.conf
+
+添加
+ServerSignature Off
+ServerTokens Prod
+
+启动apache
+/usr/local/apache2/bin/apachectl start
+
+# 测试 使用curl获取服务器信息
+
+[root@1314it conf]# curl -Is localhost
+HTTP/1.1 200 OK
+Date: Tue, 16 Nov 2010 04:06:21 GMT
+Server: Microsoft-IIS/5.0
+Last-Modified: Sat, 20 Nov 2004 20:16:24 GMT
+ETag: "d8514-2c-3e9564c23b600"
+Accept-Ranges: bytes
+Content-Length: 44
+Content-Type: text/html
+
+[root@1314it conf]#
+
+
+
+
+# 相关资料
+
+ServerSignature 配置服务器生成页面的页脚
+语法    ServerSignature On|Off|EMail
+默认值    ServerSignature Off
+作用域    server config, virtual host, directory, .htaccess
+覆盖项    All
+
+ServerTokens 配置"Server:"应答头
+语法    ServerTokens Major|Minor|Min[imal]|Prod[uctOnly]|OS|Full
+默认值    ServerTokens Full
+作用域    server config
+
+这个指令控制了服务器回应给客户端的"Server:"应答头是否包含关于服务器操作系统类型和编译进的模块描述信息。
+
+ServerTokens Prod[uctOnly]
+服务器会发送(比如)： Server: Apache
+ServerTokens Major
+服务器会发送(比如)： Server: Apache/2
+ServerTokens Minor
+服务器会发送(比如)： Server: Apache/2.0
+ServerTokens Min[imal]
+服务器会发送(比如)： Server: Apache/2.0.41
+ServerTokens OS
+服务器会发送(比如)： Server: Apache/2.0.41 (Unix)
+ServerTokens Full (或未指定)
+服务器会发送(比如)： Server: Apache/2.0.41 (Unix) PHP/4.2.2 MyMod/1.2
+
