@@ -1,0 +1,30 @@
+###gitweb##
+# 1 apache加载了cgi模块  LoadModule cgid_module modules/mod_cgid.so
+# 2 perl安装了CGI和Git模块
+# 3 apache对目标目录有访问权限
+# 4 gitweb.cgi默认到/usr/bin下寻找git命令，如果git不在此目录要手动指定:
+#   打开/var/www/gitweb/gitweb.cgi文件，找到如下行   
+#   our $GIT = "/usr/bin/git";
+#   将目录修改为系统中git所在的实际目录
+
+# 进入git源码包,安装gitweb
+
+make GITWEB_PROJECTROOT="/home/git" \
+prefix=/usr gitweb
+cp -Rf gitweb /var/www/
+
+##apache配置##
+<VirtualHost *:80>
+    DocumentRoot /var/www/gitweb
+    ServerName git.happigo.com
+    <Directory /var/www/gitweb>
+        Options +ExecCGI +FollowSymLinks +SymLinksIfOwnerMatch #该目录允许执行CGI
+        Require all granted
+        AddHandler cgi-script .cgi  #.cgi文件以CGI方式运行
+        DirectoryIndex gitweb.cgi   
+    </Directory>
+</VirtualHost>
+
+
+##在线访问仓库##
+http://git.happigo.com

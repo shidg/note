@@ -1,0 +1,21 @@
+##########gitolite控制权限#############
+
+#安装在git用户下
+
+###客户端 
+su git
+ssh-keygen -f ~/.ssh/admin
+
+admin.pub发送到server端/home/git下
+
+###服务端
+
+su git
+cd
+git clone git://github.com/sitaramc/gitolite
+
+mkdir ~/bin
+
+./gitolite/install -to ~/bin
+
+./bin/gitolite  setup  -pk admin.pub #将admin公钥组添加到/home/git/.ssh/authorized_keys下，执行此操作前要确保authorized_keys为空或者不存在

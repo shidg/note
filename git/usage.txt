@@ -1,0 +1,134 @@
+###################客户端常用命令#########################
+##########################################################
+#git config --system user.name ""
+#git config --system user.email xx@.com
+
+#git config --global user.name ""
+#git config --global user.email xx@.com
+#
+#git config --global push.default simple
+
+#########################################################
+
+#初始化一个新的版本库
+git init  
+
+git add  file
+
+git commit file -m ""
+
+#添加远程仓库
+git remote add origin git@github.com:shidg/test.git
+#显示远程仓库列表
+git remote -v
+#查看远程仓库详情
+git remote show name
+#重命名远程仓库
+git remote rename name1 name2
+#删除远程仓库
+git remote rm name
+#推送到远程版本库
+git push -u origin master
+
+# 查看版本库状态
+git status
+
+# 修改记录
+git log
+
+# 命令记录
+git reflog
+
+#版本库回退到上个版本
+git reset --hard HEAD^  
+
+#版本库回退到上上个版本
+git reset --hard HEAD^^  
+
+#回退到指定版本
+git reset --hard d27413c
+
+#丢弃工作区的修改,让工作区文件回到最近的git add状态，若修改后尚未git add,则回到最近的git commit状态。
+git checkout -- file_name 
+
+#丢弃暂存区的修改,撤销git add
+git reset HEAD file_name
+
+# 修改最后一次提交
+git commit --amend
+
+# git 命令别名
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.unstage 'reset HEAD --'
+git config --global alias.last 'log -1 HEAD'
+# git 调用外部命令,使用!
+git config --global alias.visual '!gitk'
+
+#分支
+#新建并进入分支
+git checkout -b iss53
+or:
+git branch iss53
+git checkout iss53
+
+#显示所有分支,带*的为当前所在分支
+git branch
+
+#查看各个分支最后一个提交对象的信息
+git branch -v
+
+#从该清单中筛选出你已经（或尚未）与当前分支合并的分支
+git branch --merged
+git branch --no-merged
+
+#分支删除
+git branch -d iss53
+
+#分支合并,将iss53分支合并进master分支
+git checkout master
+git branch merge iss53
+
+#推送本地分支到远程
+#本地创建的分支不会自动同步到远程仓库，必须执行分支推送操作
+#推送本地的iss53分支推送到远程仓库(origin是远程仓库名，git remote -v可以查看每个仓库名对应的哪台服务器的哪个仓库)，远程分支名##还是iss53
+git push origin iss53  (git push origin iss53:iss53)
+
+#取出本地的iss53分支推送到远程仓库，并且远程分支名称命名为mybranch
+git push origin iss53:mybranch
+
+#获取远程分支
+git fetch origin
+remote: Counting objects: 20, done.
+remote: Compressing objects: 100% (14/14), done.
+remote: Total 15 (delta 5), reused 0 (delta 0)
+Unpacking objects: 100% (15/15), done.
+From git@github.com:schacon/simplegit
+ * [new branch]      serverfix    -> origin/serverfix
+
+##在 fetch操作下载好新的远程分支之后，你仍然无法在本地编辑该远程仓库中的分支。换句话说，在本例中，你不会有一个新的 serverfix 分支，有的只是一个你无法移动的 origin/serverfix 指针。
+#如果要把该远程分支的内容合并到当前分支，可以运行 git merge origin/serverfix。如果想要一份自己的 serverfix 来开发，可以在远程分支的基础上分化出一个新的分支来：
+git checkout -b serverfix origin/serverfix
+git checkout --track origin/serverfix (1.6.2以上版本可以使用--track，与上句效果等同)
+#这会切换到新建的 serverfix 本地分支，其内容同远程分支 origin/serverfix 一致，这样你就可以在里面继续开发了。
+
+#删除远程分支
+git push origin :branch_name
+#参考推送本地分支到远程的git push [远程名] [本地分支]:[远程分支] 语法，如果省略 [本地分支]，那就等于是在说“在这里提取空白然后把它变成[远程分支]”，也就是将远程分支变为"没有"，这样比较容易记忆这条语法
+
+
+###分支衍合##
+####一旦分支中的提交对象发布到公共仓库，就千万不要对该分支进行衍合操作。######
+
+
+#它的原理是回到两个分支最近的共同祖先，根据当前分支（也就是要进行衍合的分支iss53）后续的历次提交对象,生成一系列文件补丁，然后##以基底分支（也就是主干分支 master）最后一个提交对象为新的出发点，逐个应用之前准备好的补丁文件，最后会生成一个新的合并提交对象#从而改写iss53的提交历史，使它成为 master 分支的直接下游,再回到master进行一次快进。
+git checkout iss53
+git rebase master
+git checkout master
+git merge iss53
+
+
+##取出 client 分支，找出 client 分支和 server 分支的共同祖先之后client分支的所有变化，然后把它们在 master 上重演一遍
+git rebase --onto master server client
+git checkout master
+git merge client
