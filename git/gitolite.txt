@@ -4,18 +4,20 @@
 
 ###客户端 
 su git
-ssh-keygen -f ~/.ssh/admin
+ssh-keygen -f ~/.ssh/shidg
 
-admin.pub发送到server端/home/git下
+生成的shidg.pub发送到服务端
 
 ###服务端
-
 su git
 cd
-git clone git://github.com/sitaramc/gitolite
+git clone https://github.com/sitaramc/gitolite
 
 mkdir ~/bin
 
 ./gitolite/install -to ~/bin
+#安装，安装结果将在/home/git/repositories下生成gitolite-admin.git和testing.git两个裸仓库,其中gitolite-admin就是对git进行权限控制的仓库
 
-./bin/gitolite  setup  -pk admin.pub #将admin公钥组添加到/home/git/.ssh/authorized_keys下，执行此操作前要确保authorized_keys为空或者不存在
+./bin/gitolite  setup  -pk admin.pub
+#初始化gitolite,将只有shidg用户有权对gitolite-admin仓库进行读写，也就是只有这个用户可以控制git的权限。
+#shidg将gitolite-admin克隆到本地，此后，创建库，添加用户，修改用户权限等都可以由shidg在本地通过修改gitolite-admin的配置文件来完成，然后将修改推送到远程仓库即可。
