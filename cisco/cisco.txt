@@ -1,0 +1,21 @@
+#思科路由器添加端口映射(为员工设置办公电脑远程连接)
+#顺序执行以下命令
+
+1.#登录路由器
+telnet 10.10.xx.xx
+
+2.用户名密码验证通过后出现以下界面
+hostname>
+
+3. 输入en，回车，再次输入密码，出现以下界面
+hostname#
+
+4. 执行 sh run，可以查看到路由器信息，包括已有的端口映射，即nat条目
+#添加一条新的端口映射
+
+config t
+
+ip nat inside source static tcp 10.10.38.xx 3389 124.65.xxx.xxx 34013 extendable
+
+#去除一条映射
+no ip nat inside source static tcp 10.10.38.xx 3389 124.65.xxx.xxx 34013 extendable
