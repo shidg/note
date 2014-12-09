@@ -1,0 +1,53 @@
+##思科交换机添加静态路由##
+telnet 10.10.67.xxx
+
+en
+
+
+
+Swithc3750#
+Swithc3750#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+##去除一条路由##
+Swithc3750(config)#no ip route 10.10.0.0 255.255.0.0 10.10.66.11
+Swithc3750#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+
+##添加一条路由##
+Swithc3750(config)#ip route 10.10.203.0 255.255.255.0 10.10.66.144
+Swithc3750(config)#
+
+
+
+
+
+
+##华为交换机###
+telnet 10.10.66.xxx
+Trying 10.10.66.xxx...
+Connected to localhost (10.10.66.xxx).
+Escape character is '^]'.
+
+********************************************************************************
+*  Copyright(c) 1998-2007 Huawei Technologies Co., Ltd.  All rights reserved.  *
+*  Without the owner's prior written consent,                                  *
+*  no decompiling or reverse-engineering shall be allowed.                     *
+********************************************************************************
+
+
+Login authentication
+
+
+Username:
+Password:
+<Quidway>sys
+
+#添加一条路由#
+[Quidway] ip route-static 10.10.203.0 255.255.255.0 10.10.66.144 preference 60
+[Quidway]
+[Quidway]
+
+
+##去除一条路由
+[Quidway]undo  ip route-static 10.11.0.0 255.255.0.0 Tunnel 1 preference 60
+[Quidway]
