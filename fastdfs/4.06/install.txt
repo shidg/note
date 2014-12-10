@@ -1,0 +1,126 @@
+##http://sourceforge.net/projects/fastdfs/files/##
+#  libevent <所有机器>
+tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable
+./configure
+make && make install
+#如果是在64位系统，最好创建一个libevent-2.0.so.5 到/usr/lib64的软链接
+
+
+# FastDFS <所有机器>
+tar zxvf FastDFS_v4.06.tar.gz && cd FastDFS
+./make.sh
+./make.sh install
+
+
+## tracker##
+#创建目录，用于存放tracker日志,storage server等信息
+mkdir -p /Data/FastDFS
+#vi /etc/fdfs/tracker.conf,修改以下参数
+base_path=/Data/FastDFS
+use_storage_id = true
+storage_ids_filename = storage_ids.conf
+id_type_in_filename = id
+
+#storage_ids.conf
+cp /Data/software/FastDFS/conf/storage_ids.conf /etc/fdfs
+vi /etc/fdfs/storage_ids.conf
+# <id>  <group_name>  <ip_or_hostname>
+100001   group1  10.10.67.186
+100002   group1  10.10.67.187
+#启动#
+/usr/local/bin/fdfs_trackerd /etc/fdfs/tracker.conf 
+#查看/Data/FastDFS/logs/tracker.log获取详细信息
+
+
+
+
+
+## storage ##
+#创建目录，用于存储文件
+mkdir -p /Data/FastDFS
+# vi /etc/fdfs/storage.conf
+base_path=/Data/FastDFS
+store_path0=/Data/FastDFS
+tracker_server=10.10.67.185:22122
+http.server_port=8080
+#启动#
+/usr/local/bin/fdfs_storaged /etc/fdfs/storage.conf
+#storaged启动时会连接tracker的22122端口，如果连接失败则处于僵死状态，注意保证tracker已经启动，并检查防火墙
+#storaged启动后会连接其他storage的23000端口，注意检查防火墙
+#更多信息查看/Data/FastDFS/logs/storaged.log 
+
+#安装nginx,4.06版本已经取消了内置的HTTP，这里使用轻量级的nginx做为提供HTTP服务#
+tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36 /usr/local
+tar zxvf fastdfs-nginx-module_v1.15.tar.gz 
+tar zxvf nginx-1.62.tar.gz && cd nginx-1.62
+
+#configure参数可尽量简化，不必要的模块不必添加
+./configure --prefix=/Data/app/nginx --add-module=../fastdfs-nginx-module/src/ --with-pcre=/usr/local/pcre-8.36
+make && make install
+
+# mod_fastdfs.conf
+cp fastdfs-nginx-module/src/mod_fastdfs.conf /etc/fdfs
+vi /etc/fdfs/mod_fastdfs.conf
+#设置以下值，其它保持默认
+base_path=/Data/FastDFS
+load_fdfs_parameters_from_tracker=true
+use_storage_id = true
+storage_ids_filename = storage_ids.conf
+tracker_server=10.10.67.185:22122
+group_name=group1
+url_have_group_name = true
+store_path_count=1
+store_path0=/Data/FastDFS
+
+#nginx.conf
+server {
+        listen       8080;
+        server_name  localhost;
+
+        #charset koi8-r;
+
+        #access_log  logs/host.access.log  main;
+         location /group1/M00/ {
+                alias /Data/FastDFS/data/;
+                ngx_fastdfs_module;
+        }
+
+#启动nginx
+
+
+##测试（在tracker上）##
+vi /etc/fdfs/client.conf
+
+tracker_server
+load_fdfs_parameters_from_tracker=true
+use_storage_id = true
+storage_ids_filename = storage_ids.conf
+
+#上传文件#
+fdfs_upload_file /etc/fdfs/client.conf /tmp/test.txt 
+#输出如下：
+group1/M00/00/00/oYYBAFSIY9yAGiaUAAAACVAPOyI336.txt
+
+#获取文件信息
+fdfs_file_info /etc/fdfs/client.conf group1/M00/00/00/oYYBAFSIY9yAGiaUAAAACVAPOyI336.txt
+#输出如下：
+source storage id: 100001
+source ip address: 10.10.67.186
+file create timestamp: 2014-12-10 23:16:44
+file size: 9
+file crc32: 1343175458 (0x500F3B22)
+
+#访问文件
+http://10.10.67.186:8080/group1/M00/00/00/oYYBAFSIY9yAGiaUAAAACVAPOyI336.txt
+
+
+
+
+
+
+##重启
+/usr/local/bin/restart.sh /usr/local/bin/fdfs_storaged /etc/fdfs/storage.conf 
+/usr/local/bin/restart.sh /usr/local/bin/fdfs_trackerd /etc/fdfs/tracker.conf 
+
+##查看storage状态，在任意一台storage上执行
+/usr/local/bin/fdfs_monitor /etc/fdfs/storage.conf
