@@ -121,6 +121,9 @@ vi /etc/fdfs/storage_ids.conf
 100001   group1  10.10.67.186
 100002   group1  10.10.67.187
 
+#另外注意把/Data/software/FastDFS/conf/下的http.conf和mime.types也拷贝一份到/etc/fdfs下，nginx启动时会用到，因为在mod_fastdfs.conf中Include了http.conf,http.conf又引用了mime.types
+
+
 #nginx.conf
 user fastdfs fastdfs;
 events {
@@ -145,10 +148,12 @@ server {
 ##测试（在tracker上）##
 vi /etc/fdfs/client.conf
 
-tracker_server
+tracker_server=10.10.67.185:22122
 load_fdfs_parameters_from_tracker=false
 use_storage_id = true
 storage_ids_filename = storage_ids.conf
+http.tracker_server_port=8888 #与storage保持一致
+#include http.conf
 
 #上传文件#
 fdfs_upload_file /etc/fdfs/client.conf /tmp/test.txt 
@@ -164,9 +169,34 @@ file create timestamp: 2014-12-10 23:16:44
 file size: 9
 file crc32: 1343175458 (0x500F3B22)
 
-#访问文件
-http://10.10.67.186:8080/group1/M00/00/00/oYYBAFSIY9yAGiaUAAAACVAPOyI336.txt
 
+#或者使用fdfs_test直接上传文件
+fdfs_test /etc/fdfs/client.conf upload /tmp/test.txt
+#输出如下：
+tracker_query_storage_store_list_without_group: 
+        server 1. group_name=, ip_addr=10.10.67.186, port=23000
+        server 2. group_name=, ip_addr=10.10.67.187, port=23000
+
+group_name=group1, ip_addr=10.10.67.186, port=23000
+storage_upload_by_filename
+group_name=group1, remote_filename=M00/00/00/oYYBAFSJWR-AJkhyAAAAAAAAAAA136.txt
+source ip address: 10.10.67.186
+file timestamp=2014-12-11 16:43:11
+file size=0
+file crc32=0
+example file url: http://10.10.67.186:8888/group1/M00/00/00/oYYBAFSJWR-AJkhyAAAAAAAAAAA136.txt
+storage_upload_slave_by_filename
+group_name=group1, remote_filename=M00/00/00/oYYBAFSJWR-AJkhyAAAAAAAAAAA136_big.txt
+source ip address: 10.10.67.186
+file timestamp=2014-12-11 16:43:11
+file size=0
+file crc32=0
+example file url: http://10.10.67.186:8888/group1/M00/00/00/oYYBAFSJWR-AJkhyAAAAAAAAAAA136_big.txt
+
+
+
+#访问文件
+http://10.10.67.186:8888/group1/M00/00/00/oYYBAFSJWR-AJkhyAAAAAAAAAAA136.txt
 
 
 
