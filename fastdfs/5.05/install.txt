@@ -105,7 +105,7 @@ cp fastdfs-nginx-module/src/mod_fastdfs.conf /etc/fdfs
 vi /etc/fdfs/mod_fastdfs.conf
 #设置以下值，其它保持默认
 base_path=/Data/FastDFS
-load_fdfs_parameters_from_tracker=true
+load_fdfs_parameters_from_tracker=false
 use_storage_id = true
 storage_ids_filename = storage_ids.conf
 tracker_server=10.10.67.185:22122
@@ -146,7 +146,7 @@ server {
 vi /etc/fdfs/client.conf
 
 tracker_server
-load_fdfs_parameters_from_tracker=true
+load_fdfs_parameters_from_tracker=false
 use_storage_id = true
 storage_ids_filename = storage_ids.conf
 
@@ -173,8 +173,9 @@ http://10.10.67.186:8080/group1/M00/00/00/oYYBAFSIY9yAGiaUAAAACVAPOyI336.txt
 
 
 ##重启
-/usr/local/bin/restart.sh /usr/local/bin/fdfs_storaged /etc/fdfs/storage.conf 
-/usr/local/bin/restart.sh /usr/local/bin/fdfs_trackerd /etc/fdfs/tracker.conf 
+service  xxx restart
+#/usr/local/bin/restart.sh /usr/local/bin/fdfs_storaged /etc/fdfs/storage.conf 
+#/usr/local/bin/restart.sh /usr/local/bin/fdfs_trackerd /etc/fdfs/tracker.conf 
 
 ##查看storage状态，在任意一台storage上执行
 /usr/local/bin/fdfs_monitor /etc/fdfs/storage.conf
