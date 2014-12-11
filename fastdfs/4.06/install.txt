@@ -1,13 +1,16 @@
 ##http://sourceforge.net/projects/fastdfs/files/##
+
+##依赖perl环境，保证perl已安装#
+
 #  libevent <所有机器>
 tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable
-./configure
+./configure --prefix
 make && make install
 #如果是在64位系统，最好创建一个libevent-2.0.so.5 到/usr/lib64的软链接
 
 
 # FastDFS <所有机器>
-tar zxvf FastDFS_v4.06.tar.gz && cd FastDFS
+tar zxvf FastDFS_v5.05.tar.gz && cd FastDFS
 ./make.sh
 ./make.sh install
 
