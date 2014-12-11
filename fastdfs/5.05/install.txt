@@ -1,12 +1,15 @@
+##FastDFS_v5.05 On CentOS-6.5##
+
 ##http://sourceforge.net/projects/fastdfs/files/##
 
 ##依赖perl环境，保证perl已安装#
 
-#  libevent <所有机器>
-tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable
-./configure --prefix
-make && make install
-#如果是在64位系统，最好创建一个libevent-2.0.so.5 到/usr/lib64的软链接
+##libfastcommon#
+#https://github.com/happyfish100/libfastcommon
+unzip libfastcommon-master.zip
+cd libfastcommon-master
+./make.sh
+./make.sh install
 
 
 # FastDFS <所有机器>
@@ -15,23 +18,38 @@ tar zxvf FastDFS_v5.05.tar.gz && cd FastDFS
 ./make.sh install
 
 
+
 ## tracker##
+##创建fastdfs运行用户
+useradd fastdfs
+
 #创建目录，用于存放tracker日志,storage server等信息
 mkdir -p /Data/FastDFS
-#vi /etc/fdfs/tracker.conf,修改以下参数
+chown -R fastdfs:fastdfs /Data/FastDFS
+
+#cp /etc/fdfs/tracker.conf.sample /etc/fdfs/tracker.conf,修改以下参数
+port=22122
 base_path=/Data/FastDFS
+run_by_group=fastdfs
+run_by_user=fastdfs
 use_storage_id = true
 storage_ids_filename = storage_ids.conf
 id_type_in_filename = id
 
-#storage_ids.conf
-cp /Data/software/FastDFS/conf/storage_ids.conf /etc/fdfs
+#cp /Data/software/FastDFS/conf/storage_ids.conf /etc/fdfs
 vi /etc/fdfs/storage_ids.conf
 # <id>  <group_name>  <ip_or_hostname>
 100001   group1  10.10.67.186
 100002   group1  10.10.67.187
+
 #启动#
-/usr/local/bin/fdfs_trackerd /etc/fdfs/tracker.conf 
+#注意：make.sh默认将二进制文件安装到/usr/bin目录，但安装后的启动脚本却到/usr/local/bin下寻找相关二进制文件，所以要对启动脚本加以修改,如：
+vi /etc/init.d/fdfs_trackerd
+PRG=/usr/local/bin/fdfs_trackerd ##将/usr/local/bin修改为/usr/bin
+sed -i 's#usr/local/bin#/usr/bin#' /etc/init.d/fdfs_trackerd
+
+service fdfs_trackerd start
+#/usr/local/bin/fdfs_trackerd /etc/fdfs/tracker.conf 
 #查看/Data/FastDFS/logs/tracker.log获取详细信息
 
 
@@ -39,26 +57,47 @@ vi /etc/fdfs/storage_ids.conf
 
 
 ## storage ##
+##创建运行用户
+useradd fastdfs
 #创建目录，用于存储文件
 mkdir -p /Data/FastDFS
+chown -R fastdfs:fastdfs /Data/FastDFS
+
+#cp /etc/fdfs/storage.conf.sample /etc/fdfs/storage.conf
 # vi /etc/fdfs/storage.conf
 base_path=/Data/FastDFS
 store_path0=/Data/FastDFS
+run_by_group=fastdfs
+run_by_user=fastdfs
 tracker_server=10.10.67.185:22122
-http.server_port=8080
+http.server_port=8888
 #启动#
-/usr/local/bin/fdfs_storaged /etc/fdfs/storage.conf
+#注意：make.sh默认将二进制文件安装到/usr/bin目录，但安装后的启动脚本却到/usr/local/bin下寻找相关二进制文件，所以要对启动脚本加以修改,如：
+vi /etc/init.d/fdfs_storaged
+PRG=/usr/local/bin/fdfs_storaged ##将/usr/local/bin修改为/usr/bin
+sed -i 's#usr/local/bin#/usr/bin#' /etc/init.d/fdfs_storaged
+
+service fdfs_storaged start
+#/usr/local/bin/fdfs_storaged /etc/fdfs/storage.conf
 #storaged启动时会连接tracker的22122端口，如果连接失败则处于僵死状态，注意保证tracker已经启动，并检查防火墙
 #storaged启动后会连接其他storage的23000端口，注意检查防火墙
 #更多信息查看/Data/FastDFS/logs/storaged.log 
 
-#安装nginx,4.06版本已经取消了内置的HTTP，这里使用轻量级的nginx做为提供HTTP服务#
-tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36 /usr/local
-tar zxvf fastdfs-nginx-module_v1.15.tar.gz 
-tar zxvf nginx-1.62.tar.gz && cd nginx-1.62
 
+#安装nginx,5.05版本已经取消了内置的HTTP，这里使用轻量级的nginx做为提供HTTP服务#
+tar jxvf pcre-8.36.tar.bz2
+tar zxvf openssl-1.01.j
+tar zxvf fastdfs-nginx-module_v1.16.tar.gz 
+#fastdfs-nginx-module的config指定的路径与fastdfs和fastcommon的实际安装路径不符，需先加以修改
+vi fastdfs-nginx-module/src/config
+CORE_INCS="$CORE_INCS /usr/local/include/fastdfs /usr/local/include/fastcommon/
+#上句修改为如下：
+CORE_INCS="$CORE_INCS /usr/include/fastdfs /usr/include/fastcommon/
+
+
+tar zxvf nginx-1.62.tar.gz && cd nginx-1.62
 #configure参数可尽量简化，不必要的模块不必添加
-./configure --prefix=/Data/app/nginx --add-module=../fastdfs-nginx-module/src/ --with-pcre=/usr/local/pcre-8.36
+./configure --prefix=/Data/app/nginx  --with-pcre=/Data/software/pcre-8.36 --with-openssl=/Data/software/openssl-1.0.1j --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../fastdfs-nginx-module/src/
 make && make install
 
 # mod_fastdfs.conf
@@ -75,9 +114,21 @@ url_have_group_name = true
 store_path_count=1
 store_path0=/Data/FastDFS
 
+#storage_ids.conf,与tracker保持一致
+#cp /Data/software/FastDFS/conf/storage_ids.conf /etc/fdfs
+vi /etc/fdfs/storage_ids.conf
+# <id>  <group_name>  <ip_or_hostname>
+100001   group1  10.10.67.186
+100002   group1  10.10.67.187
+
 #nginx.conf
+user fastdfs fastdfs;
+events {
+    use epoll;
+    worker_connections  1024;
+}
 server {
-        listen       8080;
+        listen       8888;
         server_name  localhost;
 
         #charset koi8-r;
