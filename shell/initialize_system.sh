@@ -25,6 +25,9 @@ cat >> /etc/security/limits.conf << EOF
 * hard core   0
 EOF
 # set sysctl
+
+modprobe bridge
+
 cat > /etc/sysctl.conf << EOF
 #不充当路由器
 net.ipv4.ip_forward = 0
@@ -101,6 +104,11 @@ net.ipv4.tcp_fin_timeout = 30
 net.ipv4.tcp_keepalive_time = 1800
 net.ipv4.tcp_keepalive_intvl = 30
 net.ipv4.tcp_keepalive_probes = 3
+
+##bridge 需加载bridge模块之后方可生效
+net.bridge.bridge-nf-call-ip6tables = 0
+net.bridge.bridge-nf-call-iptables = 0
+net.bridge.bridge-nf-call-arptables = 0
 
 net.ipv4.tcp_mem = 94500000 915000000 927000000
 net.ipv4.ip_local_port_range = 1024 65535

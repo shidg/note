@@ -1,0 +1,27 @@
+# 如何在系统启动是自动加载模块
+# 方法1：
+# 在/etc/sysconfig/modules/下面创建*.modules文件，并添加执行权限，文件内容如下：
+
+#!/bin/sh
+/sbin/modinfo -F filename bridge > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    /sbin/modprobe bridge
+fi
+
+#或者:
+#!/bin/sh
+if [ ! -c /dev/input /uinput ] ;  then
+exec /sbin/modprobe uinput  > /dev/null 2>&1
+fi
+
+
+#方法2：
+#在/etc/rc.modules里面加上相应内容，没有的话创建该文件。
+echo "modprobe bridge >> /etc/rc.modules"
+
+
+操作完毕之后reboot，lsmod | grep bridge进行验证。
+
+#为什么不使用rc.local？
+#网上有些文章建议在/etc/rc.local文件中增加modprobe命令，某些情况下这样配置不会正常工作。因为系统启动是在执行完rc.d目录中的程序后才执行/etc/rc.local，因此，启动时rc.d中的程序如果用到了所需加载的模块，就会出错。
+#另外有些文章提到修改/etc/modprobe.conf文件，其实也是错误的。这个文件仅仅是定义一些内核模块的别名、以及一些特殊的加载、卸载命令。修改此文件并不能使模块在启动时被自动加载。
