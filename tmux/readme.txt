@@ -1,26 +1,21 @@
 # get source
 wget http://sourceforge.net/projects/tmux/files/tmux/tmux-1.9/tmux-1.9a.tar.gz
-or
+
+
+##git获取较新版本##
 git clone git://git.code.sf.net/p/tmux/tmux-code tmux
 cd tmux
 sh autogen.sh
-./configure && make
+#若执行autogen.sh的时候提示"aclocal: command not found"则yum install libtool即可。
 
+#安装依赖,libevent和ncurses
+tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable && ./configure --prefix=/usr && make && make install
+ldconfig
 
-###dep###
-#确保安装了ncurses
-yum install ncurses-devel
-
-#从1.8版开始，tmux depends on libevent 2.x. 否则会有 make *** control.o error1 的错误,删除旧版本libevent，安装最新版
-tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable
-./configure --prefix=/usr
-make && make install
+yum install ncurses-devel -y
 
 # install tmux
-
-tar zxvf tmux-1.9a.tar.gz && cd tmux-1.9a
-./configure
-make && make install
+./configure (--prefix=/usr) && make && make install
 
 #############################################################
 ###By default, `make install' will install all the files in##
