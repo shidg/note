@@ -1,0 +1,31 @@
+chage -m 0 -M 90 -d 2014-12-15 -W 30 -I 15 username
+
+-m  两次修改密码的最短间隔，0，即随时可修改密码 passwd -n 0 username等效
+-M  两次修改密码的最长间隔，即密码有效期 passwd -x 90 username等效
+-d  最后修改密码的时间，如果设置为0则用户密码过期，下次用户登录时会被强制要求修改密码. passwd -e username等效
+-W  密码到期前几天开始提醒。passwd -w 7 username等效
+-I  密码过期15天后帐号将被锁定 passwd -i 15 username 等效
+
+
+
+##指定帐号失效日期
+chage -E 2014-12-15 username
+usermod -e 2014-12-15 username
+useradd -e 2014-12-15 username
+
+
+
+
+
+#! /bin/bash
+# chage.sh#
+# runing every 3 months find users that uid >=500 and chageit#
+
+DATE=`date +%Y-%m-%d`
+ALL_USERS=/tmp/user.list
+awk -F ':' '{if($3>=500) print $1}' /etc/passwd > /tmp/user.list
+
+while read user
+do
+    chage -m 0 -M 90 -d $DATE -W 30 -I 15 $user
+done < ${ALL_USERS}

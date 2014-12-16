@@ -1,0 +1,43 @@
+#显示压缩包内的目录结构、文件列表 t
+tar ztf logwatch-7.4.1.tgz
+logwatch-7.4.1/
+logwatch-7.4.1/override.conf.5
+logwatch-7.4.1/HOWTO-Customize-LogWatch
+logwatch-7.4.1/logwatch.cron
+logwatch-7.4.1/ignore.conf.5
+logwatch-7.4.1/README
+logwatch-7.4.1/postfix-logwatch.1
+logwatch-7.4.1/amavis-logwatch.1
+logwatch-7.4.1/logwatch.conf.5
+logwatch-7.4.1/logwatch.8
+logwatch-7.4.1/LICENSE
+
+tar ztvf logwatch-7.4.1.tgz
+drwxrwxr-x root/root         0 2014-09-24 06:54 logwatch-7.4.1/
+-rw-rw-r-- root/root        25 2014-09-23 19:52 logwatch-7.4.1/override.conf.5
+-rw-rw-r-- root/root     22390 2014-09-23 19:52 logwatch-7.4.1/HOWTO-Customize-LogWatch
+-rw-rw-r-- root/root       434 2014-09-23 19:52 logwatch-7.4.1/logwatch.cron
+-rw-rw-r-- root/root        24 2014-09-23 19:52 logwatch-7.4.1/ignore.conf.5
+-rw-rw-r-- root/root      3437 2014-09-23 19:52 logwatch-7.4.1/README
+-rw-rw-r-- root/root     36103 2014-09-23 19:52 logwatch-7.4.1/postfix-logwatch.1
+-rw-rw-r-- root/root     33704 2014-09-23 19:52 logwatch-7.4.1/amavis-logwatch.1
+-rw-rw-r-- root/root      1003 2014-09-23 19:52 logwatch-7.4.1/logwatch.conf.5
+-rw-rw-r-- root/root      4968 2014-09-23 19:52 logwatch-7.4.1/logwatch.8
+-rw-rw-r-- root/root      1055 2014-09-23 19:52 logwatch-7.4.1/LICENSE
+-rw-rw-r-- root/root     10435 2014-09-23 19:52 logwatch-7.4.1/install_logwatch.sh
+
+
+#只提取压缩包内的指定文件
+tar zxvf logwatch-7.4.1.tgz logwatch-7.4.1/LICENSE
+
+
+
+#overwrite control
+-k (--keep-old-files) 若同名文件已存在则报错，不会覆盖
+--skip-old-files  若同名文件已存在则自动跳过，不会覆盖
+--keep-newer-files 已存在文件比压缩包内的文件新则不覆盖
+--no-overwrite-dir  不覆盖目录
+--remove-files  生成压缩包后删除源文件
+
+
+
