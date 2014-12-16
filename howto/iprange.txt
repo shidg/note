@@ -1,0 +1,31 @@
+#为网卡配置多个连续ip
+cat /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+BOOTPROTO="static"
+IPV6INIT="no"
+MTU="1500"
+NM_CONTROLLED="no"
+ONBOOT="yes"
+TYPE="Ethernet"
+HWADDR=00:50:56:85:11:35
+IPADDR=10.10.67.164
+NETMASK=255.255.255.0
+GATEWAY=10.10.67.251
+DNS1=202.106.196.115
+
+
+cp  /etc/sysconfig/network-scripts/ifcfg-eth0 /etc/sysconfig/network-scripts/ifcfg-eth0-range0
+vi /etc/sysconfig/network-scripts/ifcfg-eth0-range0
+DEVICE="eth0"  ##绑定IP段的网卡名称
+BOOTPROTO="static"
+ONBOOT="yes"
+IPADDR_START=10.10.67.230 ##开始ip
+IPADDR_END=10.10.67.239   ##结束ip
+NETMASK=255.255.255.0
+CLONENUM_START=0          ##从eth0:0开始
+NO_ALIASROUTING=yes       ##数据包始终通过eth0进出，不走网卡别名（如eth0:0），可以加快路由的响应速度，强烈建议配置
+
+
+service network restart
+
+#同理，如果还想绑定另一个ip段，只需要再编辑一个ifcfg-eth0-range1

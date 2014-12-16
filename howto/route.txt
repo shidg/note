@@ -1,0 +1,23 @@
+#vi /etc/sysconfig/static-routes,
+any net 10.10.66.0 netmask 255.255.255.0 gw 10.10.67.251
+any host 10.10.66.11 gw 10.10.67.251
+
+
+#如果static-routes的内容如上，那么在系统启动的时候会自动执行两个添加路由的动作：
+route add -net 10.10.66.0 netmask 255.255.255.0 gw 10.10.67.251
+route add -host 10.10.66.11 gw 10.10.67.251
+
+
+
+
+
+static-routes工作原理
+
+#在/etc/init.d/network脚本中有这样一段：
+if [ -f /etc/sysconfig/static-routes ]; then 
+grep "^any" /etc/sysconfig/static-routes | while read ignore args;    do   
+       /sbin/route add -$args
+    done
+fi
+#这段的意思是，如果存在static-routes文件，则遍历它的内容，然后执行路由添加。其中while  read 是循环的意思是：以空格为分隔符，每行的第一个字段赋值给第一个变量(ignore) ,第二个字段赋值给第二个变量，……最后一个变量将接受剩余的所有字段。这里只有ignore和args两个变量，所以$args的值是host  25.255.255.255  dev  eth0,也就是第一个字段之外的所有内容。
+

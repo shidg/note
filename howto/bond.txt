@@ -1,0 +1,77 @@
+#多网卡绑定
+vi /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+USERCTL=no  #禁止root之外的用户控制该设备
+BOOTPROTO=none
+ONBOOT=yes
+IPADDR=192.168.100.17
+NETMASK=255.255.255.0
+GATEWAY=192.168.100.1
+TYPE=UnKnown
+
+
+
+vi /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+ONBOOT="yes"
+BOOTPROTO=none
+MASTER=bond0
+SLAVE=yes
+USERCTL=no
+
+
+
+vi /etc/sysconfig/network-scripts/ifcfg-eth1
+DEVICE="eth1"
+ONBOOT="yes"
+BOOTPROTO=none
+MASTER=bond0
+SLAVE=yes
+USERCTL=no
+
+
+
+vi /etc/modprobe.d/bonding.conf
+alias bond0 bonding #定义模块别名
+options bond0 miimon=100 mode=1
+#miimon用来进行链路监测。 系统每100ms监测一次链路连接状态，如果有一条线路不通就转入另一条线路。mode=0表示load balancing (round-robin)为负载均衡方式，两块网卡都工作。 mode=1表示fault-tolerance (active-backup)提供冗余功能，工作方式是主备的工作方式,也就是说默认情况下只有一块网卡工作,另一块做备份
+
+
+service network restart
+
+
+
+
+
+
+#为网卡配置多个连续ip
+cat /etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE="eth0"
+BOOTPROTO="static"
+IPV6INIT="no"
+MTU="1500"
+NM_CONTROLLED="no"
+ONBOOT="yes"
+TYPE="Ethernet"
+HWADDR=00:50:56:85:11:35
+IPADDR=10.10.67.164
+NETMASK=255.255.255.0
+GATEWAY=10.10.67.251
+DNS1=202.106.196.115
+
+
+cp  /etc/sysconfig/network-scripts/ifcfg-eth0 /etc/sysconfig/network-scripts/ifcfg-eth0-range0
+vi /etc/sysconfig/network-scripts/ifcfg-eth0-range0
+DEVICE="eth0"
+BOOTPROTO="static"
+ONBOOT="yes"
+IPADDR_START=10.10.67.230
+IPADDR_END=10.10.67.239
+NETMASK=255.255.255.0
+CLONENUM_START=0
+NO_ALIASROUTING=yes
+
+
+service network restart
+
+#同理，如果还想绑定另一个ip段，只需要再编辑一个ifcfg-eth0-range1
