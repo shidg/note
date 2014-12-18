@@ -19,9 +19,10 @@ hostname oracle
 
 ###depend##
 ##让yum同时安装32位和64位软件包####
-sed -i '/plugins/a\multilib_policy=all' /etc/yum.conf
+sed -i '/plugins/a\multilib_policy=all\
+exclude=kernel*' /etc/yum.conf
 yum clean all
-yum install setarch binutils compat-libstdc++-33 compat-gcc-34 compat-gcc-34-c++-3* openmotif elfutils-libelf elfutils-libelf-devel elfutils-libelf-devel-static gcc gcc-c++ glibc glibc-common glibc-devel glibc-headers kernel-headers ksh libaio libaio-devel libgcc libgomp libstdc++ libstdc++-devel make sysstat unixODBC unixODBC-devel libXp libXt libXtst -y
+yum install setarch binutils compat-libstdc++-33 compat-gcc-34 compat-gcc-34-c++-3* openmotif elfutils-libelf elfutils-libelf-devel elfutils-libelf-devel-static gcc gcc-c++ glibc glibc-common glibc-devel glibc-headers kernel-devel kernel-headers ksh libaio libaio-devel libgcc libgomp libstdc++ libstdc++-devel make sysstat unixODBC unixODBC-devel libXp libXt libXtst -y
 ##ld-linux.so.2 
 ##sysctl.conf
 cat > /etc/sysctl.conf << EOF
@@ -117,7 +118,8 @@ groupadd dba
 useradd -m -g oinstall -G dba oracle
 echo "123456"  | passwd  --stdin oracle
 
-GROUP_ID=`id oracle | cut -d, -f2 | awk -F '[^0-9]' '{print $1}'`
+#GROUP_ID=`id oracle | cut -d, -f2 | awk -F '[^0-9]' '{print $1}'`
+GROUP_ID=`grep "oinstall" /etc/group | cut -d: -f3`
 echo -e "vm.hugetlb_shm_group  = ${GROUP_ID}" >> /etc/sysctl.conf
 sysctl -p
 
@@ -182,11 +184,11 @@ sed -i '$a\if($USER == "oracle") then\
     limit descriptors 65536\
 endif' /etc/csh.login
 
-##/etc/redhat-release
-echo "redhat-4" > /etc/redhat-release
-
 gunzip 10201_database_linux_x86_64.cpio.gz
 cpio -idmv < 10201_database_linux_x86_64.cpio
+
+VERSION=`cat /etc/redhat-release`
+sed -i 's/redhat-3,/$VERSION,/' database/install/oraparam.ini 
 
 echo "All Done!"
 sleep 3
