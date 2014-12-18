@@ -176,7 +176,11 @@ sed -i '$a\if [ $USER = "oracle" ];then\
 	else\
 		ulimit -u 16384 -n 65536\
 	fi\
-fi' /home/oracle/.bash_profile
+fi' /etc/profile
+sed -i '$a\if($USER == "oracle") then\
+    limit maxproc 16384\
+    limit descriptors 65536\
+endif' /etc/csh.login
 
 ##/etc/redhat-release
 echo "redhat-4" > /etc/redhat-release
