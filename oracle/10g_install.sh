@@ -4,23 +4,19 @@ APP_DIR=/opt/app/
 if [ ! -d ${APP_DIR} ];then
     mkdir -p ${APP_DIR}
 fi
-#tar zxvf jdk-7u51-linux-x64.tar.gz -C ${APP_DIR}
-
-# 设置java环境，[~/.bashrc]
-#echo -e "JAVA_HOME=${APP_DIR}jdk1.7.0_51\nPATH=\$PATH:\$JAVA_HOME/bin\nCLASSPATH=.:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar\nexport JAVA_HOME PATH CLASSPATH" >> /etc/profile
-
-#tar zxvf apache-tomcat-7.0.50.tar.gz -C ${APP_DIR} 
 
 ##hostname
-sed  '/HOSTNAME/ s/^/#/;$a\HOSTNAME=oracle' /etc/sysconfig/network
-IP=`ifconfig | grep inet | grep -v 127.0.0.1|grep -v inet6 |awk '{print $2}' | cut -d : -f2`
-echo "$IP oracle" >> /etc/hosts
-hostname oracle
+MACHINE_NAME=oracle
+sed  -i "/HOSTNAME/ s/^/#/;\$a\HOSTNAME=${MACHINE_NAME}" /etc/sysconfig/network
+sed -i "s/127.0.0.1/127.0.0.1 ${MACHINE_NAME}/" /etc/hosts
+ifconfig | grep inet | grep -v 127.0.0.1|grep -v inet6 |awk '{print $2}' | cut -d : -f2 | while read IP;do echo "$IP ${MACHINE_NAME}" >> /etc/hosts;done
+
+##selinux
+if [ `sed -n '/^SELINUX=/p' /etc/selinux/config  | cut -d= -f2` != disabled ];then sed -i '/^SELINUX=/ s/^/#/;/#SELINUX=/a\SELINUX=disabled' /etc/selinux/config;fi
 
 ###depend##
 ##让yum同时安装32位和64位软件包####
-sed -i '/plugins/a\multilib_policy=all\
-exclude=kernel*' /etc/yum.conf
+sed -i '/plugins/a\multilib_policy=all' /etc/yum.conf
 yum clean all
 yum install setarch binutils compat-libstdc++-33 compat-gcc-34 compat-gcc-34-c++-3* openmotif elfutils-libelf elfutils-libelf-devel elfutils-libelf-devel-static gcc gcc-c++ glibc glibc-common glibc-devel glibc-headers kernel-devel kernel-headers ksh libaio libaio-devel libgcc libgomp libstdc++ libstdc++-devel make sysstat unixODBC unixODBC-devel libXp libXt libXtst -y
 ##ld-linux.so.2 
@@ -187,11 +183,17 @@ endif' /etc/csh.login
 gunzip 10201_database_linux_x86_64.cpio.gz
 cpio -idmv < 10201_database_linux_x86_64.cpio
 
-VERSION=`cat /etc/redhat-release`
-sed -i 's/redhat-3,/$VERSION,/' database/install/oraparam.ini 
+VERSION=`awk '{for(i=1;i<=NF;i++){if($i ~ /[0-9]\.[0-9]/)print $i} }'  /etc/redhat-release | cut -d. -f1`
+sed -i "s/redhat-3,/redhat-$VERSION,/" database/install/oraparam.ini 
 
 echo "All Done!"
-sleep 3
+for i in $(seq -w 10| tac)
+do
+        echo -ne "\aThe system will reboot after $i seconds...\r"
+        sleep 1
+done
+echo
+shutdown -r now  
 exit 0
 ####DISPLAY###
 #export DISPLAY=:0.0
