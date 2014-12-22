@@ -19,7 +19,12 @@ if [ `sed -n '/^SELINUX=/p' /etc/selinux/config  | cut -d= -f2` != disabled ];th
 sed -i '/plugins/a\multilib_policy=all' /etc/yum.conf
 yum clean all
 yum install setarch binutils compat-libstdc++-33 compat-gcc-34 compat-gcc-34-c++-3* openmotif elfutils-libelf elfutils-libelf-devel elfutils-libelf-devel-static gcc gcc-c++ glibc glibc-common glibc-devel glibc-headers kernel-devel kernel-headers ksh libaio libaio-devel libgcc libgomp libstdc++ libstdc++-devel make sysstat unixODBC unixODBC-devel libXp libXt libXtst -y
-##ld-linux.so.2 
+
+if [ ! $? == 0 ];then
+echo "ERROR: some package not installed!"
+exit 1
+fi
+
 ##sysctl.conf
 cat > /etc/sysctl.conf << EOF
 #不充当路由器
