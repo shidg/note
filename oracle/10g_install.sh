@@ -184,12 +184,13 @@ gunzip 10201_database_linux_x86_64.cpio.gz
 cpio -idmv < 10201_database_linux_x86_64.cpio
 
 VERSION=`awk '{for(i=1;i<=NF;i++){if($i ~ /[0-9]\.[0-9]/)print $i} }'  /etc/redhat-release | cut -d. -f1`
+echo "redhat-$VERSION" > /etc/redhat-release
 sed -i "s/redhat-3,/redhat-$VERSION,/" database/install/oraparam.ini 
 
 echo "All Done!"
 for i in $(seq -w 10| tac)
 do
-        echo -ne "\aThe system will reboot after $i seconds...\r"
+        echo -ne "\aThe system will reboot after $i seconds... press CTR-C to exit\r"
         sleep 1
 done
 echo
@@ -203,6 +204,3 @@ exit 0
 #export DISPLAY=:0.0
 #xhost +
 ##若有条件可直接将服务器init 5或startx##
-
-##表空间和用户
-##http://blog.sina.com.cn/s/blog_4172d3d601010bd9.html##
