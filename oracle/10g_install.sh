@@ -145,14 +145,16 @@ echo "sedsession   required      pam_limits.so" >> /etc/pam.d/login
 #在oracle用户家目录下创建vncpasswd.sh,并写入内容。若已存在先更名
 #FILE=/home/oracle/vncpasswd.sh
 #if [ -f $FILE ];then mv $FILE $FILE.BACK;fi
-#echo '#!/usr/bin/expect' >> /home/oracle/vncpasswd.sh
-#echo "set timeout 10" >> /home/oracle/vncpasswd.sh
-#echo "spawn vncpasswd" >> /home/oracle/vncpasswd.sh
-#echo "expect \"Password:\"" >> /home/oracle/vncpasswd.sh
-#echo "send \"123456\n\"" >> /home/oracle/vncpasswd.sh
-#echo "expect \"Verify:\"" >> /home/oracle/vncpasswd.sh
-#echo "send \"123456\n\"" >> /home/oracle/vncpasswd.sh
-#echo "interact" >> /home/oracle/vncpasswd.sh
+#cat > /home/oracle/vncpasswd.sh << EOF
+##!/usr/bin/expect
+#set timeout 10
+#spawn vncpasswd
+#expect \"Password:\"
+#send \"123456\n\"
+#expect \"Verify:\"
+#send \"123456\n\"
+#interact
+#EOF
 
 #以oracle用户的身份，调用expect执行vncpasswd.sh脚本,设置oracle用户的vnc密码
 #yum install expect -y 
