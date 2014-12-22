@@ -164,6 +164,8 @@ echo "sedsession   required      pam_limits.so" >> /etc/pam.d/login
 #service vncserver start
 
 #iptables -I INPUT -p tcp -m tcp --dport 5910 -j ACCEPT
+# vnc远程登录图形界面开始安装，若安装界面乱码，可将系统默认语言设置为英文之后再登录。
+
 
 # create directory
 mkdir -p ${APP_DIR}oracle_10/app/product/10.2.0/db_1

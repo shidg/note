@@ -1,0 +1,6 @@
+#修改系统默认语言
+vi /etc/sysconfig/i18n
+#LANG="zh_CN.UTF-8" #默认中文
+LANG="en_US.UTF-8"  #默认英语
+SUPPORTED="zh_CN.UTF-8:zh_CN:zh:en_US.UTF-8:en_US:en"
+SYSFONT="latarcyrheb-sun16
