@@ -159,17 +159,17 @@ set softtabstop=4
 "cindent对c语法的缩进更加智能灵活，
 "而shiftwidth则是在使用&lt;和&gt;进行缩进调整时用来控制缩进量。
 "换行自动缩进，是按照shiftwidth值来缩进的
-set cindent shiftwidth=4
+"set cindent shiftwidth=4
  
 "最基本的自动缩进
-set autoindent shiftwidth=4
+"set autoindent shiftwidth=4
  
 "比autoindent稍智能的自动缩进
 set smartindent shiftwidth=4
 
 "字符编码
 set encoding=utf-8
-set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+set fileencodings=utf-8,ucs-bom,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 set fileencoding=utf-8
 set termencoding=utf-8
 
@@ -199,7 +199,9 @@ let mapleader=","
 map b wbi{<Esc>ea}<Esc>
  
 "使用前导键加w来实现加速文件保存，来代替:w!加回车
-nmap w :w!<CR>
+map w :w!<CR>
+"使用前导键加q来实现快速退出，来代替:q!加回车
+map q :q!<CR>
  
 "匹配那些末尾有空格或TAB的行。（es：Endspace Show）
 map es :/.*\s\+$<CR>
@@ -220,19 +222,19 @@ map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
 map /d :s/^\/\/\(\s*\)/\1/<CR>
 
 " 允许折叠
-set foldenable 
+"set foldenable 
 
 " 按缩进折叠
-set foldmethod=syntax
+"set foldmethod=syntax
 
 " 设置折叠区域的宽度
-set foldcolumn=0 
+"set foldcolumn=0 
 
 " 设置折叠层数为
-setlocal foldlevel=1 
+"setlocal foldlevel=1 
 
 " 设置为自动关闭折叠 
-set foldclose=all 
+"set foldclose=all 
 
 " 用空格键来开关折叠
-nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
+"nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
