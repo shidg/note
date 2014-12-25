@@ -1,6 +1,11 @@
 #install
 
-# yum
+# sysdig提供的全自动安装脚本
+curl -s https://s3.amazonaws.com/download.draios.com/stable/install-sysdig | bash 
+
+
+
+# 手动yum安装
 rpm --import https://s3.amazonaws.com/download.draios.com/DRAIOS-GPG-KEY.public
 curl -s -o /etc/yum.repos.d/draios.repo http://download.draios.com/stable/rpm/draios.repo
 rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
