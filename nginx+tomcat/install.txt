@@ -9,12 +9,9 @@
 
 # 获取最新版本
 
-svn checkout http://nginx-upstream-jvm-route.googlecode.com/svn/trunk/ nginx-upstream-jvm-route-read-only 
+git clone https://github.com/nulab/nginx-upstream-jvm-route  nginx-upstream-jvm-route
 
 #安装nginx，并为nginx添加模块
-
-######https://github.com/tbje/nginx-upstream-jvm-route#########
-tar zxvf nginx-upstream-jvm-route.tgz 
 
 tar zxvf nginx-1.4.7.tar.gz && cd nginx-1.4.7
 
