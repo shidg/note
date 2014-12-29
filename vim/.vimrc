@@ -88,7 +88,10 @@ set history=100
 set cursorline
  
 "插入右括号时会短暂地跳转到匹配的左括号
-"set showmatch
+set showmatch
+
+"等待时间设置为1秒
+set matchtime=10
  
 "搜索时忽略大小写
 set ignorecase
