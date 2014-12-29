@@ -65,6 +65,11 @@ set nobackup
 
 "语法高亮
 syntax on
+
+"配色方案
+execute pathogen#infect()
+set background=dark
+colorscheme solarized
  
 "显示行数标示
 set number
@@ -88,10 +93,7 @@ set history=100
 set cursorline
  
 "插入右括号时会短暂地跳转到匹配的左括号
-set showmatch
-
-"等待时间设置为1秒
-set matchtime=10
+"set showmatch
  
 "搜索时忽略大小写
 set ignorecase
@@ -161,7 +163,7 @@ set softtabstop=4
 "cindent对c语法的缩进更加智能灵活，
 "而shiftwidth则是在使用&lt;和&gt;进行缩进调整时用来控制缩进量。
 "换行自动缩进，是按照shiftwidth值来缩进的
-"set cindent shiftwidth=4
+set cindent shiftwidth=4
  
 "最基本的自动缩进
 "set autoindent shiftwidth=4
@@ -233,5 +235,22 @@ map /d :s/^\/\/\(\s*\)/\1/<CR>
 " 用空格键来开关折叠
 "nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
 
-"在同一vim窗口中打开Man手册
+"在同一vim窗口中打开man手册
 source $VIMRUNTIME/ftplugin/man.vim
+
+"NERDTree
+"打开vim时自动运行NERDTree
+autocmd vimenter * NERDTree
+"运行NERDTree后自动将光标定位在右侧窗口
+autocmd VimEnter * wincmd w
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+"退出编辑区自动退出NERDTree
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+"默认显示bookmarks
+let NERDTreeShowBookmarks=1 
+"打开/关闭NERDTree的快捷键
+map <C-n> :NERDTreeToggle<CR>
+
+"vim-nerdtree-tabs
+let g:nerdtree_tabs_open_on_console_startup=1
