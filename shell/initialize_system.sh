@@ -388,13 +388,6 @@ imap jj <Esc><Right>
 "设置自定义快捷键的前导键
 let mapleader=","
  
-"利用前导键加b，则可以在一个单词两边加上大括号
-map b wbi{<Esc>ea}<Esc>
- 
-"使用前导键加w来实现加速文件保存，来代替:w!加回车
-map w :w!<CR>
-map q :q!<CR>
- 
 "匹配那些末尾有空格或TAB的行。（es：Endspace Show）
 map es :/.*\s\+$<CR>
  
@@ -430,6 +423,9 @@ map /d :s/^\/\/\(\s*\)/\1/<CR>
 
 " 用空格键来开关折叠
 "nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
+
+"在同一vim窗口中打开man手册
+source $VIMRUNTIME/ftplugin/man.vim
 EOF
 echo "~/.vimrc has been created"
 sleep 2
