@@ -379,14 +379,14 @@ set expandtab
 set hlsearch
 
 "高亮显示匹配字符串时的颜色
-highlight Search term=reverse ctermfg=7 ctermbg=6
+highlight Search term=standout ctermfg=10 ctermbg=7
  
 "在搜索模式下，随着搜索字符的逐个输入，实时进行字符串匹配，并对首个匹配到的字符串高亮显示
 set incsearch
 
 "tab标签配色
-highlight TabLine term=underline cterm=bold ctermfg=9 ctermbg=4
-highlight TabLineSel term=bold cterm=bold ctermbg=Red ctermfg=yellow
+highlight TabLine term=reverse cterm=reverse ctermfg=12 ctermbg=0
+highlight TabLineSel term=reverse,bold cterm=reverse,bold ctermbg=7 ctermfg=4
 
 "Mapping jj to Esc
 imap jj <Esc><Right>
@@ -411,24 +411,6 @@ map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
  
 "如果所选行行首有//，则将所选行行首的//都去掉（/d：/ delete）
 map /d :s/^\/\/\(\s*\)/\1/<CR>
-
-" 允许折叠
-"set foldenable 
-
-" 按缩进折叠
-"set foldmethod=syntax
-
-" 设置折叠区域的宽度
-"set foldcolumn=0 
-
-" 设置折叠层数为
-"setlocal foldlevel=1 
-
-" 设置为自动关闭折叠 
-"set foldclose=all 
-
-" 用空格键来开关折叠
-"nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
 
 "在同一vim窗口中打开man手册
 source $VIMRUNTIME/ftplugin/man.vim
