@@ -51,7 +51,7 @@ ln -s  /dev/urandom  /dev/random
 ipsec newhostkey --output /etc/ipsec.secrets 
 
 ###/etc/ipsec.secrets添加以下内容,两段公网ip ，123456是共享密钥##
-118.145.0.38 118.144.83.20 : PSK "123456"
+118.xxx.xxx.x 118.xxx.xxx.x : PSK "123456"
 
 
 #######ipsec.conf########
@@ -59,7 +59,7 @@ version	2.0
 config setup
 dumpdir=/var/run/pluto/
 nat_traversal=yes
-virtual_private=%v4:10.10.66.0/24,%v4:192.168.0.0/16,%v4:172.16.3.0/24,%v4:172.16.83.0/24,%v4:25.0.0.0/8,%v6:fd00::/8,%v6:fe80::/10
+virtual_private=%v4:10.0.8.0/24,%v4:192.168.0.0/16,%v4:172.16.3.0/24,%v4:172.16.83.0/24,%v4:25.0.0.0/8,%v6:fd00::/8,%v6:fe80::/10
 oe=off
 protostack=auto
 
@@ -67,12 +67,12 @@ conn net-net
         ike=3des-md5
         authby=secret
         keyingtries=0
-        left=118.145.0.200          
-        leftsubnet=10.10.66.0/24
+        left=117.xxx.xxx.x          
+        leftsubnet=10.0.x.x/24
         leftrsasigkey=123456
         leftnexthop=%defaultroute  
-        right=118.144.83.121
-        rightsubnet=172.16.83.0/24
+        right=117.xxx.xx.xxx
+        rightsubnet=172.x.x.x/24
         rightrsasigkey=123456
         rightnexthop=%defaultroute
         compress=no
