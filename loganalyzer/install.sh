@@ -19,6 +19,7 @@ cd /usr/share/doc/rsyslog-mysql-5.8.10/
 mysql -u root -p < createDB.sql  #该操作会创建Syslog库，库中含两张表，其中的SystemEvents正是loganalyzer要读取的表
 
 
+#登录mysql服务器，授权rsyslog用户可以读写Syslog库
 grant all privileges on Syslog.* to rsyslog@'localhost' identified by '123456';
 
 flush privileges;
@@ -71,9 +72,3 @@ $ModLoad ommysql.so
 #管理员身份登录loganalyzer，在Aamin Center中新建Field  View 和DBmapping，然后用新的view来显示，页面上就会有ip信息了
 
 #field定义的变量，view定义哪些变量将显示在页面上，DBmapping定义的field变量取什么值
-
-
-
-
-
-
