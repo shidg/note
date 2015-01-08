@@ -18,6 +18,12 @@ sleep 2
 tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr && make && make install || exit 1
 echo 'OK,libiconv-1.14 has  been successfully installed!'
 
+## for CentOS 7 ##
+#tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr
+#(cd /Data/software/lnmp/libiconv-1.14;make)
+#sed  -i -e '/_GL_WARN_ON_USE (gets/a\#endif' -e '/_GL_WARN_ON_USE (gets/i\#if defined(__GLIBC__) && !defined(__UCLIBC__) && !__GLIBC_PREREQ(2, 16)' srclib/stdio.h
+#make && make install || exit 1
+
 cd ..
 echo "Start the installation of libxslt..."
 sleep 2
