@@ -8,7 +8,7 @@ sed -i '/$RM "$cfgfile"/ s/^/#/' configure
  make && make install
 
 #安装apr-util
-tar jxvf apr-util-1.5.3.tar.bz2 && cd  apr-util-1.5.3
+tar jxvf apr-util-1.5.4.tar.bz2 && cd  apr-util-1.5.4
 
 ./configure --prefix=/usr/local/apr-util --with-apr=/usr/local/apr/bin/apr-1-config
 
@@ -42,14 +42,14 @@ tar jxvf httpd-2.4.7.tar.bz2 && cd httpd-2.4.7
 
 
 #安装sqlite
-tar zxvf sqlite-autoconf-3080600.tar.gz  && cd   sqlite-autoconf-3080600
+tar zxvf sqlite-autoconf-3080801.tar  && cd   sqlite-autoconf-3080801
 
 ./configure --prefix=/usr/local/sqlite
 
 make && make install
 
 #安装svn
-tar  jxvf subversion-1.8.10.tar.bz2 && cd  subversion-1.8.10
+tar  jxvf subversion-1.8.11.tar.bz2 && cd  subversion-1.8.11
 
 ./configure --prefix=/usr/local/subversion --with-apxs=/usr/local/apache2/bin/apxs --with-apr=/usr/local/apr --with-apr-util=/usr/local/apr-util/ --with-sqlite=/usr/local/sqlite/
 
