@@ -95,8 +95,8 @@ echo 'OK,gd-2.1.0 has  been successfully installed!'
 cd ../../
 echo "Start the installation of cmake..."
 sleep 2
-tar zxvf cmake-3.1.0-rc2.tar.gz && cd cmake-3.1.0-rc2 && ./configure --prefix=/usr && make && make install || exit 1
-echo 'OK,cmake-3.1.0-rc2 has  been successfully installed!'
+tar zxvf cmake-3.1.0.tar.gz && cd cmake-3.1.0 && ./configure --prefix=/usr && make && make install || exit 1
+echo 'OK,cmake-3.1.0 has  been successfully installed!'
 
 cd ..
 echo "Start the installation of mysql..."
