@@ -43,6 +43,10 @@ exec 2>/dev/null
 
 trap 'ERRTRAP $LINENO' ERR 1 2 3 15
 
+if [ ! -d ${app_dir} ];then
+    mkdir -p ${app_dir}
+fi
+
 echo "install dependent libraries"
 dots &
 exec 1>&2
