@@ -10,13 +10,13 @@ source_dir="/usr/local/src/lnmp/"
 
 app_dir="/Data/app/"
 
-function ERRTRAP{
+function ERRTRAP {
     echo "[LINE:$1] Error: exited with status $?"
     kill $!
     exit 1
 }
 
-function dots{
+function dots {
     while true;do
         for cha in '-' '\\' '|' '/'
         do
@@ -26,7 +26,7 @@ function dots{
     done
 }
 
-function success{
+function success {
     echo
     echo "Successful!"
     kill $!
@@ -37,8 +37,7 @@ stty -echo
 
 exec 6>&1
 exec 7>&2
-exec 1>/dev/null
-exec 2>&1
+exec 2>/dev/null
 #exec 1>&6 6>&-
 #exec 2>&7 7>&-
 
@@ -47,6 +46,7 @@ trap 'ERRTRAP $LINENO' ERR
 
 echo "install dependent libraries"
 dots &
+exec 1>&2
 yum -y install gcc gcc-c++ libtool ncurses ncurses-devel openssl openssl-devel libxml2 libxml2-devel bison libXpm libXpm-devel fontconfig-devel libtiff libtiff-devel curl curl-devel readline readline-devel bzip2 bzip2-devel  sqlite sqlite-devel zlib zlib-devel
 exec 1>&6
 success
@@ -55,7 +55,7 @@ success
 
 echo "install libiconv..."
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
@@ -69,7 +69,7 @@ success
 cd ..
 echo "install libxslt..."
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf libxslt-1.1.28.tar.gz && cd libxslt-1.1.28
 #解决“/bin/rm: cannot remove `libtoolT’: No such file or directory ”
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
@@ -80,7 +80,7 @@ success
 cd ..
 echo "install libmcrypt"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf libmcrypt-2.5.8.tar.gz && cd libmcrypt-2.5.8 && ./configure --prefix=/usr && make && make install
 cd libltdl && ./configure --prefix=/usr/ --enable-ltdl-install && make && make install
 exec 1>&6
@@ -89,7 +89,7 @@ success
 cd ../../
 echo "install mhash"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar jxvf mhash-0.9.9.9.tar.bz2 && cd mhash-0.9.9.9 && ./configure && make && make install
 exec 1>&6
 success
@@ -100,7 +100,7 @@ ldconfig
 cd ..
 echo "install mcrypt"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf mcrypt-2.6.8.tar.gz && cd mcrypt-2.6.8  && ./configure && make && make install
 exec 1>&6
 success
@@ -108,7 +108,7 @@ success
 cd ..
 echo "install libevent..."
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
@@ -116,7 +116,7 @@ success
 cd ..
 echo "install libpng..."
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf libpng-1.6.8.tar.gz && cd libpng-1.6.8 && ./configure --prefix=/usr && make && make install
 #ln -s /usr/lib/libpng15.so.15.12.0  /usr/lib64/libpng15.so.15
 exec 1>&6
@@ -125,7 +125,7 @@ success
 cd ..
 echo "install jpeg"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf jpegsrc.v9a.tar.gz && cd jpeg-9a && ./configure --prefix=${app_dir}jpeg --enable-shared --enable-static && make && make install
 exec 1>&6
 success
@@ -133,7 +133,7 @@ success
 cd ..
 echo "install freetype"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf freetype-2.5.3.tar.gz && cd freetype-2.5.3 && ./configure --prefix=${app_dir}freetype && make && make install
 exec 1>&6
 success
@@ -141,7 +141,7 @@ success
 cd ..
 echo "install gd2"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar jxvf libgd-2.1.0.bz2 && cd gd/2.1.0 && ./configure --prefix=${app_dir}gd --with-zlib --with-png=/usr --with-jpeg=${app_dir}jpeg --with-freetype=${app_dir}freetype --with-tiff=/usr/ && make && make install
 exec 1>&6
 success
@@ -149,7 +149,7 @@ success
 cd ../../
 echo "install cmake"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf cmake-3.1.0.tar.gz && cd cmake-3.1.0 && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
@@ -157,7 +157,7 @@ success
 cd ..
 echo "install mysql"
 dots &
-exec 1>/dev/null
+exec 1>&2
 #yum -y install ncurses ncurses-devel openssl openssl-devel
 yum install bison
 tar zxvf mysql-5.6.15.tar.gz && cd mysql-5.6.15 && cmake . -DCMAKE_INSTALL_PREFIX=${app_dir}mysql/ -DMYSQL_DATADIR=/data/mysql/data -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DENABLED_LOCAL_INFILE=1 -DMYSQL_TCP_PORT=3306 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_PARTITION_STORAGE_ENGINE=1 -DMYSQL_UNIX_ADDR=/tmp/mysql.sock -DWITH_DEBUG=0  -DWITH_SSL=yes -DSYSCONFDIR=/data/mysql -DMYSQL_TCP_PORT=3306 && make && make install
@@ -170,10 +170,6 @@ useradd -s /sbin/nologin mysql
 cp ${app_dir}mysql/bin/mysql* /usr/bin/ && cp ${app_dir}mysql/support-files/mysql.server /etc/init.d/mysqld && chmod +x /etc/init.d/mysqld
 chkconfig --level 3 mysqld on
 
-#不保留mysql操作记录
-if [ -f /root/.mysql_history ];then
-rm -f /root/.mysql_history && ln -s /dev/null /root/.mysql_history
-fi
 exec 1>&6
 success
 
@@ -181,7 +177,7 @@ success
 cd ..
 echo "install php"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf php-5.5.8.tar.gz && cd php-5.5.8 && ./configure --prefix=${app_dir}php5.5.8  --with-config-file-path=${app_dir}php5.5.8/etc --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir=${app_dir}jpeg --with-zlib --with-gd=${app_dir}gd --with-freetype-dir=${app_dir}freetype --with-mcrypt=/usr --with-mhash --enable-gd-native-ttf  --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear --enable-fpm --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp  --enable-zip --enable-bcmath --enable-sockets --enable-opcache && make && make install
 ln -s ${app_dir}php-5.5.8  ${app_dir}php
 exec 1>&6
@@ -198,7 +194,7 @@ success
 cd ..
 echo "install nginx"
 dots &
-exec 1>/dev/null
+exec 1>&2
 #下载ngx_cache_purge模块
 #wget http://labs.frickle.com/files/ngx_cache_purge-1.5.tar.gz && tar zxvf ngx_cache_purge-1.5.tar.gz
 #tar zxvf pcre-8.30.tar.gz && mv pcre-8.30  /usr/local/ && tar zxvf openssl-1.0.1c.tar.gz && mv openssl-1.0.1c /usr/local/ && tar zxvf nginx-1.2.3.tar.gz && cd nginx-1.2.3 && ./configure --prefix=/usr/local/nginx --add-module=../ngx_cache_purge-1.5 --with-pcre=/usr/local/pcre-8.30 --with-openssl=/usr/local/openssl-1.0.1c --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module && make && make install 
@@ -215,7 +211,7 @@ success
 cd ..
 echo "install re2c"
 dots &
-exec 1>/dev/null
+exec 1>&2
 tar zxvf re2c-0.13.7.5.tar.gz && cd re2c-0.13.7.5 && ./configure && make && make install
 exec 1>&6
 success
