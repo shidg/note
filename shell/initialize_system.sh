@@ -466,8 +466,10 @@ $IPTABLES -P FORWARD DROP
 service iptables save
 
 # reboot system
-echo "All things is init ok! reboot in 10 sec "
-
+echo -n "reboot system right now?[Y/n]"
+read -n 1 answer
+case $answer in
+Y|y) echo 
 for i in $(seq -w 10| tac)
 do
         echo -ne "\aThe system will reboot after $i seconds...\r"
@@ -475,3 +477,9 @@ do
 done
 echo
 shutdown -r now  
+;;
+N|n)
+echo
+;;
+esac
+exit 0

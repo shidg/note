@@ -8,7 +8,7 @@
 source_dir="/usr/local/src/lnmp/"
 [ "$PWD" != "${source_dir}" ] && cd ${source_dir}
 
-app_dir="/Data/app"
+app_dir="/Data/app/"
 
 function ERRTRAP{
     echo "[LINE:$1] Error: exited with status $?"
@@ -42,12 +42,12 @@ exec 2>&1
 #exec 1>&6 6>&-
 #exec 2>&7 7>&-
 
+trap 'kill $!;echo;exit' 1 2 3 15
 trap 'ERRTRAP $LINENO' ERR
 
 echo "install dependent libraries"
 dots &
 yum -y install gcc gcc-c++ libtool ncurses ncurses-devel openssl openssl-devel libxml2 libxml2-devel bison libXpm libXpm-devel fontconfig-devel libtiff libtiff-devel curl curl-devel readline readline-devel bzip2 bzip2-devel  sqlite sqlite-devel zlib zlib-devel
-
 exec 1>&6
 success
 #ncurses  openssl bison 为编译mysql5必须
@@ -57,7 +57,6 @@ echo "install libiconv..."
 dots &
 exec 1>/dev/null
 tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr && make && make install
-
 exec 1>&6
 success
 
@@ -72,13 +71,9 @@ echo "install libxslt..."
 dots &
 exec 1>/dev/null
 tar zxvf libxslt-1.1.28.tar.gz && cd libxslt-1.1.28
-
 #解决“/bin/rm: cannot remove `libtoolT’: No such file or directory ”
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
-
 ./configure --prefix=/usr && make && make install
-echo 'OK,libxslt-1.1.28 has  been successfully installed!'
-
 exec 1>&6
 success
 
@@ -87,9 +82,7 @@ echo "install libmcrypt"
 dots &
 exec 1>/dev/null
 tar zxvf libmcrypt-2.5.8.tar.gz && cd libmcrypt-2.5.8 && ./configure --prefix=/usr && make && make install
-
 cd libltdl && ./configure --prefix=/usr/ --enable-ltdl-install && make && make install
-
 exec 1>&6
 success
 
@@ -133,7 +126,7 @@ cd ..
 echo "install jpeg"
 dots &
 exec 1>/dev/null
-tar zxvf jpegsrc.v9a.tar.gz && cd jpeg-9a && ./configure --prefix=/usr/local/jpeg --enable-shared --enable-static && make && make install
+tar zxvf jpegsrc.v9a.tar.gz && cd jpeg-9a && ./configure --prefix=${app_dir}jpeg --enable-shared --enable-static && make && make install
 exec 1>&6
 success
 
@@ -141,7 +134,7 @@ cd ..
 echo "install freetype"
 dots &
 exec 1>/dev/null
-tar zxvf freetype-2.5.3.tar.gz && cd freetype-2.5.3 && ./configure --prefix=/usr/local/freetype && make && make install
+tar zxvf freetype-2.5.3.tar.gz && cd freetype-2.5.3 && ./configure --prefix=${app_dir}freetype && make && make install
 exec 1>&6
 success
 
@@ -149,7 +142,7 @@ cd ..
 echo "install gd2"
 dots &
 exec 1>/dev/null
-tar jxvf libgd-2.1.0.bz2 && cd gd/2.1.0 && ./configure --prefix=/usr/local/gd --with-zlib --with-png=/usr --with-jpeg=/usr/local/jpeg --with-freetype=/usr/local/freetype --with-tiff=/usr/ && make && make install
+tar jxvf libgd-2.1.0.bz2 && cd gd/2.1.0 && ./configure --prefix=${app_dir}gd --with-zlib --with-png=/usr --with-jpeg=${app_dir}jpeg --with-freetype=${app_dir}freetype --with-tiff=/usr/ && make && make install
 exec 1>&6
 success
 
@@ -167,16 +160,14 @@ dots &
 exec 1>/dev/null
 #yum -y install ncurses ncurses-devel openssl openssl-devel
 yum install bison
-tar zxvf mysql-5.6.15.tar.gz && cd mysql-5.6.15 && cmake . -DCMAKE_INSTALL_PREFIX=/usr/local/mysql/ -DMYSQL_DATADIR=/data/mysql/data -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DENABLED_LOCAL_INFILE=1 -DMYSQL_TCP_PORT=3306 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_PARTITION_STORAGE_ENGINE=1 -DMYSQL_UNIX_ADDR=/tmp/mysql.sock -DWITH_DEBUG=0  -DWITH_SSL=yes -DSYSCONFDIR=/data/mysql -DMYSQL_TCP_PORT=3306 && make && make install
+tar zxvf mysql-5.6.15.tar.gz && cd mysql-5.6.15 && cmake . -DCMAKE_INSTALL_PREFIX=${app_dir}mysql/ -DMYSQL_DATADIR=/data/mysql/data -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DENABLED_LOCAL_INFILE=1 -DMYSQL_TCP_PORT=3306 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_PARTITION_STORAGE_ENGINE=1 -DMYSQL_UNIX_ADDR=/tmp/mysql.sock -DWITH_DEBUG=0  -DWITH_SSL=yes -DSYSCONFDIR=/data/mysql -DMYSQL_TCP_PORT=3306 && make && make install
 #-DWITH_MEMORY_STORAGE_ENGINE=1  -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1支持的三种数据库引擎，根据需要增减
 useradd -s /sbin/nologin www
 useradd -s /sbin/nologin mysql
-mkdir -p /data/mysql/{data,binlog,relaylog}
-chown -R mysql:mysql /data/mysql
-touch /data/mysql/my.cnf
-echo -ne "[client]\ndefault-character-set=utf8\nport = 3306\nsocket = /tmp/mysql.sock\n[mysqld]\ncharacter-set-server = utf8\ncollation-server = utf8_general_ci\n#replicate-ignore-db = mysql\n#replicate-ignore-db = test\n#replicate-ignore-db = information_schema\nuser = mysql\nport = 3306\nsocket  = /tmp/mysql.sock\nbasedir = /usr/local/mysql\ndatadir = /data/mysql/data\nexplicit_defaults_for_timestamp=true\nlog-error = /data/mysql/mysql_error.log\npid-file = /data/mysql/mysql.pid\nopen_files_limit    = 10240\nback_log = 600\nmax_connections = 5000\nmax_connect_errors = 6000\nexternal-locking = FALSE\nmax_allowed_packet = 32M\nsort_buffer_size = 1M\njoin_buffer_size = 1M\nthread_cache_size = 300\nthread_concurrency = 8\nquery_cache_size = 512M\nquery_cache_limit = 2M\nquery_cache_min_res_unit = 2k\ndefault-storage-engine = MyISAM\nthread_stack = 192K\ntransaction_isolation = READ-COMMITTED\ntmp_table_size = 246M\nmax_heap_table_size = 246M\nlong_query_time = 3\nlog-slave-updates\nlog-bin = /data/mysql/binlog/binlog\nbinlog_cache_size = 4M\nbinlog_format = MIXED\nmax_binlog_cache_size = 8M\nmax_binlog_size = 1G\nexpire-logs-days = 30\nrelay-log-index = /data/mysql/relaylog/relaylog\nrelay-log-info-file = /data/mysql/relaylog/relaylog\nrelay-log = /data/mysql/relaylog/relaylog\nexpire_logs_days = 30\nkey_buffer_size = 256M\nread_buffer_size = 1M\nread_rnd_buffer_size = 16M\nbulk_insert_buffer_size = 64M\nmyisam_sort_buffer_size = 128M\nmyisam_max_sort_file_size = 10G\nmyisam_repair_threads = 1\n;myisam_recover\n\ninteractive_timeout = 120\nwait_timeout = 120\n\nskip-name-resolve\nslave-skip-errors = 1032,1062,126,1114,1146,1048,1396\n\nserver-id = 1\n\n;innodb_additional_mem_pool_size = 16M\n;innodb_buffer_pool_size = 512M\n;innodb_data_file_path = ibdata1:256M:autoextend\n;innodb_file_io_threads = 4\n;innodb_thread_concurrency = 8\n;innodb_flush_log_at_trx_commit = 2\n;innodb_log_buffer_size = 16M\n;innodb_log_file_size = 128M\n;innodb_log_files_in_group = 3\n;innodb_max_dirty_pages_pct = 90\n;innodb_lock_wait_timeout = 120\n;innodb_file_per_table = 0\n\nslow_query_log\nslow_query_log_file = /data/mysql/slow.log\nlong_query_time = 1\nlog-queries-not-using-indexes\n\n[mysqldump]\nquick\nmax_allowed_packet = 32M\n" >> /data/mysql/my.cnf
-ln -s /data/mysql/my.cnf /etc/my.cnf
-cp /usr/local/mysql/bin/mysql* /usr/bin/ && cp /usr/local/mysql/support-files/mysql.server /etc/init.d/mysqld && chmod +x /etc/init.d/mysqld
+#mkdir -p /data/mysql/{data,binlog,relaylog}
+#chown -R mysql:mysql /data/mysql
+#touch /data/mysql/my.cnf
+cp ${app_dir}mysql/bin/mysql* /usr/bin/ && cp ${app_dir}mysql/support-files/mysql.server /etc/init.d/mysqld && chmod +x /etc/init.d/mysqld
 chkconfig --level 3 mysqld on
 
 #不保留mysql操作记录
@@ -191,13 +182,8 @@ cd ..
 echo "install php"
 dots &
 exec 1>/dev/null
-tar zxvf php-5.5.8.tar.gz && cd php-5.5.8 && ./configure --prefix=/usr/local/php5.5.8  --with-config-file-path=/usr/local/php5.5.8/etc --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir=/usr/local/jpeg --with-zlib --with-gd=/usr/local/gd --with-freetype-dir=/usr/local/freetype --with-mcrypt=/usr --with-mhash --enable-gd-native-ttf  --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear --enable-fpm --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp  --enable-zip --enable-bcmath --enable-sockets --enable-opcache && make && make install
-cp ../{php.ini,php-fpm.conf} /usr/local/php-5.5.8/etc/ && mkdir /usr/local/php-5.5.8/ext
-ln -s /usr/local/php-5.5.8  /usr/local/php
-if [ ! -d /data/logs/php ];then
-mkdir -p /data/logs/php #日志存放目录
-fi
-
+tar zxvf php-5.5.8.tar.gz && cd php-5.5.8 && ./configure --prefix=${app_dir}php5.5.8  --with-config-file-path=${app_dir}php5.5.8/etc --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir=${app_dir}jpeg --with-zlib --with-gd=${app_dir}gd --with-freetype-dir=${app_dir}freetype --with-mcrypt=/usr --with-mhash --enable-gd-native-ttf  --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear --enable-fpm --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp  --enable-zip --enable-bcmath --enable-sockets --enable-opcache && make && make install
+ln -s ${app_dir}php-5.5.8  ${app_dir}php
 exec 1>&6
 success
 
@@ -208,15 +194,6 @@ success
 #./configure --with-openssl --with-php-config=/usr/local/php/bin/php-config && make && make install
 #cp /usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/openssl.so /usr/local/php/ext
 #cd ..
-#PHP-5.2.17
-#cd ..
-#tar zxvf php-5.2.17.tar.gz && cd php-5.2.17
-#patch -p1 < ../php-5.2.17-fpm-0.5.14.diff && ./buildconf --force
-#rm -f /usr/lib/libxml2.so.2.6.26 && cp /usr/lib/libxml2.so.2.7.4 /usr/lib64 && rm -f /usr/lib64/{libxml2.so,libxml2.so.2} && ln -s /usr/lib64/libxml2.so.2.7.4 /usr/lib64/libxml2.so && ln -s /usr/lib64/libxml2.so.2.7.4 /usr/lib64/libxml2.so.2 && ln -s /usr/lib/libpng14.so.14.4.0 /usr/lib64/libpng14.so.14
-#./configure --prefix=/usr/local/php-5.2.17 --with-config-file-path=/usr/local/php/etc --with-libxml-dir  --with-iconv-dir --with-png-dir --with-jpeg-dir=/usr/local/jpeg --with-zlib --with-gd=/usr/local/gd --with-freetype-dir=/usr/local/freetype --with-mcrypt --with-mhash --enable-gd-native-ttf --with-readline --with-curl --with-bz2 --with-mysql=/usr/local/mysql --with-mysqli=/usr/local/mysql/bin/mysql_config --with-openssl-dir --enable-fpm --enable-fastcgi --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp --without-safe-mode --enable-zip  --enable-bcmath  --enable-sockets && make && make install
-#cp php.ini-dist /usr/local/php/etc && cp /usr/local/php/sbin/php-fpm /etc/init.d/ && chmod +x /etc/init.d/php-fpm && mkdir /usr/local/php/ext
-#echo  'OK,PHP-5.2.17 has  been successfully installed!'
-#sleep 2
 
 cd ..
 echo "install nginx"
@@ -226,8 +203,11 @@ exec 1>/dev/null
 #wget http://labs.frickle.com/files/ngx_cache_purge-1.5.tar.gz && tar zxvf ngx_cache_purge-1.5.tar.gz
 #tar zxvf pcre-8.30.tar.gz && mv pcre-8.30  /usr/local/ && tar zxvf openssl-1.0.1c.tar.gz && mv openssl-1.0.1c /usr/local/ && tar zxvf nginx-1.2.3.tar.gz && cd nginx-1.2.3 && ./configure --prefix=/usr/local/nginx --add-module=../ngx_cache_purge-1.5 --with-pcre=/usr/local/pcre-8.30 --with-openssl=/usr/local/openssl-1.0.1c --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module && make && make install 
 
-tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36  /usr/local/ && tar zxvf openssl-1.0.1j.tar.gz && mv openssl-1.0.1j/usr/local/ && tar zxvf nginx-1.6.2.tar.gz && cd nginx-1.6.2 && ./configure --prefix=/usr/local/nginx  --with-pcre=/usr/local/pcre-8.36 --with-openssl=/usr/local/openssl-1.0.1j --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
-cat ../nginx.conf > /usr/local/nginx/conf/nginx.conf
+tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36  ${app_dir} && tar zxvf openssl-1.0.2.tar.gz && mv openssl-1.0.2 ${app_dir} && tar zxvf nginx-1.6.2.tar.gz && cd nginx-1.6.2 && ./configure --prefix=${app_dir}nginx  --with-pcre=${app_dir}pcre-8.36 --with-openssl=${app_dir}openssl-1.0.2--with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
+
+#nginx/mysql/php auto running
+echo "${app_dir}nginx/sbin/nginx -c ${app_dir}nginx/conf/nginx.conf" >> /etc/rc.d/rc.local
+echo "${app_dir}/php/sbin/php-fpm" >> /etc/rc.d/rc.local
 
 exec 1>&6
 success
@@ -239,6 +219,12 @@ exec 1>/dev/null
 tar zxvf re2c-0.13.7.5.tar.gz && cd re2c-0.13.7.5 && ./configure && make && make install
 exec 1>&6
 success
+
+exec 1>&6 6>&-
+exec 2>&7 7>&-
+stty echo
+
+echo -ne "OK,That is all!\nThanks \n"
 
 #cd ..
 #echo "Start the installation of memcached..."
@@ -307,59 +293,3 @@ success
 #tar zxvf yaf-2.3.3.tgz && cd yaf-2.3.3 
 #/usr/local/php/bin/phpize && ./configure --with-php-config=/usr/local/php/bin/php-config && make && make install
 #cp /usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/yaf.so /usr/local/php/ext/
-
-echo "others"
-dots &
-exec 1>/dev/null
-
-#nginx/mysql/php auto running
-echo "/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf" >> /etc/rc.d/rc.local
-echo "/usr/local/php/sbin/php-fpm" >> /etc/rc.d/rc.local
-
-#ulimit
-sed -i '$i *                -       nofile          65535\
-*                soft    core            0\
-*                hard    core            0' /etc/security/limits.conf
-
-#sysctl.conf
-cat sysctl.conf >> /etc/sysctl.conf && chown root:root /etc/sysctl.conf && chmod 0600 /etc/sysctl.conf
-
-#history保留操作时间
-sed -i '/HISTSIZE/a HISTTIMEFORMAT="`who am i`:%Y%m%d-%H%M%S:"'  /etc/profile
-sed -i '/export/ s/$/ HISTTIMEFORMAT/' /etc/profile
-
-#su/sudo
-#仅wheel组成员可以使用su
-sed -i '/required/ s/^#//' /etc/pam.d/su
-echo "SU_WHEEL_ONLY  yes" >> /etc/login.defs
-
-#sudo
-#Cmnd_Alias MANAGER = /sbin/route, /sbin/ifconfig, /bin/ping, /sbin/iptables, /sbin/service, /sbin/chkconfig, /bin/chmod, /bin/chown, /bin/chgrp
-#User_Alias ADMINS = 
-
-#root    ALL=(ALL)     ALL
-#ADMINS  ALL=(ALL)     MANAGER
-
-#vim_editor
-exec 1&6
-success
-echo -ne "OK,That is all!\nThanks \n"
-
-#10秒钟后重启
-echo -n "reboot system right now?[Y/n]"
-read -n 1 answer
-case $answer in
-Y|y) echo 
-for i in $(seq -w 10| tac)
-do
-        echo -ne "\aThe system will reboot after $i seconds...\r"
-        sleep 1
-done
-echo
-shutdown -r now  
-;;
-N|n)
-echo
-;;
-esac
-exit 0
