@@ -27,8 +27,8 @@ function dots {
 }
 
 function success {
-    echo
-    echo "Successful!"
+    printf "%20s"
+    echo -e "\rSuccessful!"
     kill $!
 }
 
