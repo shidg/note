@@ -41,7 +41,8 @@ exec 2>/dev/null
 #exec 1>&6 6>&-
 #exec 2>&7 7>&-
 
-trap 'ERRTRAP $LINENO' ERR 1 2 3 15
+trap 'kill $!;exit' 1 2 3 15
+trap 'ERRTRAP $LINENO' ERR
 
 if [ ! -d ${app_dir} ];then
     mkdir -p ${app_dir}
