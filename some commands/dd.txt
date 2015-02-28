@@ -1,0 +1,7 @@
+硬盘读写测速
+
+##写入
+time dd if=/dev/zero  of=test.dd bs=8K count=300000 conv=fdatasync
+
+## 读取
+time dd if=test.dd bs=8K |dd of=/dev/null

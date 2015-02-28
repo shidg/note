@@ -1,4 +1,4 @@
-tar jxvf pdsh-2.26.tar.bz2 && cd pdsh-2.26
+tar jxvf pdsh-2.29.tar.bz2 && cd pdsh-2.29
 
 ./configure --with-ssh --without-rsh --with-dshgroups && make && make install
 

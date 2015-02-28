@@ -1,6 +1,6 @@
 #http://download.oracle.com/otn-pub/java/jdk/7u51-b13/jdk-7u51-linux-x64.tar.gz
 
-tar zxvf jdk-7u71-linux-x64.tar.gz -C /usr/local/
+tar zxvf jdk-7u71-linux-x64.tar.gz -C /Data/app
 
 
 # …Ë÷√javaª∑æ≥£¨[~/.bashrc]
