@@ -18,7 +18,7 @@ chmod 600 /etc/gshadow
 
 # Turn off unnecessary services
 if [ ! -f /etc/init.d/snmpd ];then
-    yum install net-snmp
+    yum install net-snmp -y
 fi
 service=($(ls /etc/init.d/))
 for i in ${service[@]}; do

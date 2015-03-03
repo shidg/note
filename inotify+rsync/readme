@@ -1,0 +1,8 @@
+#download
+https://github.com/rvoicilas/inotify-tools/wiki
+
+#install
+tar zxvf inotify-tools-3.14.tar.gz && cd  inotify-tools-3.14 
+./configure --prefix=/usr && make && make install
+
+
