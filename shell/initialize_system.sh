@@ -120,7 +120,7 @@ net.ipv4.tcp_keepalive_probes = 3
 #对iptables的优化
 net.nf_conntrack_max = 25000000
 net.netfilter.nf_conntrack_max = 25000000
-net.netfilter.nf_conntrack_tcp_timeout_established = 180
+net.netfilter.nf_conntrack_tcp_timeout_established = 7200
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 120
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120
