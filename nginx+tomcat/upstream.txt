@@ -1,0 +1,20 @@
+当nginx的upstream中的server是tomcat的时候，如下：
+upstream backend {
+    server 192.168.1.100:8080;
+    server 192.168.1.101:8080;
+    #server 192.168.1.102:8080;
+}
+
+server {
+    ……
+    ……
+    
+    location /gold60 {
+        proxy_pass http://backend;
+    }
+}
+
+
+这种情况下，各个server上的tomcat中一定要配置了defaulthost和jvmRoute,不然nginx在proxy_pass的时候会返回400
+
+<Engine name="Catalina" defaultHost="10.10.67.210" jvmRoute="jvm1">

@@ -1,4 +1,4 @@
-*.tgz
+﻿*.tgz
 *.gz
 *.bz2
 *.xz
@@ -16,6 +16,7 @@
 *.dat
 *.pm
 *.chm
+*.jar
 /gcc/gcc/
 
 #example
