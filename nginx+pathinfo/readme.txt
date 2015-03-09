@@ -27,7 +27,8 @@ location ~ .*\.(php|php5)
         fastcgi_index index.php;
         fastcgi_split_path_info ^(.+\.php)(.*)$;
         fastcgi_param PATH_INFO $fastcgi_path_info;
-        include fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include fastcgi_params; #fastcgi_paramsÖÐµÄSCRIPT_NAME×¢ÊÍµô
     }
 	
 	

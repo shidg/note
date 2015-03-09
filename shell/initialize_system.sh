@@ -117,6 +117,22 @@ net.ipv4.tcp_keepalive_time = 1800
 net.ipv4.tcp_keepalive_intvl = 30
 net.ipv4.tcp_keepalive_probes = 3
 
+#对iptables的优化
+net.nf_conntrack_max = 25000000
+net.netfilter.nf_conntrack_max = 25000000
+net.netfilter.nf_conntrack_tcp_timeout_established = 180
+net.netfilter.nf_conntrack_tcp_timeout_time_wait = 120
+net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60
+net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120
+
+#以下是CentOS5的参数
+#net.ipv4.ip_conntrack_max = 25000000
+#net.ipv4.netfilter.ip_conntrack_max = 25000000
+#net.ipv4.netfilter.ip_conntrack_tcp_timeout_established = 180
+#net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait = 120
+#net.ipv4.netfilter.ip_conntrack_tcp_timeout_close_wait = 60
+#net.ipv4.netfilter.ip_conntrack_tcp_timeout_fin_wait = 120
+
 ##bridge 需加载bridge模块之后方可生效
 net.bridge.bridge-nf-call-ip6tables = 0
 net.bridge.bridge-nf-call-iptables = 0
