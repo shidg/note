@@ -1,0 +1,66 @@
+#官方建议内核版本高于3.0.8，依赖ausfs模块
+# 操作系统 CentOS6
+
+#准备工作
+#Selinux和LXC有冲突，禁用Selinux。
+
+#方式1，yum安装包含aufs的内核
+
+#配置hop5.in源
+wget http://www.hop5.in/yum/el6/hop5.repo  -P /etc/yum.repos.d
+yum install kernel-ml-aufs kernel-ml-aufs-devel
+#用新内核启动系统
+
+#配置epel源
+rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+
+#安装docker,CentOS6中，docker的rpm包名为docker-io,若系统中已安装docker，先卸载之。
+rpm -qa | grep docker
+rpm -e xx
+yum install docker-io
+
+
+##方式2 ，手动升级内核，并启用aufs模块
+
+#获取内核
+wget https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.19.1.tar.xz -P /Data/software
+tar xf linux-3.19.1.tar.xz  -C /usr/src
+
+#获取aufs源码
+cd /Data/software
+git clone git://git.code.sf.net/p/aufs/aufs3-standalone aufs3-standalone.git
+cd aufs3-standalone.git
+git branch -r # 显示所有分支，以版本号区分
+git checkout aufs3.19 #选择与内核版本号一致的分支
+
+
+#将aufs源码合并进linux内核源码
+cd /usr/src/linux-3.19.1
+patch -p1 < /Data/software/aufs3-standalone.git/aufs3-kbuild.patch
+patch -p1 < /Data/software/aufs3-standalone.git/aufs3-base.patch
+patch -p1 < /Data/software/aufs3-standalone.git/aufs3-mmap.patch
+patch -p1 < /Data/software/aufs3-standalone.git/aufs3-standalone.patch
+cp -a /Data/software/aufs3-standalone.git/Documentation/*  Documentation/
+cp -a /Data/software/aufs3-standalone.git/fs/*  fs/
+cp -a /Data/software/aufs3-standalone.git/include/uapi/linux/aufs_type.h/*  include/uapi/linux/
+
+#开始编译内核
+make menuconfig #aufs模块已设置为加载，无需再改动。NAT模块要设置为允许加载(y or m),否则docker无法正常启动
+
+make
+
+make modules
+
+make modules_install
+
+make install
+
+make headers_install
+
+# 以新内核启动
+
+#配置epel源
+
+#安装docker
+yum install docker-io
