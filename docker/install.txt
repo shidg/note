@@ -77,6 +77,20 @@ make clean
 yum install docker-io
 
 
+# Binaries 如果追求最新版本，可以直接从github获取最新的二进制docker
+
+# Get the docker binary:
+wget https://get.docker.com/builds/Linux/x86_64/docker-latest -O docker
+
+chmod +x docker
+
+# Note: If you have trouble downloading the binary, you can also get the smaller compressed release file: https://get.docker.com/builds/Linux/x86_64/docker-latest.tgz
+
+# Run the docker daemon
+# start the docker in daemon mode from the directory you unpacked
+./docker -d &
+
+
 
 
 ##error
