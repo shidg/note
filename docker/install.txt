@@ -46,7 +46,13 @@ cp -a /Data/software/aufs3-standalone.git/fs/*  fs/
 cp -a /Data/software/aufs3-standalone.git/include/uapi/linux/aufs_type.h/*  include/uapi/linux/
 
 #开始编译内核
-make menuconfig #aufs模块已设置为加载，无需再改动。NAT模块要设置为允许加载(y or m),否则docker无法正常启动
+# make menuconfig依赖ncurses-devel，
+yum install ncurses-devel -y
+
+make menuconfig #aufs模块、NAT模块要设置为允许加载(y or m)
+
+#编译环境
+yum install gcc gcc-c++ bc libtool hmaccalc zlib-devel binutils-devel elfutils-libelf-devel
 
 make
 
@@ -57,6 +63,11 @@ make modules_install
 make install
 
 make headers_install
+
+
+#若需重新编译，执行以下,之后重复make menuconfig、make、make modules ……
+make mrproper
+make clean
 
 # 以新内核启动
 
