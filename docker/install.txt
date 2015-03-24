@@ -49,7 +49,7 @@ cp -a /Data/software/aufs3-standalone.git/include/uapi/linux/aufs_type.h/*  incl
 # make menuconfig依赖ncurses-devel，
 yum install ncurses-devel -y
 
-make menuconfig #aufs模块、NAT模块、addrtype模块必须加载(XT_MATCH_ADDRTYPE)
+make menuconfig #aufs模块(File systems->Miscellaneous filesystems->Aufs support)、NAT模块(Networking support->Networking options->Netfilter->Netfilter Configuration)、addrtype模块(Core Netfilter Configuration->Xtables matches->"addrtype" address type match support)必须加载(XT_MATCH_ADDRTYPE)
 
 #编译环境
 yum install gcc gcc-c++ bc libtool hmaccalc zlib-devel binutils-devel elfutils-libelf-devel
