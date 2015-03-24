@@ -16,4 +16,4 @@ master_log_pos=1826803;
 
 slave start;
 1826803
-show slave status\G;jfjb
+show slave status\G;
