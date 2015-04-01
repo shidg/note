@@ -203,7 +203,7 @@ exec 1>&2
 #wget http://labs.frickle.com/files/ngx_cache_purge-1.5.tar.gz && tar zxvf ngx_cache_purge-1.5.tar.gz
 #tar zxvf pcre-8.30.tar.gz && mv pcre-8.30  /usr/local/ && tar zxvf openssl-1.0.1c.tar.gz && mv openssl-1.0.1c /usr/local/ && tar zxvf nginx-1.2.3.tar.gz && cd nginx-1.2.3 && ./configure --prefix=/usr/local/nginx --add-module=../ngx_cache_purge-1.5 --with-pcre=/usr/local/pcre-8.30 --with-openssl=/usr/local/openssl-1.0.1c --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module && make && make install 
 
-tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36  ${app_dir} && tar zxvf openssl-1.0.2.tar.gz && mv openssl-1.0.2 ${app_dir} && tar zxvf nginx-1.6.2.tar.gz && cd nginx-1.6.2 && ./configure --prefix=${app_dir}nginx  --with-pcre=${app_dir}pcre-8.36 --with-openssl=${app_dir}openssl-1.0.2--with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
+tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36  ${app_dir} && tar zxvf openssl-1.0.2.tar.gz && mv openssl-1.0.2 ${app_dir} && tar zxvf nginx-1.6.2.tar.gz && cd nginx-1.6.2 && ./configure --prefix=${app_dir}nginx  --with-pcre=${app_dir}pcre-8.36 --with-openssl=${app_dir}openssl-1.0.2 --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
 
 #nginx/mysql/php auto running
 echo "${app_dir}nginx/sbin/nginx -c ${app_dir}nginx/conf/nginx.conf" >> /etc/rc.d/rc.local
