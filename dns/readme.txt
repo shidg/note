@@ -1,3 +1,6 @@
+# get software
+# wget ftp://ftp.isc.org/isc/bind9/9.10.2/bind-9.10.2.tar.gz
+
 ./configure --prefix=/usr/local/bind/ --with-openssl=/usr/ --sysconfdir=/etc/ --with-libtool --enable-threads
 
 
