@@ -6,12 +6,12 @@ yum install pam pam-devel
 
 #如果openssh版本过低，升级openssh
 
-wget http://openbsd.org.ar/pub/OpenBSD/OpenSSH/portable/openssh-5.8p2.tar.gz
+wget http://openbsd.org.ar/pub/OpenBSD/OpenSSH/portable/openssh-6.8p1.tar.gz
 
-tar zxvf openssh-5.8p2.tar.gz && cd openssh-5.8p2 
+tar zxvf openssh-6.8p1.tar.gz && cd openssh-6.8p1 
 
 
-./configure --prefix=/usr --sysconfdir=/etc/ssh --with-pam --with-zlib --with-ssl --with-md5-passwords --mandir=/usr/share/man && make && make install
+./configure --prefix=/usr --sysconfdir=/etc/ssh --with-pam --with-zlib --with-ssl-dir=/usr/local/ssl --with-md5-passwords --mandir=/usr/share/man && make && make install
 
 
 # 配置sftp,将www用户限制在/data/www目录中,注意把目标目录的上级目录，也就是本例中的/data目录的所有者设置为root
@@ -52,12 +52,12 @@ service sshd restart
 
 ##如果需要升级openssl则如下操作
 
-wget  http://www.openssl.org/source/openssl-1.0.1g.tar.gz
+wget  http://www.openssl.org/source/openssl-1.0.2a.tar.gz
 
 
 
-tar zxvf openssl-1.0.1g.tar.gz
-cd openssl-1.0.1g
+tar zxvf openssl-1.0.2a.tar.gz
+cd openssl-1.0.2a
 ./config shared zlib
 make
 make install
