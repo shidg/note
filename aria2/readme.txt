@@ -1,4 +1,4 @@
-#主要参数
+﻿#主要参数
 
 -x  (–max-connection-per-server ),多线程下载，对每个服务器使用几个连接
 
@@ -19,4 +19,7 @@ aria2c -s2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.i
 -S 查看种子中包含的文件
 --select-file 选择要下载种子中的哪些文件
 aria2c --select-file=1-4,8 file.torrent
+
+--
+hehe
 
