@@ -26,8 +26,8 @@ gpg --send-keys [用户ID] --keyserver hkp://subkeys.pgp.net
 
 ##获取他人公钥##
 gpg --keyserver hkp://subkeys.pgp.net --search-keys [用户ID]
-
 gpg --recv-keys ID 
+
 ##验证公钥指纹##
 gpg --fingerprint [用户ID]
 
