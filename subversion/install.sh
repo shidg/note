@@ -15,15 +15,14 @@ tar jxvf apr-util-1.5.4.tar.bz2 && cd  apr-util-1.5.4
 make && make install
 
 #安装sqlite
-tar zxvf sqlite-autoconf-3080801.tar  && cd   sqlite-autoconf-3080801
+tar zxvf sqlite-autoconf-3080900.tar.gz  && cd   sqlite-autoconf-3080900
 
 ./configure --prefix=/usr/local/sqlite
 
 make && make install
 
 #安装svn
-tar  jxvf subversion-1.8.11.tar.bz2 && cd  subversion-1.8.11
-
+tar  jxvf subversion-1.8.13.tar.bz2 && cd  subversion-1.8.13
 ./configure --prefix=/usr/local/subversion  --with-apr=/usr/local/apr --with-apr-util=/usr/local/apr-util/ --with-sqlite=/usr/local/sqlite/
 
 make && make install
