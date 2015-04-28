@@ -18,6 +18,7 @@ fi
 #方法2：
 #在/etc/rc.modules里面加上相应内容，没有的话创建该文件。
 echo "modprobe bridge >> /etc/rc.modules"
+chmod +x /etc/rc.modules
 
 
 操作完毕之后reboot，lsmod | grep bridge进行验证。

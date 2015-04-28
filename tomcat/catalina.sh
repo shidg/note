@@ -1,5 +1,5 @@
 #在catalina.sh中添加以下参数
-JAVA_OPTS="-Xms3000m -Xmx3000m -Xss1024K -XX:PermSize=64m -XX:MaxPermSize=128m"
+JAVA_OPTS="-Xms12000m -Xmx12000m -Xss256K -XX:PermSize=64m -XX:MaxPermSize=128m"
 
 参数详解
 -Xms  JVM初始化堆内存大小
