@@ -16,6 +16,7 @@ iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth1 -j MASQUERADE
 ###3.设置openvpn端口通过：
 iptables -A INPUT -p TCP --dport 1194 -m comment --comment "openvpn" -j ACCEPT
 
+##需注意,除了INPUT,vpnserver的OUTPUT及FORWARD链要开放必要的端口，不然会影响客户端通过vpnserver访问互联网或者vpnserver所在的局域网
 
 ###epel###
 rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
