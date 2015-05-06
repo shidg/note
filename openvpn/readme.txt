@@ -103,10 +103,6 @@ vi /etc/openvpn/server.conf
 #内容见server.conf##
 
 
-
-####创建日志目录：
-mkdir -p /var/log/openvpn/
-
 ###启动###
 
 openvpn --config /etc/openvpn/server.conf &
