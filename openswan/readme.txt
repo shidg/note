@@ -4,7 +4,7 @@
 ##download from  https://download.openswan.org/openswan/ ####
 
 ###deps#####
-yum install gmp-devel flex bison-devel
+yum install gmp-devel flex  bison bison-devel
 
 tar zxvf openswan-2.6.38.tar.gz && cd openswan-2.6.38 && make programs && make install
 

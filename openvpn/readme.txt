@@ -89,7 +89,8 @@ source ./vars
 
 
 ######## 创建迪菲·赫尔曼密钥，会生成dh2048.pem文件（生成过程比较慢，在此期间不要去中断它）
-#hellman参数，用于增强openvpn安全性（生成需要漫长等待）####./build-dh
+#hellman参数，用于增强openvpn安全性（生成需要漫长等待）
+####./build-dh
 
 # 生成ta.key文件（防DDos攻击、UDP淹没等恶意攻击）
 openvpn --genkey --secret keys/ta.key
