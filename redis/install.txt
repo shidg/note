@@ -24,6 +24,16 @@ make install 默认安装到/usr/local/bin下
 #将redis安装到指定位置
 make PREFIX=/path  install
 
+
+# settings
 echo "vm.overcommit_memory=1" >> /etc/sysctl.conf
+#默认值为：0
+#从内核文档里得知，该参数有三个值，分别是：
+#0：当用户空间请求更多的的内存时，内核尝试估算出剩余可用的内存。
+#1：当设这个参数值为1时，内核允许超量使用内存直到用完为止，主要用于科学计算
+#2：当设这个参数值为2时，内核会使用一个决不过量使用内存的算法，即系统整个内存地址空间不能超过swap+50%的RAM值，50%参数的设定是在overcommit_ratio中设定。
+
+
+echo "never" > /sys/kernel/mm/transparent_hugepage/enabled
 
 sysctl -p
