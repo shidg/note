@@ -1,8 +1,7 @@
-wget ftp://ftp.isc.org/isc/dhcp/4.2.4rc2/dhcp-4.2.4rc2.tar.gz
+wget ftp://ftp.isc.org/isc/dhcp/4.3.2/dhcp-4.3.2.tar.gz
+tar zxvf dhcp-4.3.2.tar.gz
 
-tar zxvf dhcp-4.2.4rc2.tar.gz
-
-cd dhcp-4.2.4rc2
+cd dhcp-4.3.2
 
 ./configure && make && make install
 

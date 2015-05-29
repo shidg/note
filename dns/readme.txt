@@ -55,9 +55,10 @@ chown -R named:named  /var/named/chroot/var/run   #named 要向run目录写入pid文件
 
 
 #生成rndc.conf ，以便使用rndc命令管理bind
-rndc-confgen
+rndc-confgen > /etc/rndc.conf
 
-将生成的内容分别写入/etc/named.conf和/etc/rndc.conf #这里在测试中，named.conf是写入chroot之后的etc而rndc.conf写如chroot之后的etc却提示找不到，写入真实的/etc下则正常
+将生成的内容分别写入/etc/named.conf和/etc/rndc.conf 
+#这里在测试中，named.conf是写入chroot之后的etc而rndc.conf写如chroot之后的etc却提示找不到，写入真实的/etc下则正常
 
 #创建配置文件
 
