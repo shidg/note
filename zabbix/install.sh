@@ -12,7 +12,9 @@
 #PHP always_populate_raw_post_data off  (php5.6中取消了该项设置，可设置为-1)
 #mbstring bcmatch  gettext sockets
 #putenv()
-#java
+
+
+#java环境
 
 #deps
 yum install net-snmp-devel libxml2-devel curl curl-devel
