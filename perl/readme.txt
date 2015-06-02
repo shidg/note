@@ -1,6 +1,6 @@
-tar zxvf perl-5.20.1.tar.gz
+tar zxvf perl-5.22.0.tar.gz
 
-cd perl-5.20.1
+cd perl-5.22.0
 
 ./Configure -des -Dprefix=/usr/local/perl
 
