@@ -1,0 +1,27 @@
+#tomcat以普通用户身份运行
+#创建用户
+useradd -M -s /sbin/nologin tomcat
+
+#编译jsvc
+cd /Data/app/tomcat/bin
+tar zxvf commons-daemon-native.tar.gz && cd commons-daemon-1.0.15-native-src/unix
+sh support/buildconf.sh
+./configure --with-java=/Data/app/jdk1.7.0_80
+make
+cp -a jsvc /Data/app/tomcat/bin/
+rm -rf /Data/app/tomcat/bin/commons-daemon-1.0.15-native-src/
+
+
+cp /Data/app/tomcat/bin/daemon.sh /etc/init.d/tomcat
+
+vi /etc/init.d/tomcat
+
+export JAVA_HOME=/Data/app/jdk1.7.0_80
+export TOMCAT_HOME=/Data/app/tomcatA
+export CATALINA_HOME=/Data/app/tomcatA
+export CATALINA_BASE=/Data/app/tomcatA
+export CATALINA_TMPDIR=/Data/app/tomcatA/temp
+
+
+#以tomcat用户的身份，运行tomcat服务
+service tomcat start
