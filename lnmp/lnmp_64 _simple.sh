@@ -118,6 +118,14 @@ exec 1>&6
 success
 
 cd ..
+echo "install re2c"
+dots &
+exec 1>&2
+tar zxvf re2c-0.14.3.tar.gz && cd re2c-0.14.3 && ./configure && make && make install
+exec 1>&6
+success
+
+cd ..
 echo "install php"
 dots &
 exec 1>&2
@@ -154,13 +162,6 @@ echo "${app_dir}/php/sbin/php-fpm" >> /etc/rc.d/rc.local
 exec 1>&6
 success
 
-cd ..
-echo "install re2c"
-dots &
-exec 1>&2
-tar zxvf re2c-0.13.7.5.tar.gz && cd re2c-0.13.7.5 && ./configure && make && make install
-exec 1>&6
-success
 
 exec 1>&6 6>&-
 exec 2>&7 7>&-

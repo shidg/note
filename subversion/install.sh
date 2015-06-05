@@ -1,5 +1,5 @@
 #安装apr
-tar jxvf apr-1.5.1.tar.bz2  && cd apr-1.5.1
+tar jxvf apr-1.5.2.tar.bz2  && cd apr-1.5.2
 
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
 
@@ -15,7 +15,8 @@ tar jxvf apr-util-1.5.4.tar.bz2 && cd  apr-util-1.5.4
 make && make install
 
 #安装sqlite
-tar zxvf sqlite-autoconf-3080900.tar.gz  && cd   sqlite-autoconf-3080900
+#http://www.sqlite.org/download.html
+tar zxvf sqlite-autoconf-3081002.tar.gz  && cd   sqlite-autoconf-3081002
 
 ./configure --prefix=/usr/local/sqlite
 
