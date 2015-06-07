@@ -1,22 +1,28 @@
-#°²×°apr
 # deps
-yum -y install gcc gcc-c++ libtool openssl openssl-devel ncurses ncurses-devel libxml2 libxml2-devel bison libXpm libXpm-devel fontconfig-devel libtiff libtiff-devel curl curl-devel readline readline-devel bzip2 bzip2-devel sqlite sqlite-devel zlib zlib-devel libpng-devel gd-devel freetype-devel perl perl-devel perl-ExtUtils-Embed
+yum -y install gcc gcc-c++ libtool openssl openssl-devel ncurses ncurses-devel libxml2 libxml2-devel bison libXpm libXpm-devel fontconfig-devel libtiff libtiff-devel curl curl-devel readline readline-devel bzip2 bzip2-devel sqlite sqlite-devel zlib zlib-devel libpng-devel gd-devel freetype-devel perl perl-devel perl-ExtUtils-Embed openldap openldap-devel
+
+APP_DIR=/usr/local/
+SOURCE_DIR=/Data/software
+[ "$PWD" != "${SOURCE_DIR}" ] && cd ${SOURCE_DIR}
 
 #apr
 tar jxvf apr-1.5.2.tar.bz2  && cd apr-1.5.2
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
-./configure --prefix=/usr/local/apr
- make && make install
+./configure --prefix=${APP_DIR}apr
+make && make install
+cd ..
 
 #°²×°apr-util
 tar jxvf apr-util-1.5.4.tar.bz2 && cd  apr-util-1.5.4
-./configure --prefix=/usr/local/apr-util --with-apr=/usr/local/apr/bin/apr-1-config
+./configure --prefix=${APP_DIR}apr-util --with-apr=${APP_DIR}apr/bin/apr-1-config --with-ldap
 make && make install
+cd ..
 
 #°²×°pcre
 tar jxvf pcre-8.37.tar.bz2 && cd pcre-8.37
-./configure --prefix=/usr/local/pcre
+./configure --prefix=${APP_DIR}pcre
 make && make install
+cd ..
 
 #Éı¼¶openssl
 tar zxvf openssl-1.0.2a.tar.gz
@@ -25,32 +31,50 @@ cd openssl-1.0.2a
 make && make install
 mv /usr/bin/openssl /usr/bin/openssl.OFF
 mv /usr/include/openssl /usr/include/openssl.OFF
-ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
-ln -s /usr/local/ssl/include/openssl /usr/include/openssl
+ln -s ${APP_DIR}ssl/bin/openssl /usr/bin/openssl
+ln -s ${APP_DIR}ssl/include/openssl /usr/include/openssl
+echo "${APP_DIR}ssl/lib" >> /etc/ld.so.conf
+ldconfig
+cd ..
 
 #°²×°apache
 tar jxvf httpd-2.4.12.tar.bz2 && cd httpd-2.4.12
-./configure --prefix=/usr/local/apache-2.4.12 --sysconfdir=/etc/httpd --with-apr=/usr/local/apr/bin/apr-1-config --with-apr-util=/usr/local/apr-util/bin/apu-1-config  --with-pcre=/usr/local/pcre/ --enable-so --enable-mods-shared=most --enable-rewirte  --enable-ssl=shared --with-ssl=/usr/local/ssl
+./configure --prefix=${APP_DIR}apache-2.4.12 --sysconfdir=/etc/httpd --with-apr=${APP_DIR}apr/bin/apr-1-config --with-apr-util=${APP_DIR}apr-util/bin/apu-1-config  --with-pcre=${APP_DIR}pcre/ --enable-so --enable-mods-shared=all --enable-rewirte  --enable-ssl=shared --with-ssl=${APP_DIR}ssl --enable-ldap --enable-authnz-ldap
 make && make install
+cd ..
 
 #re2c (for php)
 tar zxvf re2c-0.14.3.tar.gz && cd re2c-0.14.3
 ./configure && make &&  make install
+cd ..
 
 # libiconv (for php)
 tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14
 ./configure --prefix=/usr && make && make install
+cd ..
 
 # php (for iF.SVNADMIN)
 tar jxvf php-5.3.29.tar.bz2 && cd php-5.3.29
- ./configure --prefix=/Data/app/php-5.3.29  --with-config-file-path=/Data/app/php-5.3.29/etc --with-apxs2=/Data/app/apache-2.4.12/bin/apxs --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir --with-zlib --with-gd  --with-freetype-dir  --enable-gd-native-ttf  --with-readline --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear  --enable-mbstring --enable-soap --enable-xml --enable-zip --enable-bcmath
+./configure --prefix=${APP_DIR}php-5.3.29  --with-config-file-path=${APP_DIR}php-5.3.29/etc --with-apxs2=${APP_DIR}apache-2.4.12/bin/apxs --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir --with-zlib --with-gd  --with-freetype-dir  --enable-gd-native-ttf  --with-readline --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear  --enable-mbstring --enable-soap --enable-xml --enable-zip --enable-bcmath
 make ZEND_EXTRA_LIBS='-liconv' && make install
+
+#phpÌí¼ÓldapÖ§³Ö
+cd ext/ldap
+${APP_DIR}php-5.3.29/bin/phpize
+./configure --with-ldap  --with-ldap-sasl --with-php-config=${APP_DIR}php-5.3.29/bin/php-config 
+make && make install
+mkdir ${APP_DIR}ext
+cp ${APP_DIR}php-5.3.29/lib/php/extensions/no-debug-zts-20090626/ldap.so ${APP_DIR}ext
+#echo "extension = ldap.so" >> php.ini
+
+cd ../../
 
 #°²×°sqlite
 #http://www.sqlite.org/download.html
 tar zxvf sqlite-autoconf-3081002.tar.gz  && cd   sqlite-autoconf-3081002
-./configure --prefix=/usr/local/sqlite
+./configure --prefix=${APP_DIR}sqlite
 make && make install
+cd ..
 
 #cyrus-sasl
 #×¢Ïú¾ÉµÄcyrus-sasl
@@ -58,16 +82,18 @@ mv /usr/lib64/sasl2/ /usr/lib64/sasl2.OFF
 tar zxvf cyrus-sasl-2.1.26.tar.gz && cd cyrus-sasl-2.1.26
 ./configure --disable-sample --disable-saslauthd --disable-pwcheck --disable-krb4 --disable-gssapi --disable-anon --enable-plain --enable-login --enable-cram --enable-digest --with-saslauthd=/var/run/saslauthd
 make && make install
-ln -s /usr/local/lib/sasl2/ /usr/lib64/sasl2
-echo "/usr/local/lib/sasl2/lib" >> /etc/ld.so.conf
+ln -s ${APP_DIR}lib/sasl2/ /usr/lib64/sasl2
+echo "${APP_DIR}lib/sasl2/lib" >> /etc/ld.so.conf
 ldconfig
+cd ..
 
 #°²×°subversion
 tar  jxvf subversion-1.8.13.tar.bz2 && cd  subversion-1.8.13
-./configure --prefix=/usr/local/subversion --with-apxs=/usr/local/apache2/bin/apxs --with-apr=/usr/local/apr --with-apr-util=/usr/local/apr-util/ --with-sqlite=/usr/local/sqlite/ --with-sasl=/usr/lib64/sasl2
+./configure --prefix=${APP_DIR}subversion --with-apxs=${APP_DIR}apache-2.4.12/bin/apxs --with-apr=${APP_DIR}apr --with-apr-util=${APP_DIR}apr-util/ --with-sqlite=${APP_DIR}sqlite/ --with-sasl=/usr/lib64/sasl2
 make && make install
 #ÔÚ°²×°Ä¿Â¼ÏÂÉú³Ésvn-toolsÄ¿Â¼£¬Àï±ßÓĞÒ»Ğ©À©Õ¹¹¤¾ß£¬±ÈÈçsvnauthz-validate
 make install-tools
+cd ..
 
 #########svnserve --version################
 ##Cyrus SASL authentication is available.##
@@ -75,60 +101,113 @@ make install-tools
 
 # $PATH
 cat >> ~/.bashrc << EOF
-APACHE_HOME=/Data/app/apache-2.4.12
-SUBVERSION_HOME=/Data/app/subversion
-PATH=$PATH:${APACHE_HOME}/bin:${SUBVERSION_HOME}/bin
+APACHE_HOME=${APP_DIR}apache-2.4.12
+SUBVERSION_HOME=${APP_DIR}subversion
+PATH=$PATH:\${APACHE_HOME}/bin:\${SUBVERSION_HOME}/bin
 export APACHE_HOME SUBVERSIOIN_HOME PATH
 EOF
+source ~/.bashrc
 
 #ÎªapacheÌí¼ÓÄ£¿é
-cd $prefix
-cp   libexec/mod_authz_svn.so  /usr/local/apache2/modules/
-cp   libexec/mod_dav_svn.so  /usr/local/apache2/modules/
+cd ${SUBVERSOIN_HOME}
+cp libexec/*svn.so  ${APACHE_HOME}/modules/
 
-#Ïòhttpd.confÌí¼Ó£º
+#È·±£apache¿ªÆôÁËÈçÏÂÄ£¿é£º
+LoadModule authz_user_module modules/mod_authz_user.so
 LoadModule dav_module modules/mod_dav.so
 LoadModule dav_svn_module modules/mod_dav_svn.so
 LoadModule authz_svn_module modules/mod_authz_svn.so
+LoadModule authnz_ldap_module modules/mod_authnz_ldap.so
+LoadModule ldap_module modules/mod_ldap.so
 
-#È¥µôInclude /etc/httpd/extra/httpd-vhosts.confĞĞÇ°×¢ÊÍÊ¹Ö®ÉúĞ§
+
+#ÅäÖÃsaslauthd·şÎñ
+cat > /etc/saslauthd.conf << EOF
+ldap_servers: ldap://192.168.1.100
+ldap_default_domain: selboo.com.cn
+ldap_search_base: DC=selboo,DC=com,DC=cn
+ldap_bind_dn: administrator@selboo.com.cn
+ldap_bind_pw: 123456
+ldap_deref: never
+ldap_restart: yes
+ldap_scope: sub
+ldap_use_sasl: no
+ldap_start_tls: no
+ldap_version: 3
+ldap_auth_method: bind
+ldap_filter: sAMAccountName=%u
+ldap_password_attr: userPassword
+ldap_timeout: 10
+ldap_cache_ttl: 30
+ldap_cache_mem: 32768
+EOF
+sed -i '/^MECH/ s/pam/ldap/' /etc/sysconfig/saslauthd
+
+#ÕûºÏsvnÓësasl
+#cat /etc/sasl2/svn.conf
+pwcheck_method: saslauthd
+auxprop_plugin: ldap
+mech_list: PLAIN LOGIN
+ldapdb_mech: PLAIN LOGIN
+
+#Æô¶¯saslauthd·şÎñ
+service saslauthd start
+
+#ÑéÖ¤sasl
+testsaslzuthd -u xxx -p xxx
+##0: OK "Success."##
+
+#svnadmin create /Data/svnroot/test1
+# vi /Data/svnroot/test1/conf/svnserve.conf
+[sasl]
+use-sasl = true
 
 #ÔÚhttpd-vhosts.confÌí¼ÓĞéÄâÖ÷»ú£º
 <VirtualHost *:80>
-    ServerName svn.happigo.com
-    <Location /svn>                         #ÕâÀïµÄ/svnÒªÇø±ğÓÚAliasÄ¿Â¼±ğÃû
+    ServerName svn.xxx.com
+    <Location />
         DAV svn
-        SVNParentPath /data/svn      #svn°æ±¾¿â¸ùÄ¿Â¼,¸ùÄ¿Â¼ÏÂÓĞ¶à¸ö°æ±¾¿âÊ¹ÓÃSVNParentPath,µ¥¸ö°æ±¾¿â¿ÉÊ¹ÓÃSVNPath
+        SVNParentPath /Data/svnroot
+        AuthBasicProvider ldap
         AuthType Basic
-        AuthName "Subversion repository"    #ÑéÖ¤Ò³ÃæÌáÊ¾ĞÅÏ¢
-        AuthUserFile /data/svn/passwd          #ÓÃ»§ÃûÃÜÂë
-        Require valid-user                              # Ö»ÔÊĞíÍ¨¹ıÑéÖ¤µÄÓÃ»§·ÃÎÊ
-        AuthzSVNAccessFile /data/svn/authz  #°æ±¾¿âÈ¨ÏŞ¿ØÖÆ
+        #AuthzLDAPAuthoritative on
+        AuthName "My Subversion Server"
+        AuthLDAPURL "ldap://10.10.xx.xx:389/DC=bj,DC=happigo,DC=com?sAMAccountName?sub?(objectClass=*)" NONE
+        #AuthLDAPBindDN "CN=shidg,CN=Users,DC=bj,DC=happigo,DC=COM"
+        AuthLDAPBindDN "shidg@bj.happigo.com"
+        AuthLDAPBindPassword "xxxx"
+        Require valid-user
+        AuthzSVNAccessFile /Data/svnroot/authz
     </Location>
 </VirtualHost>
+
+
+
+##############################################×î»ù±¾µÄhtpasswdÈÏÖ¤####################################################
+#<VirtualHost *:80>
+#    ServerName svn.happigo.com
+#    <Location />                         #ÕâÀïµÄ/svnÒªÇø±ğÓÚAliasÄ¿Â¼±ğÃû
+#        DAV svn
+#        SVNParentPath /data/svn      #svn°æ±¾¿â¸ùÄ¿Â¼,¸ùÄ¿Â¼ÏÂÓĞ¶à¸ö°æ±¾¿âÊ¹ÓÃSVNParentPath,µ¥¸ö°æ±¾¿â¿ÉÊ¹ÓÃSVNPath
+#        AuthType Basic
+#        AuthName "Subversion repository"    #ÑéÖ¤Ò³ÃæÌáÊ¾ĞÅÏ¢
+#        AuthUserFile /data/svn/passwd          #ÓÃ»§ÃûÃÜÂë
+#        Require valid-user                              # Ö»ÔÊĞíÍ¨¹ıÑéÖ¤µÄÓÃ»§·ÃÎÊ
+#        AuthzSVNAccessFile /data/svn/authz  #°æ±¾¿âÈ¨ÏŞ¿ØÖÆ
+#    </Location>
+#</VirtualHost>
 # ´´½¨passwd¼°authzÎÄ¼ş
-
 # ´´½¨ÈÏÖ¤ÎÄ¼ş
-
 # ÓÃ»§ÃûÃÜÂëÎÄ¼ş£º
-htpasswd -c  /data/svn/passwd  user1  #Ê×´ÎÌí¼ÓÓÃ»§£¬ÔÙÌí¼ÓÓÃ»§Ê¹ÓÃ-m²ÎÊı¼´¿É
+#htpasswd -c  /data/svn/passwd  user1  #Ê×´ÎÌí¼ÓÓÃ»§£¬ÔÙÌí¼ÓÓÃ»§Ê¹ÓÃ-m²ÎÊı¼´¿É
+# °æ±¾¿âÈ¨ÏŞÈÏÖ¤ÎÄ¼ş authz
+######################################################################################################################
 
-# °æ±¾¿âÈ¨ÏŞÈÏÖ¤ÎÄ¼ş
 
-vi  /data/svn/authz  #°´ÕÕsvn°æ±¾¿âÏÂµÄauthzÎÄ¼ş¸ñÊ½±à¼­È¨ÏŞ¼´¿É
-
-#  ´´½¨°æ±¾¿â
-
-svnadmin  create /data/svn/test1
-
-# ·ÃÎÊ
-http://svn.xx.com/svn/test1
 
 
 # ÅäÖÃapache  https
-
 # ·şÎñÆ÷Òª°²×°ÁËopenssl,ÉÏ±ßµÄ²½ÖèÖĞÒÑ¾­°²×°¹ı
-
 # apacheÒª¼ÓÔØsslÄ£¿é»òÕß°²×°apacheµÄÊ±ºòÒÑ¾­Ê¹ÓÃenable-ssl¾²Ì¬°üº¬ÁËssl
 
 #httpd.confÖĞÈ¥µôÈçÏÂĞĞµÄ×¢ÊÍ£¬Ê¹Ö®ÉúĞ§
@@ -140,14 +219,19 @@ Include /etc/httpd/extra/httpd-ssl.conf
 
 <VirtualHost _default_:443>
 ServerName svn.xx.com:443
-<Location /svn>
+<Location />
         DAV svn
-        SVNParentPath /data/svn
+        SVNParentPath /Data/svnroot
+        AuthBasicProvider ldap
         AuthType Basic
-        AuthName "Subversion repository"
-        AuthUserFile /data/svn/passwd
+        #AuthzLDAPAuthoritative on
+        AuthName "My Subversion Server"
+        AuthLDAPURL "ldap://10.10.xx.xx:389/DC=bj,DC=happigo,DC=com?sAMAccountName?sub?(objectClass=*)" NONE
+        #AuthLDAPBindDN "CN=shidg,CN=Users,DC=bj,DC=happigo,DC=COM"
+        AuthLDAPBindDN "shidg@bj.happigo.com"
+        AuthLDAPBindPassword "xxxx"
         Require valid-user
-        AuthzSVNAccessFile /data/svn/authz
+        AuthzSVNAccessFile /Data/svnroot/authz
 </Location>
 SSLEngine on
 SSLCertificateFile "/etc/httpd/server.crt"     
@@ -159,7 +243,7 @@ openssl genrsa  -des3 -out  server.key 1024 #des3 ¸øË½Ô¿Ìí¼ÓÃÜÂë£¬ÌáÉı°²È«ĞÔ
 
 openssl req -new   -key server.key  -out server.csr # ÓëË½Ô¿Æ¥ÅäµÄ¹«Ô¿£¬Á¬½Ó½¨Á¢ºó¸Ã¹«Ô¿´«Êä¸ø¿Í»§¶Ë
 
-openssl req -x509 -days 365 -signkey server.key -in server.csr  -out  server.crt #¸ø¹«Ô¿Ç©Ãû£¬Éú³ÉÖ¤Êé
+openssl  x509 -days 365 -req -signkey server.key -in server.csr  -out  server.crt  #¸ø¹«Ô¿Ç©Ãû£¬Éú³ÉÖ¤Êé
 
 cp server.key server.key.with_pass
 
@@ -171,6 +255,6 @@ openssl rsa -in server.key.with_pass -out server.key # Éú³ÉÒ»¸öÎŞÃÜÂëµÄË½Ô¿£¬×¨Ã
 
 #·ÃÎÊ
 
-https://svn.xx.com/svn/test1
+https://svn.xx.com/test1
 
 #×¢ÒâÔÚÕâÖÖÄ£Ê½ÏÂ£¨svn·şÎñ²¢²»Æô¶¯£¬Í¨¹ıhttp»òhttpsÀ´¹ÜÀísvn£©£¬ÏòsvnÌá½»Êı¾İµÄÊ±ºòÒª±£Ö¤ÓÃÀ´ÔËĞĞapacheµÄÓÃ»§¶Ôsvn°æ±¾¿âÄ¿Â¼ÓĞ¶ÁĞ´È¨ÏŞ£¬²»È»»áÓöµ½¡°db/txn-current-lock': Permission denied¡± µÄ´íÎó
