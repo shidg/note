@@ -279,8 +279,8 @@ syntax on
 
 "配色方案
 execute pathogen#infect()
-set background=dark
-colorscheme solarized
+"set background=dark
+"colorscheme solarized
  
 "显示行数标示
 set number

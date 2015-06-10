@@ -44,9 +44,9 @@ if &t_Co > 2 || has("gui_running")
   set hlsearch
 endif
 
-if has('mouse')
-  set mouse=a
-endif
+"if has('mouse')
+"  set mouse=a
+"endif
 
 filetype plugin on
 
