@@ -1,0 +1,21 @@
+#a web tools for samba
+yum install samba-swat
+
+#iptables open tcp port 901
+
+#/etc/
+ service swat
+{
+    port        = 901
+    socket_type = stream
+    wait        = no
+    only_from   = 192.168.1.113
+    user        = root
+    server      = /usr/sbin/swat
+    log_on_failure  += USERID
+    disable     = no                                                         
+}
+
+service xinetd restart
+
+http://smbserver:901
