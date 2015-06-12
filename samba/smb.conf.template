@@ -4,7 +4,9 @@ global]
     workgroup = DEBIAN_FANS  #samba服务器属于哪个工作组名或域名
     encrypt passwords = yes  #密码需要加密
     message command = /bin/sh -c 'xedit %s ; rm %s' &  #当winpopup向网络用户发消息时，此参数可用来接收消息，可惜没有发送。
-    security = user          #用于登陆域，或用户验证登陆
+    security = user          #本机用户验证
+    security = server        #由其他服务器进行验证
+    security = domain        #使用域认证
     wins support = yes       #设置本地为wins服务器，当WINS SERVER没有启动,SAMBA利用广播来进行名字解析，而WINS SERVER是通过udp协议来进行包的传送和不同网络中的路由．因此在不同的网络中进行NETbios解析，要打开wins server.
     samba 利用"remote browse sync" 来和远程的local master browser进行信息的同步 
     name resolve order = wins lmhosts hosts bcast # 解析netbios的顺序 (lmhosts-lan manager file)(hosts-unix的/etc/hosts,dns,nis)(wins)(bcast,广播)  

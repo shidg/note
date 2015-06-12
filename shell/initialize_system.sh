@@ -204,9 +204,9 @@ else
 fi
 
 #NERDTree and vim-nerdtree-tabs
-cd ~/.vim/bundle
-git clone https://github.com/scrooloose/nerdtree.git
-git clone https://github.com/jistr/vim-nerdtree-tabs.git
+#cd ~/.vim/bundle
+#git clone https://github.com/scrooloose/nerdtree.git
+#git clone https://github.com/jistr/vim-nerdtree-tabs.git
 
 cat > ~/.vimrc << EOF
 set nocompatible	" Use Vim defaults (much better!)
@@ -255,9 +255,9 @@ if &t_Co > 2 || has("gui_running")
   set hlsearch
 endif
 
-if has('mouse')
-  set mouse=a
-endif
+"if has('mouse')
+"  set mouse=a
+"endif
 
 filetype plugin on
 
@@ -433,20 +433,20 @@ source $VIMRUNTIME/ftplugin/man.vim
 
 "NERDTree
 "打开vim时自动运行NERDTree
-autocmd vimenter * NERDTree
+"autocmd vimenter * NERDTree
 "运行NERDTree后自动将光标定位在右侧窗口
-autocmd VimEnter * wincmd w
-autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+"autocmd VimEnter * wincmd w
+"autocmd StdinReadPre * let s:std_in=1
+"autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 "退出编辑区自动退出NERDTree
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+"autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
 "默认显示bookmarks
-let NERDTreeShowBookmarks=1 
+"let NERDTreeShowBookmarks=1 
 "打开/关闭NERDTree的快捷键
-map <C-n> :NERDTreeToggle<CR>
+"map <C-n> :NERDTreeToggle<CR>
 
 "vim-nerdtree-tabs
-let g:nerdtree_tabs_open_on_console_startup=1
+"let g:nerdtree_tabs_open_on_console_startup=1
 EOF
 echo "~/.vimrc has been created"
 sleep 2

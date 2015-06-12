@@ -4,7 +4,7 @@ yum install nfs-utils
 
 #centos6 安装
 
-yum install nfs-utils prcbind
+yum install nfs-utils rpcbind
 #设置共享目录，共享参数是重点，这些参数中有部分参数在CENTOS6的新版本NFS中不再可用，比如no_root_suqash no_hide，应该是出于安全性考虑
 vi  /etc/exports
 /data/nfs  10.0.8.2(rw,ro,sync,async,secure,insecure,root_suqash,no_root_suqash,all_suqash,anonuid=,anongid=,hide,no_hide,subtree_check,no_subtree_check) #注意这里是空格  *(ro)
