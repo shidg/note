@@ -1,0 +1,7 @@
+#隐藏tomcat版本信息
+cd ${TOMCAT_HOME}/lib
+mkdir -p org/apache/catalina/util && cd org/apache/catalina/util
+vi ServerInfo.properties
+server.info=Apache
+
+restart tomcat
