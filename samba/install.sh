@@ -1,6 +1,6 @@
 yum update
 
-yum install glibc glibc-devel gcc python* libacl-devel krb5-workstation krb5-libs pam_krb5 gnutls-devel -y
+yum install glibc glibc-devel gcc python python-devel libacl-devel krb5-workstation krb5-libs pam_krb5 gnutls-devel compat-openldap apr-util-ldap openldap-devel python-ldap openldap -y
 
 mkdir samba4dc
 git clone git://git.samba.org/samba.git samba-master
