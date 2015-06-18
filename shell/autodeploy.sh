@@ -59,7 +59,7 @@ do
 	mv ${BUILDDIRB}/${PROJ}/target/*war $TB/webapps/
 done
 
-for CONTEXT in ${PROJCONTEXT[*]}
+for CONTEXT in ${PROJCPMTEXT[*]}
 do
 	if [ -d "$TB/webapps/${CONTEXT}" ];then	
 		rm -rf $TB/webapps/${CONTEXT}
@@ -110,7 +110,7 @@ do
 	mv ${BUILDDIR}/${PROJ}/target/*war $TA/webapps
 done
 
-for CONTEXT in ${PROJCONTEXT[*]}
+for CONTEXT in ${PROJCPMTEXT[*]}
 do
 	if [ -d "$TA/webapps/${CONTEXT}" ];then	
 		rm -rf $TA/webapps/${CONTEXT}

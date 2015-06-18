@@ -1,0 +1,13 @@
+service postfix|sendmail stop
+chkconfig --del postfix|sendmail
+
+vi /etc/mail.rc
+
+# add these
+set from=xxx@qq.com
+set smtp=smtp.qq.com
+set smtp-auth-user=xxx
+set smtp-auth-password=xxx
+set smtp-auth=login 
+
+ok
