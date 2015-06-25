@@ -1,0 +1,74 @@
+#基本条件
+modprobe ppp-compress-18 && echo ok
+cat /dev/net/tun
+cat: /dev/net/tun: File descriptor in bad state
+
+#ppp是否支持MPPE,输出结果为0则不支持，大于等于30支持
+strings '/usr/sbin/pppd' |grep -i mppe | wc --lines
+
+#install ppp
+yum install perl ppp iptables
+
+# install pptpd,注意版本对应：
+
+#############################
+#ppp 2.4.4——————>pptpd 1.3.4#
+#ppp 2.4.5——————>pptpd 1.4.0#
+#############################
+
+#yum 安装
+rpm -Uvh http://poptop.sourceforge.net/yum/stable/rhel6/pptp-release-current.noarch.rpm
+yum install pptpd
+
+#rpm包安装
+#32位
+wget http://acelnmp.googlecode.com/files/pptpd-1.3.4-1.rhel5.1.i386.rpm
+#64位
+wget http://acelnmp.googlecode.com/files/pptpd-1.3.4-1.rhel5.1.x86_64.rpm
+
+
+# 配置文件
+# /etc/ppp/options.pptpd
+cp /etc/ppp/options.pptpd /etc/ppp/options.pptpd.bak
+vi /etc/ppp/options.pptpd
+ms-dns 8.8.8.8
+ms-dns 8.8.4.4
+
+#etc/ppp/chap-secrets
+cp /etc/ppp/chap-secrets   /etc/ppp/chap-secrets.bak
+vi /etc/ppp/chap-secrets
+myusername pptpd mypassword *
+#myusername是vpn帐号，mypasswordvpn的密码，*表示对任何ip，切记不要丢了星号
+
+#/etc/pptpd.conf
+cp /etc/pptpd.conf     /etc/pptpd.conf.bak
+vi /etc/pptpd.conf
+
+localip 192.168.9.1
+remoteip 192.168.9.11-30 
+#表示vpn客户端获得ip的范围
+#pptpd.conf这个配置文件必须保证最后是以空行结尾，否则会导致启动pptpd服务时，出现“Startingpptpd:”，一直卡着不动的问题，无法启动服务，切记！
+
+# /etc/sysctl.conf
+net.ipv4.ip_forward = 1
+
+#iptables
+iptables -t nat -A POSTROUTING -o eth0 -s 192.168.9.0/24 -j MASQUERADE
+
+
+#start service
+service pptpd start
+
+
+
+#other
+2.有的vps不支持加密连接，导致不能拨号成功登陆vpn。
+解决办法：是编辑/etc/ppp/options.pptpd（vim /etc/ppp/options.pptpd），在require-mppe-128前面加个#（# require-mppe-128）；
+
+在windows的VPN连接属性里，加密方式选择为可选加密，并允许未加密的密码。
+
+ 
+4.有的链接 pptp vpn时候失败，提示619.
+解决办法：执行下面的命令：
+# rm -r /dev/ppp
+# mknod /dev/ppp c 108 0 然后重启VPS即可。
