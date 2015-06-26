@@ -25,8 +25,8 @@ make && make install
 cd ..
 
 #Éý¼¶openssl
-tar zxvf openssl-1.0.2a.tar.gz
-cd openssl-1.0.2a
+tar zxvf openssl-1.0.2c.tar.gz
+cd openssl-1.0.2c
 ./config shared zlib
 make && make install
 mv /usr/bin/openssl /usr/bin/openssl.OFF
@@ -50,6 +50,12 @@ cd ..
 
 # libiconv (for php)
 tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14
+#centos7 ²¹¶¡
+#cd ..
+#gunzip libiconv-glibc-2.16.patch.gz
+#cd libiconv-1.14/srclib
+#patch -p1 < ../../libiconv-glibc-2.16.patch
+#cd ..
 ./configure --prefix=/usr && make && make install
 cd ..
 
