@@ -5,9 +5,6 @@ cd dhcp-4.3.2
 
 ./configure && make && make install
 
-#确认广播路由，要想通过eth0广播DHCP服务信息，必须将eth0加入广播路由表，即： 
-
-route add -host 255.255.255.255 dev eth0
 
 #创建配置文件
 

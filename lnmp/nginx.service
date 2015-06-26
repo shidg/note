@@ -1,0 +1,13 @@
+[Unit]  
+Description=nginx  
+After=network.target  
+   
+[Service]  
+Type=forking  
+ExecStart=/etc/init.d/nginx start
+ExecReload=/etc/init.d/nginx reload
+ExecStop=/etc/init.d/nginx stop  
+PrivateTmp=true  
+   
+[Install]  
+WantedBy=multi-user.target

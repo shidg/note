@@ -1,12 +1,12 @@
-service postfix|sendmail stop
-chkconfig --del postfix|sendmail
+systemctl stop postfix
+systemctl disable postfix
 
 vi /etc/mail.rc
 
 # add these
-set from=xxx@qq.com
-set smtp=smtp.qq.com
-set smtp-auth-user=xxx
+set from=xxx@xx.com
+set smtp=smtp.xx.com
+set smtp-auth-user=xxx@xx.com
 set smtp-auth-password=xxx
 set smtp-auth=login 
 
