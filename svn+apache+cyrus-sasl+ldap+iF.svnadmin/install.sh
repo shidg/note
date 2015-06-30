@@ -69,8 +69,8 @@ cd ext/ldap
 ${APP_DIR}php-5.3.29/bin/phpize
 ./configure --with-ldap  --with-ldap-sasl --with-php-config=${APP_DIR}php-5.3.29/bin/php-config 
 make && make install
-mkdir ${APP_DIR}ext
-cp ${APP_DIR}php-5.3.29/lib/php/extensions/no-debug-zts-20090626/ldap.so ${APP_DIR}ext
+mkdir ${APP_DIR}php-5.3.29/ext
+cp ${APP_DIR}php-5.3.29/lib/php/extensions/no-debug-zts-20090626/ldap.so ${APP_DIR}php-5.3.29/ext
 #echo "extension = ldap.so" >> php.ini
 
 cd ../../
