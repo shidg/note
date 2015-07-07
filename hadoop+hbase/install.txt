@@ -1,0 +1,144 @@
+#伪分布式安装
+
+#java环境
+tar zxvf jdk-7u80-linux-x64.gz -C /Data/app/
+echo -ne "JAVA_HOME=/Data/app/jdk1.7.0_80\nPATH=\$PATH:\$JAVA_HOME/bin\nCLASSPATH=.:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar\nexport JAVA_HOME PATH CLASSPATH" >> .bashrc
+source ~/.bashrc
+
+# ssh免密码登录
+ssh-keygen
+ssh-copy-id -i ~/.ssh/id.rsa.pub "-p 5122 root@localhost"
+
+#vi /etc/hosts
+192.168.1.40 procuceHadoop  #该主机名为hadoop自动修改
+192.168.1.40 localhost.localdomain	localhost
+
+
+# ################################hadoop begin#################################
+
+tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0/Data/app/hadoop && cd /Data/app/hadoop/etc/hadoop
+
+# vi core-site.xml
+<configuration>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>file:/Data/app/hadoop/tmp</value>
+        <description>Abase for other temporary directories.</description>
+    </property>                                                                                                                                                          
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+
+# vi hdfs-site.xml
+<configuration>
+    <property>                                                                                                                                                           
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.name.dir</name>
+        <value>file:/Data/app/hadoop/tmp/dfs/name</value>
+    </property>
+    <property>
+        <name>dfs.data.dir</name>
+        <value>file:/Data/app/hadoop/tmp/dfs/data</value>
+    </property>
+</configuration>
+
+# create folders
+mkdir -p /Data/app/hadoop/tmp/dfs{name,data}
+
+#vi hadoop-env.sh
+export JAVA_HOME=/Data/app/jdk1.7.0_80
+export HADOOP_PREFIX=/Data/app/hadoop
+export HADOOP_SSH_OPTS="-p 5122"   
+
+# format
+/Data/app/hadoop/bin/hdfs namenode -format
+/Data/app/hadoop/sbin/start-dfs.sh
+#http://localhost:50070
+
+#cp mapred-site.xml.template mapred-site.xml
+# vi mapred-site.xml
+<configuration>
+    <property>
+		<name>mapreduce.framework.name</name>
+		<value>yarn</value>
+	</property>
+</configuration>
+
+#vi yarn-site.xml
+<configuration>
+    <property>
+	<name>yarn.nodemanager.aux-services</name>
+	<value>mapreduce_shuffle</value>
+	</property>
+</configuration>
+
+## start
+/Data/app/hadoop/sbin/start-yarn.sh
+##http://localhost:8088/
+
+# jps查看进程
+# ResourceManager
+# NodeManager
+# DataNode  <-------------
+# SecondaryNameNode
+# NameNode  <-------------
+
+##################################hadoop end##########################
+
+
+#########hbase begin#############
+tar zxvf hbase-1.0.1.1-bin.tar.gz -C /Data/app/ && ln -s /Data/app/hbase-1.0.1.1 /Data/app/hbase && cd /Data/app/hbase/conf
+
+#vi hbase-env.sh
+export JAVA_HOME=/Data/app/jdk1.7.0_80
+export HBASE_CLASSPATH=/Data/app/hadoop/etc/hadoop
+export HBASE_SSH_OPTS="-p 5122" 
+
+# vi hbase-site.xml
+<configuration>
+    <property>
+        <name>hbase.rootdir</name>
+        <value>hdfs://localhost:9000/hbase</value> ##这个地方必须与hadoop的core-site.xml的fs.defaultFS的值保持一致
+        <description>The directory shared by Region Servers</description>
+    </property>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+        <description>The replication count for HLog and HFlie storage                   </description>
+    </property>
+    <property>
+        <name>hbase.master</name>
+        <value>192.168.1.40:60000</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.quorum</name>
+        <value>192.168.1.40</value>
+    </property>
+    <property>
+        <name>hbase.cluster.distributed</name>
+        <value>true</value>
+    </property>
+</configuration> 
+
+# vi regionservers 
+localhost
+
+# start
+/Data/app/hbase/bin/start-hbase.sh
+/Data/app/hbase/bin/local-regionservers.sh start 0
+#http://localhost:16010
+# jps 查看java进程
+# HQuorumPeer
+# NodeManager
+# ResourceManager
+# HRegionServer
+# SecondaryNameNode
+# HMaster  <---------------
+# DataNode
+# HRegionServer
+# NameNode
