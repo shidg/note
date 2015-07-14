@@ -27,7 +27,7 @@ tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0/Data/
     </property>                                                                                                                                                          
     <property>
         <name>fs.defaultFS</name>
-        <value>hdfs://localhost:9000</value>
+        <value>hdfs://10.10.8.40:9000</value>
     </property>
 </configuration>
 
@@ -103,7 +103,7 @@ export HBASE_SSH_OPTS="-p 5122"
 <configuration>
     <property>
         <name>hbase.rootdir</name>
-        <value>hdfs://localhost:9000/hbase</value> ##这个地方必须与hadoop的core-site.xml的fs.defaultFS的值保持一致
+        <value>hdfs://10.10.8.40:9000/hbase</value> ##这个地方必须与hadoop的core-site.xml的fs.defaultFS的值保持一致
         <description>The directory shared by Region Servers</description>
     </property>
     <property>
@@ -113,11 +113,11 @@ export HBASE_SSH_OPTS="-p 5122"
     </property>
     <property>
         <name>hbase.master</name>
-        <value>192.168.1.40:60000</value>
+        <value>10.10.8.40:60000</value>
     </property>
     <property>
         <name>hbase.zookeeper.quorum</name>
-        <value>192.168.1.40</value>
+        <value>10.10.8.40</value>
     </property>
     <property>
         <name>hbase.cluster.distributed</name>
