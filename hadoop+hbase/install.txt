@@ -16,7 +16,7 @@ ssh-copy-id -i ~/.ssh/id.rsa.pub "-p 5122 root@localhost"
 
 # ################################hadoop begin#################################
 
-tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0/Data/app/hadoop && cd /Data/app/hadoop/etc/hadoop
+tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0 /Data/app/hadoop && cd /Data/app/hadoop/etc/hadoop
 
 # vi core-site.xml
 <configuration>
@@ -24,7 +24,7 @@ tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0/Data/
         <name>hadoop.tmp.dir</name>
         <value>file:/Data/app/hadoop/tmp</value>
         <description>Abase for other temporary directories.</description>
-    </property>                                                                                                                                                          
+    </property> 
     <property>
         <name>fs.defaultFS</name>
         <value>hdfs://10.10.8.40:9000</value>
@@ -33,7 +33,7 @@ tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0/Data/
 
 # vi hdfs-site.xml
 <configuration>
-    <property>                                                                                                                                                           
+    <property> 
         <name>dfs.replication</name>
         <value>1</value>
     </property>
@@ -48,7 +48,7 @@ tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0/Data/
 </configuration>
 
 # create folders
-mkdir -p /Data/app/hadoop/tmp/dfs{name,data}
+mkdir -p /Data/app/hadoop/tmp/dfs/{name,data}
 
 #vi hadoop-env.sh
 export JAVA_HOME=/Data/app/jdk1.7.0_80
@@ -109,7 +109,7 @@ export HBASE_SSH_OPTS="-p 5122"
     <property>
         <name>dfs.replication</name>
         <value>1</value>
-        <description>The replication count for HLog and HFlie storage                   </description>
+        <description>The replication count for HLog and HFlie storage</description>
     </property>
     <property>
         <name>hbase.master</name>
