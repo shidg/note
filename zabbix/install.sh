@@ -17,22 +17,23 @@
 #java环境
 
 #deps
-yum install net-snmp-devel libxml2-devel curl curl-devel
+yum install net-snmp-devel libxml2-devel curl curl-devel unixODBC unixODBC-devel
 
 #install
 tar zxvf zabbix-2.4.5.tar.gz
 cd zabbix-2.4.5
-./configure --prefix=/Data/app/zabiix-2.4.5 --enable-server --enable-proxy --enable-java --enable-agent --with-mysql --with-net-snmp --with-libiconv=/usr/
+./configure --prefix=/Data/app/zabiix-2.4.5 --enable-server --enable-proxy --enable-java --enable-agent --with-mysql=/Data/app/mysql/bin/mysql_config --with-net-snmp --with-libiconv=/usr/ --with-libcurl --with-unixodbc --with-ldap
 make && make install
 
 #MySQL
-mysql -u root -pxxxx << EOF
+mysql -u root -p << EOF
 create database zabbix;
+use zabbix;
 source /Data/software/zabbix-2.4.5/database/mysql/schema.sql;
 #如果仅仅初始化proxy的数据库，那么够了。如果初始化server，那么接着导入下面两个sql
-source /Data/software/zabbix-2.4.5/database/mysql/iamges.sql; 
+source /Data/software/zabbix-2.4.5/database/mysql/images.sql; 
 source /Data/software/zabbix-2.4.5/database/mysql/data.sql; 
-grant all privilges on zabbix.* to zabbix@'localhost' identified by 'zabbix';
+grant all privileges on zabbix.* to zabbix@'localhost' identified by 'zabbix';
 flush privileges;
 EOF
 
@@ -47,6 +48,7 @@ cp conf/zabbix_server.conf /etc/zabbix
 #DBPassword=zabbix
 
 #start zabbix_server(default port 10051)
+useradd zabbix
 /Data/app/zabbix/sbin/zabbix_server
 #zabbix 默认连接/var/lib/mysql/mysql.sock ，这里试图通过修改配置文件来指向其他位置未生效，故通过建立软连接来解决。
 ln -s /tmp/mysql.sock /var/lib/mysql/mysql.sock
