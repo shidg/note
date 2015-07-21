@@ -49,10 +49,7 @@ cp conf/zabbix_server.conf /etc/zabbix
 
 #start zabbix_server(default port 10051)
 useradd zabbix
-/Data/app/zabbix/sbin/zabbix_server
-#zabbix 默认连接/var/lib/mysql/mysql.sock ，这里试图通过修改配置文件来指向其他位置未生效，故通过建立软连接来解决。
-ln -s /tmp/mysql.sock /var/lib/mysql/mysql.sock
-
+/Data/app/zabbix/sbin/zabbix_server -c /etc/zabbix/zabbix_server.conf
 
 #nginx配置好虚拟机，如 vhosts/monitor.my.com，假设根目录设置为/Data/code/zabbix
 cd /Data/software/zabbix-2.4.5
