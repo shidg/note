@@ -41,15 +41,15 @@ yum install rrdtool
 
 #创建cacti使用的数据库,并添加用户
 
-mysql --user=root --password=123456 <<EOF
+mysql --user=root <<EOF
 CREATE DATABASE cacti;
 GRANT ALL PRIVILEGES ON cacti.* TO cactiuser@localhost IDENTIFIED BY 'cactiuser';
 FLUSH PRIVILEGES;
 EOF
 
 #cacti安装
-tar zxvf cacti-0.8.8b.tar.gz -C ${apache_DocumentRoot}
-#解压、导入cacti.sql到cacti库,填写mysql连接信息、URL变量，web访问开始安装
+tar zxvf cacti-0.8.8f.tar.gz -C ${apache_DocumentRoot}
+#解压、导入cacti.sql到cacti库,填写mysql连接信息、URL变量(include/config.php)，web访问开始安装
 
 #安装过程中主要是指定各程序的路径，php snmp等
 
@@ -73,8 +73,8 @@ snmp--> version2
 
 #安装spine,一种更高效的轮询机制，替换cacti自带的[poller type]--- cmd.php
 #http://www.cacti.net/downloads/spine/ 下载地址，注意与cacti版本保持一致
-tar zxvf cacti-spine-0.8.8b.tar.gz && cd cacti-spine-0.8.8b
-./configure --prefix=/usr/local/spine
+tar zxvf cacti-spine-0.8.8f.tar.gz && cd cacti-spine-0.8.8b
+./configure --prefix=/usr/local/spine --with-mysql=/Data/app/mysql
 make && make install
 
 #编辑spine配置文件 /usr/local/spine/etc/spine.conf,填写正确的数据库连接信息
@@ -85,22 +85,12 @@ make && make install
 
 
 # ndoutils,将nagios收集的数据存入mysql,然后由cacti读取并显示出来
-tar zxvf ndoutils-1.5.2.tar.gz && cd  ndoutils-1.5.2
-./configure --enable-mysql --with-mysql=/usr/local/mysql/
-
-#遇到的错误：
-../include/config.h:261:25: error: mysql/mysql.h: No such file or directory
-../include/config.h:262:26: error: mysql/errmsg.h: No such file or directory
-
-#解决：
-vi ndoutils-1.5.2/include/config.h
-将以下两行中的/mysql/去掉,这应该是个拼接，#include代表/usr/local/mysql/include/(./configure中指定的)，再拼接上后边的变成了/usr/local/mysql/include/mysql/mysql.h,所以多出了一层目录，故提示找不到
-#include </mysql/mysql.h>
-#include </mysql/errmsg.h>
+tar zxvf ndoutils-2.0.0.tar.gz && cd  ndoutils-2.0.0
+./configure --enable-mysql --with-mysql=/Data/app/mysql/
 
 make
 
-cp -v src/{ndomod-3x.o,ndo2db-3x,file2sock,log2ndo}  /usr/local/nagios/bin
+cp -v src/{ndomod-4x.o,ndo2db-4x,file2sock,log2ndo}  /usr/local/nagios/bin
 #创建ndodb库
 mysql --user=root --password=123456 <<EOF
 CREATE DATABAS ndodb;
@@ -108,13 +98,13 @@ GRANT ALL PRIVILEGES ON ndodb.* TO ndouser@localhost IDENTIFIED BY '123456';
 FLUSH PRIVILEGES;
 EOF
  
-cd ndoutils-1.5.2/db
+cd ndoutils-2.0.0/db
 #生成ndoutils所需要的数据库表等，这些表默认以“nagios_”为前缀
 ./installdb -u ndouser -p 123456 -h localhost -d ndodb
 #installdb是一个perl脚本，执行它需要用到perl的DBI和DBD::mysql模块，如果没有先安装 
 
 #复制、编辑配置文件
-cd ndoutils-1.5.2/config
+cd ndoutils-2.0.0/config
 cp ndo2db.cfg-sample  /usr/local/nagios/etc/ndo2db.cfg
 cp ndomod.cfg-sample  /usr/local/nagios/etc/ndomod.cfg
 chmod 644 /usr/local/nagios/etc/ndo*
@@ -123,7 +113,7 @@ chown nagios:nagios /usr/local/nagios/bin/*
 
 vi /usr/local/nagios/etc/nagios.cfg
 event_broker_options=-1
-broker_module=/usr/local/nagios/bin/ndomod-3x.o config_file=/usr/local/nagios/etc/ndomod.cfg
+broker_module=/usr/local/nagios/bin/ndomod-4x.o config_file=/usr/local/nagios/etc/ndomod.cfg
 
 #编辑ndo2db和ndomod的配置文件
 vi /usr/local/nagios/etc/ndo2db.cfg
@@ -144,7 +134,7 @@ output_type=unixsocket
 output=/usr/local/nagios/var/ndo.sock
 
 #启动ndo2db
-/usr/local/nagios/bin/ndo2db-3x -c /usr/local/nagios/etc/ndo2db.cfg
+/usr/local/nagios/bin/ndo2db-4x -c /usr/local/nagios/etc/ndo2db.cfg
 
 #查看系统日志确认启动正常
 
@@ -222,6 +212,6 @@ EOF
 
 
 #重启ndo2db和nagios,注意彻底关闭再启动
-# /usr/local/nagios/bin/ndo2db-3x -c /usr/local/nagios/etc/ndo2db.cfg
+# /usr/local/nagios/bin/ndo2db-4x -c /usr/local/nagios/etc/ndo2db.cfg
 # service nagios start
 #查看系统日志确认ndo2db已经把数据写入cacti库中

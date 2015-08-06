@@ -19,7 +19,7 @@ tar zxvf nagios-4.0.8.tar.gz && cd nagios-4.0.8
 make all
 make install
 make install-init
-make install config
+make install-config
 make install-commandmode
 make install-webconf
 
