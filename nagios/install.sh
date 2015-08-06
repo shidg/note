@@ -14,7 +14,7 @@ usermod -a -G nagcmd apache
 
 
 ##nagios core###
-tar zxvf nagios-4.0.8.tar.gz && cd nagios-4.0.8
+tar zxvf nagios-4.1.0rc2.tar.gz && cd nagios-4.1.orc2
 ./configure --with-command-group=nagcmd
 make all
 make install
