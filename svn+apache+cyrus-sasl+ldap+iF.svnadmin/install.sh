@@ -93,12 +93,29 @@ echo "${APP_DIR}lib/sasl2/lib" >> /etc/ld.so.conf
 ldconfig
 cd ..
 
+
+
+### serf [让svn可以处理http/htps方式的版本库]
+#scons# [http://sourceforge.net/projects/scons/files/scons/]
+tar zxvf scons-2.3.6.tar.gz  && cd scons-2.3.6
+python setup.py install 
+
+# serf# [https://serf.googlecode.com/files/serf-1.3.3.tar.bz2]
+tar jxvf serf-1.3.3.tar.bz2 && cd serf-1.3.3
+scons PREFIX=/Data/app/serf APR=/Data/app/apr APU=/Data/app/apr-util/
+scons install
+scons -c
+
+
+
+
 #安装subversion
 tar  jxvf subversion-1.8.13.tar.bz2 && cd  subversion-1.8.13
-./configure --prefix=${APP_DIR}subversion --with-apxs=${APP_DIR}apache-2.4.12/bin/apxs --with-apr=${APP_DIR}apr --with-apr-util=${APP_DIR}apr-util/ --with-sqlite=${APP_DIR}sqlite/ --with-sasl=/usr/lib64/sasl2
+./configure --prefix=${APP_DIR}subversion --with-apxs=${APP_DIR}apache-2.4.12/bin/apxs --with-apr=${APP_DIR}apr --with-apr-util=${APP_DIR}apr-util/ --with-sqlite=${APP_DIR}sqlite/ --with-serf=/Data/app/serf --with-sasl=/usr/lib64/sasl2
 make && make install
 #在安装目录下生成svn-tools目录，里边有一些扩展工具，比如svnauthz-validate
 make install-tools
+ln -s  /Data/app/serf/lib/libserf-1.so.1.3.0 /Data/app/subversion/lib/libserf-1.so.1 
 cd ..
 
 #########svnserve --version################
