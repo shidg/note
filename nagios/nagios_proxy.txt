@@ -1,0 +1,129 @@
+# nagios分布式部署##
+
+#中心服务器#
+#1. 正常安装apache+nagios
+#2. nsca
+
+tar zxvf nsca-2.9.1.tar.gz && cd nsca-2.9.1
+./configure
+make all
+cp src/nsca /usr/local/nagios/bin/
+cp sample-config/nsca.cfg /usr/local/nagios/etc/
+chown nagios:nagios /usr/local/nagios/bin/nsca 
+chown nagios:nagios /usr/local/nagios/etc/nsca.cfg
+#vi  /usr/local/nagios/etc/nsca.cfg
+server_address=10.10.x.x
+command_file=/usr/local/nagios/var/rw/nagios.cmd
+password=123456
+
+/usr/local/nagios/bin/nsca -c /usr/local/nagios/etc/nsca.cfg --daemon
+
+#vi templates.cfg \
+define service{                                                                                                                                                          
+        name                            passive_service
+        use                             generic-service
+        max_check_attempts              3   
+        active_checks_enabled           0   
+        passive_checks_enabled          1   
+        normal_check_interval           5   
+        retry_check_interval            1   
+        notifications_enabled           1   
+        notification_interval           5   
+        notification_period             24x7
+        contact_groups                  admins
+        register                        0   
+}
+
+
+
+
+
+
+
+
+#分布式代理服务器
+#安装nagios,nagios-plugin,nrpe,无需web界面，只需通过check_nrpe获取被监控服务器的状态数据即可
+
+#安装nsca,过程与上同，但代理服务器需要的是send_nsca
+
+#vi /usr/local/nagios/libexec/submit_check_result
+
+#!/bin/sh
+#  Arguments:
+#  $1 = host_name (Short name of host that the service is associated with)
+#  $2 = svc_description (Description of the service)
+#  $3 = state_string (A string representing the status of the given service - "OK", "WARNING", "CRITICAL"
+#       or "UNKNOWN")
+#  $4 = plugin_output (A text string that should be used as the plugin output for the service checks)
+#
+# Convert the state string to the corresponding return code
+
+return_code=-1
+case "$3" in
+        OK)
+        return_code=0
+        ;;
+        WARNING)
+        return_code=1
+        ;;
+        CRITICAL)
+        return_code=2
+        ;;
+        UNKNOWN)
+        return_code=-1
+        ;;
+esac
+# pipe the service check info into the send_nsca program, which
+# in turn transmits the data to the nsca daemon on the central
+# monitoring server
+
+/bin/printf "%s\t%s\t%s\t%s\n" "$1" "$2" "$return_code" "$4" | /usr/local/nagios/bin/send_nsca  -c xx.xx.xx.xx (中心服务器ip)/usr/local/nagios/etc/send_nsca.cfg
+
+#vi /usr/local/nagios/etc/nagios.cfg
+obsess_over_services=1
+ocsp_command=submit_check_result
+obsess_over_hosts=1
+ochp_command=submit_check_result
+
+
+
+
+
+
+#####被监控服务器###
+#正常安装nagios-plugin,nrpe，无特殊操作
+#分布式原理如下,代理服务器(启动nagios服务)通过check_nrpe获取被监控端(启动nrpe)的状态数据，然后将数据传给中心服务器(启动nagios+nsca)处理(使用nsca)，中心服务器把处理结果展示在它的web界面上,并判断是否触发报警等。在中心服务器看来,被监控服务器相当于本机，所以分布式部署的情况下，中心服务器对被监控服务器的监控方式如下(参考localhost.cfg)：
+
+define host{
+        use                     linux-server            ; Name of host template to use
+        host_name               online_mysql
+        address                 10.162.xx.xx
+        passive_checks_enabled  1
+        active_checks_enabled   0   
+}
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       online_mysql
+        service_description             PING
+        check_command                   check_ping!100.0,20%!500.0,60%
+        check_freshness                 1   
+        freshness_threshold             450 
+        passive_checks_enabled          1   
+        active_checks_enabled           0   
+        }   
+
+define service{
+        use                             local-service         ; Name of service template to use
+        host_name                       online_mysql
+        service_description             Current Load
+        check_command                   check_local_load!5.0,4.0,3.0!10.0,6.0,4.0
+        check_freshness                 1
+        freshness_threshold             450
+        passive_checks_enabled          1
+        active_checks_enabled           0
+}
+
+……
+
+……
