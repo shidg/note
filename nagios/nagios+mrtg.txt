@@ -1,0 +1,17 @@
+yum install mrtg
+
+#生成配置文件
+cfgmaker -output=/usr/local/nagios/mrtg/253.cfg feezu@cn@10.10.8.253
+
+# 修改配置文件
+vi mrtg/253.cfg
+WorkDir: /usr/local/nagios/share/mrtg 
+
+#生成流量图
+/usr/bin/env LANG=C  /usr/bin/mrtg /usr/local/nagios/mrtg/253.cfg
+
+#生成页面
+indexmaker -output=/usr/local/nagios/share/mrtg/index.html -title="Traffic Monitoring"  /usr/local/nagios/mrtg/h3c.cfg 
+
+#添加计划任务
+*/5 * * * * /usr/bin/env LANG=C  /usr/bin/mrtg /usr/local/nagios/mrtg/253.cfg
