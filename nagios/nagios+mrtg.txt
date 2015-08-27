@@ -11,7 +11,7 @@ WorkDir: /usr/local/nagios/share/mrtg
 /usr/bin/env LANG=C  /usr/bin/mrtg /usr/local/nagios/mrtg/253.cfg
 
 #生成页面
-indexmaker -output=/usr/local/nagios/share/mrtg/index.html -title="Traffic Monitoring"  /usr/local/nagios/mrtg/h3c.cfg 
+indexmaker -output=/usr/local/nagios/share/mrtg/index.html -title="TrafficMonitoring"  /usr/local/nagios/mrtg/253.cfg 
 
 #添加计划任务
 */5 * * * * /usr/bin/env LANG=C  /usr/bin/mrtg /usr/local/nagios/mrtg/253.cfg

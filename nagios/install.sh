@@ -14,7 +14,7 @@ usermod -a -G nagcmd apache
 
 
 ##nagios core###
-tar zxvf nagios-4.1.0rc2.tar.gz && cd nagios-4.1.orc2
+tar zxvf nagios-4.1.1.tar.gz && cd nagios-4.1.1
 ./configure --with-command-group=nagcmd
 make all
 make install
@@ -26,7 +26,7 @@ make install-webconf
 htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
 
 ##nagios-plugin###
-tar zxvf nagios-plugins-2.0.3.tar.gz && cd nagios-plugins-2.0.3
+tar zxvf nagios-plugins-2.1.1.tar.gz && cd nagios-plugins-2.1.1
 ./configure --with-nagios-user=nagios --with-nagios-group=nagios
 make && make install
 
