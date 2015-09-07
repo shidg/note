@@ -27,7 +27,7 @@ htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
 
 ##nagios-plugin###
 tar zxvf nagios-plugins-2.1.1.tar.gz && cd nagios-plugins-2.1.1
-./configure --with-nagios-user=nagios --with-nagios-group=nagios
+./configure --with-nagios-user=nagios --with-nagios-group=nagios (--with-mysql=dir)
 make && make install
 
 ###nrpe,用来监控远程主机###
@@ -66,7 +66,7 @@ define command{
 ##nagios-plugin##
 yum -y install gcc gcc-c++ make openssl openssl-devel 
 useradd -s /sbin/nologin nagios
-tar zxvf nagios-plugins-2.0.3.tar.gz && cd nagios-plugins-2.0.3
+tar zxvf nagios-plugins-2.1.1.tar.gz && cd nagios-plugins-2.1.1
 ./configure --with-nagios-user=nagios --with-nagios-group=nagios
 make && make install
 
