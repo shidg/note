@@ -1,0 +1,70 @@
+##System CentOS 7##
+
+# A storage on a network is called iSCSI Target, a Client which connects to iSCSI Target is called iSCSI Initiator. 
+# This example is based on the environment below.
+# +----------------------+          |          +----------------------+
+# | [   iSCSI Target   ] |10.0.0.30 | 10.0.0.31| [ iSCSI Initiator  ] |
+# |   dlp.server.feezu   +----------+----------+   www.server.feezu   |
+# |                      |                     |                      |
+# +----------------------+                     +----------------------+
+
+# admin tools first
+yum install targetcli
+
+# create the directory
+[root@dlp ~]# mkdir /iscsi_disks 
+
+# enter the admin console
+targetcli
+/> cd backstores/fileio
+
+# create a disk-image with the name "disk01" on /iscsi_disks/disk01.img with 20G
+/backstores/fileio> create disk01 /iscsi_disks/disk01.img 20G 
+Created fileio disk01 with size 21474836480
+
+/backstores/fileio> cd /iscsi
+
+# create a target
+/iscsi> create iqn.2015-09.feezu.server:storage.target00 
+Created target iqn.2015-09.feezu.server:storage.target00.
+Created TPG 1.
+
+/iscsi> cd iqn.2015-09.feezu.server:storage.target00/tpg1/portals
+
+# set IP address of the target
+/iscsi/iqn.20.../tpg1/portals> create 10.0.0.30 
+Using default IP port 3260
+Created network portal 10.0.0.30:3260.
+
+/iscsi/iqn.20.../tpg1/portals> cd ../luns
+
+# set LUN
+/iscsi/iqn.20...t00/tpg1/luns> create /backstores/fileio/disk01 
+Created LUN 0.
+
+/iscsi/iqn.20...t00/tpg1/luns> cd ../acls
+
+# set ACL (it's the IQN of an initiator you permit to connect)
+/iscsi/iqn.20...t00/tpg1/acls> create iqn.2015-09.feezu.server:www.server.feezu
+Created Node ACL for iqn.2015-09.feezu.server:www.server.feezu
+Created mapped LUN 0.
+
+/iscsi/iqn.20...t00/tpg1/acls> cd iqn.2015-09.feezu.server:www.server.feezu
+
+# set UserID for authentication
+/iscsi/iqn.20....server.feezu> set auth userid=username 
+Parameter userid is now 'username'.
+/iscsi/iqn.20....server.feezu> set auth password=password 
+Parameter password is now 'password'.
+/iscsi/iqn.20....server.feezy> exit 
+Global pref auto_save_on_exit=true
+Last 10 configs saved in /etc/target/backup.
+Configuration saved to /etc/target/saveconfig.json
+
+# start service
+[root@dlp ~]# systemctl start target
+[root@dlp ~]# systemctl enable target
+
+# after configuration above, the target enters in listening like follows.
+[root@dlp ~]# ss -tnl | grep 3260 
+LISTEN     0      5                 10.0.0.30:3260                *:*

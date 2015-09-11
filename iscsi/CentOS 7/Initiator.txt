@@ -1,0 +1,80 @@
+yum -y install iscsi-initiator-utils
+
+vi /etc/iscsi/initiatorname.iscsi
+
+# change to the same IQN you set on the iSCSI target server
+InitiatorName=iqn.2015-09.feezu.server:www.server.feezu
+
+[root@www ~]# vi /etc/iscsi/iscsid.conf
+# line 54: uncomment
+node.session.auth.authmethod = CHAP
+# line 58,59: uncomment and specify the username and password you set on the iSCSI target server
+node.session.auth.username = username
+node.session.auth.password = password
+
+
+# discover target
+[root@www ~]# iscsiadm -m discovery -t sendtargets -p 10.0.0.30 
+[  635.510656] iscsi: registered transport (tcp)
+10.0.0.30:3260,1 iqn.2015-09.feezu.server:storage.target00
+
+
+# confirm status after discovery
+[root@www ~]# iscsiadm -m node -o show 
+# BEGIN RECORD 6.2.0.873-21
+node.name = iqn.2015-09.feezu.server:storage.target00
+node.tpgt = 1
+node.startup = automatic
+node.leading_login = No
+...
+...
+...
+node.conn[0].iscsi.IFMarker = No
+node.conn[0].iscsi.OFMarker = No
+# END RECORD
+
+# login to the target
+[root@www ~]# iscsiadm -m node --login 
+[  709.402910] scsi 2:0:0:0: Attached scsi generic sg0 type 0
+Login to [iface: default, target: iqn.2015-09.feezu.server:storage.target00, portal: 10.0.0.30,3260] successful.
+
+
+
+# confirm the established session
+[root@www ~]# iscsiadm -m session -o show 
+tcp: [1] 10.0.0.30:3260,1 iqn.2015-09.feezu.server:storage.target00 (non-flash)
+
+
+# confirm the partitions
+[root@www ~]# cat /proc/partitions 
+major minor  #blocks  name
+
+ 252        0   52428800 sda
+ 252        1     512000 sda1
+ 252        2   51915776 sda2
+ 253        0    4079616 dm-0
+ 253        1   47833088 dm-1
+   8        0   20971520 sdb
+# added new device provided from the target server as "sdb"
+
+#After setting iSCSI devide, configure on Initiator to use it like follwos.
+
+# create label
+[root@www ~]# parted --script /dev/sdb "mklabel msdos" 
+# create partiton
+[root@www ~]# parted --script /dev/sdb "mkpart primary 0% 100%" 
+# format with XFS
+[root@www ~]# mkfs.xfs -i size=1024 -s size=4096 /dev/sdb1 
+meta-data=/dev/sdb1        isize=1024   agcount=16, agsize=327616 blks
+         =                 sectsz=4096  attr=2, projid32bit=1
+         =                 crc=0
+data     =                 bsize=4096   blocks=5241856, imaxpct=25
+         =                 sunit=0      swidth=0 blks
+naming   =version 2        bsize=4096   ascii-ci=0 ftype=0
+log      =internal log     bsize=4096   blocks=2560, version=2
+         =                 sectsz=4096  sunit=1 blks, lazy-count=1
+realtime =none             extsz=4096   blocks=0, rtextents=0
+
+# mount it
+[root@www ~]# mount /dev/sdb1 /mnt 
+
