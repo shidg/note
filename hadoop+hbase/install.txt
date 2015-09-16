@@ -9,8 +9,8 @@ source ~/.bashrc
 ssh-keygen
 ssh-copy-id -i ~/.ssh/id.rsa.pub "-p 5122 root@localhost"
 
-#vi /etc/hosts
-192.168.1.40 procuceHadoop  #该主机名为hadoop自动修改
+#vi /etc/hosts (注意这里去掉了127.0.0.1那一行)
+192.168.1.40 procuceHadoop #这一条同样需要添加到连接hbase服务器的那台机器的hosts文件中
 192.168.1.40 localhost.localdomain	localhost
 
 
@@ -142,3 +142,7 @@ localhost
 # DataNode
 # HRegionServer
 # NameNode
+
+
+# 连接hbase的服务器上，一定要在hosts文件中添加一条：
+hbase服务器的ip地址   hbase服务器的主机名
