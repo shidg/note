@@ -113,7 +113,7 @@ cd ..
 echo "install libevent"
 dots &
 exec 1>&2
-tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable && ./configure --prefix=/usr && make && make install
+tar zxvf libevent-2.0.22-stable.tar.gz && cd libevent-2.0.22-stable && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
 
