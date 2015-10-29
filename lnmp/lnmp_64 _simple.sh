@@ -129,7 +129,7 @@ cd ..
 echo "install php"
 dots &
 exec 1>&2
-tar jxvf php-5.5.18.tar.bz2 && cd php-5.5.18 && ./configure --prefix=${app_dir}php5.5.18  --with-config-file-path=${app_dir}php5.5.18/etc --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir --with-zlib --with-gd --with-freetype-dir --with-mcrypt=/usr --with-mhash --enable-gd-native-ttf  --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear --enable-fpm --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp  --enable-zip --enable-bcmath --enable-sockets --enable-opcache && make ZEND_EXTRA_LIBS='-liconv' && make install 
+tar jxvf php-5.6.14.tar.bz2 && cd php-5.6.14 && ./configure --prefix=${app_dir}php-5.6.14  --with-config-file-path=${app_dir}php-5.6.14/etc --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir --with-zlib --with-gd --with-freetype-dir --with-mcrypt=/usr --with-mhash --enable-gd-native-ttf  --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear --enable-fpm --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp  --enable-zip --enable-bcmath --enable-sockets --enable-opcache && make ZEND_EXTRA_LIBS='-liconv' && make install 
 exec 1>&6
 success
 
@@ -153,15 +153,7 @@ cd ..
 echo "install nginx"
 dots &
 exec 1>&2
-tar jxvf pcre-8.36.tar.bz2 && mv pcre-8.36  ${app_dir} && tar zxvf openssl-1.0.2.tar.gz && mv openssl-1.0.2 ${app_dir} && tar zxvf nginx-1.6.2.tar.gz && cd nginx-1.6.2 && ./configure --prefix=${app_dir}nginx  --with-pcre=${app_dir}pcre-8.36 --with-openssl=${app_dir}openssl-1.0.2 --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
-
-#nginx/mysql/php auto running
-echo "${app_dir}nginx/sbin/nginx -c ${app_dir}nginx/conf/nginx.conf" >> /etc/rc.d/rc.local
-echo "${app_dir}/php/sbin/php-fpm" >> /etc/rc.d/rc.local
-
-exec 1>&6
-success
-
+tar jxvf pcre-8.37.tar.bz2 && tar zxvf openssl-1.0.2d.tar.gz && tar zxvf nginx-1.8.0.tar.gz && cd nginx-1.8.0 && ./configure --prefix=${app_dir}nginx-1.8.0  --with-pcre=../pcre-8.37 --with-openssl=../openssl-1.0.2d --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
 
 exec 1>&6 6>&-
 exec 2>&7 7>&-

@@ -39,16 +39,14 @@ tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0 /Data
     </property>
     <property>
         <name>dfs.name.dir</name>
-        <value>file:/Data/app/hadoop/tmp/dfs/name</value>
+        <value>file:/Data/app/hadoop/dfs/name</value>
     </property>
     <property>
         <name>dfs.data.dir</name>
-        <value>file:/Data/app/hadoop/tmp/dfs/data</value>
+        <value>file:/Data/app/hadoop/dfs/data</value>
     </property>
 </configuration>
 
-# create folders
-mkdir -p /Data/app/hadoop/tmp/dfs/{name,data}
 
 #vi hadoop-env.sh
 export JAVA_HOME=/Data/app/jdk1.7.0_80

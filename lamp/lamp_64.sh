@@ -149,24 +149,24 @@ echo "Start the installation of Apache..."
 sleep 2
 #apr
 
-tar jxvf apr-1.5.1.tar.bz2 && cd apr-1.5.1
+tar jxvf apr-1.5.2.tar.bz2 && cd apr-1.5.2
 #注释掉configure文件中的某行，解决“/bin/rm: cannot remove `libtoolT’: No such file or directory ”
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
 ./configure --prefix=/usr/local/apr && make && make install || exit 1
 cd ..
 #apr-util
-tar jxvf apr-util-1.5.3.tar.bz2  &&  apr-util-1.5.3
+tar jxvf apr-util-1.5.4.tar.bz2  &&  cd apr-util-1.5.4
 ./configure --prefix=/usr/local/apr-util --with-apr=/usr/local/apr/bin/apr-1-config  && make && make install || exit 1
 #pcre
 cd ..
 echo "Start the installation of pcre..."
-tar jxvf pcre-8.33.tar.bz2 && cd pcre-8.33
+tar jxvf pcre-8.37.tar.bz2 && cd pcre-8.37
 ./configure --prefix=/usr/local/pcre && make && make install || exit 1
 echo 'OK,pcre-8.33 has  been successfully installed!'
 cd ..
 
 sleep 2
-tar zxvf httpd-2.4.6.tar.gz && cd httpd-2.4.6 && ./configure --prefix=/usr/local/apache2 --sysconfdir=/etc/httpd --with-apr=/usr/local/apr/bin/apr-1-config --with-apr-util=/usr/local/apr-util/bin/apu-1-config  --with-pcre=/usr/local/pcre/ --enable-mods-shared=most  --enable-rewirte --enable-so --enable-ssl=static --with-ssl  --enable-proxy=shared --enable-proxy-balancer=shared --enable-proxy-http=shared  --enable-cache --enable-disk-cache --enable-mem-cache --enable-file-cache  && make && make install || exit 1
+tar zxvf httpd-2.4.17.tar.gz && cd httpd-2.4.17 && ./configure --prefix=/usr/local/apache2 --sysconfdir=/etc/httpd --with-apr=/usr/local/apr/bin/apr-1-config --with-apr-util=/usr/local/apr-util/bin/apu-1-config  --with-pcre=/usr/local/pcre/ --enable-mods-shared=most  --enable-rewirte --enable-so --enable-ssl=static --with-ssl  --enable-proxy=shared --enable-proxy-balancer=shared --enable-proxy-http=shared  --enable-cache --enable-disk-cache --enable-mem-cache --enable-file-cache  && make && make install || exit 1
 if [ ! -d /data/logs ];then
 mkdir -p /data/logs/{error,access} #apache日志存放目录
 fi
