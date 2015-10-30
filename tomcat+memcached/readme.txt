@@ -1,19 +1,27 @@
 # tomcat+memcached实现多tomcat的session共享,也就是memcached-session-manager项目
 
-1. 将memcached-session-manager-${version}.jar ,
-memcached-session-manager-tc6-${version}.jar ,
+#注意jar包版本，版本冲突可能导致无法启动,以下版本组合测试通过，未经实地测试勿随意替换.
+
+
+
+1. 将以下三个包放到tomcat_dir/lib目录下。
+memcached-session-manager-${version}.jar ,
+
+memcached-session-manager-tc7-${version}.jar ,
+###tc7对应tomcat7,若是tomcat6则需使用memcached-session-manager-tc6-${version}.jar
+
 spymemcached-${version}.jar
-三个包放到tomcat_dir/lib目录下。
+
 下载地址分别为：
 http://repo1.maven.org/maven2/de/javakaffee/msm/memcached-session-manager/
-http://repo1.maven.org/maven2/de/javakaffee/msm/memcached-session-manager-tc6/
+http://repo1.maven.org/maven2/de/javakaffee/msm/memcached-session-manager-tc7/
 http://repo1.maven.org/maven2/net/spy/spymemcached/
-(本次测试中使用的版本为1.8.3和2.11.6)
+(本次测试中使用的版本为1.8.3和2.12.0)
 
 
-2. 将以下jar文件放到项目根目录下的WEB-INF/lib目录下
+2. 将以下jar文件放到tomcat_dir/lib目录下
 
-asm-3.2.jar 
+asm-3.3.1.jar 
 kryo-1.04.jar
 kryo-serializers-0.11.jar
 minlog-1.2.jar
@@ -26,8 +34,7 @@ http://repo1.maven.org/maven2/com/googlecode/kryo/
 http://repo1.maven.org/maven2/de/javakaffee/kryo-serializers/0.11/
 http://repo1.maven.org/maven2/com/googlecode/minlog/
 http://repo1.maven.org/maven2/de/javakaffee/msm/msm-kryo-serializer/
-http://repo1.maven.org/maven2/de/javakaffee/msm/msm-kryo-serializer/
-
+http://repo1.maven.org/maven2/com/googlecode/reflectasm/
 
 
 
