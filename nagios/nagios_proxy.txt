@@ -45,6 +45,10 @@ define service{
 #安装nagios,nagios-plugin,nrpe,无需web界面，只需通过check_nrpe获取被监控服务器的状态数据即可
 
 #安装nsca,过程与上同，但代理服务器需要的是send_nsca
+cp src/send_nsca /usr/local/nagios/bin/
+
+vi /usr/local/nagios/etc/send_nsca.cfg
+
 
 #vi /usr/local/nagios/libexec/submit_check_result
 
