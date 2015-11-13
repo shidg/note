@@ -1,10 +1,10 @@
 #tcl##
 #"You need tcl 8.5 or newer in order to run the Redis test"
-tar zxvf tcl8.6.3-src.tar.gz && cd tcl8.6.3/unix
+tar zxvf tcl8.6.4-src.tar.gz && cd tcl8.6.4/unix
 ./configure --prefix=/usr && make && make install
 
 ###################################################################
-tar zxvf redis-2.8.17.tar.gz && cd redis-2.8.17
+tar zxvf redis-3.0.5.tar.gz && cd redis-3.0.5
 
 make
 

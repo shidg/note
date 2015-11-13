@@ -25,8 +25,8 @@ make && make install
 cd ..
 
 #升级openssl
-tar zxvf openssl-1.0.2c.tar.gz
-cd openssl-1.0.2c
+tar zxvf openssl-1.0.2d.tar.gz
+cd openssl-1.0.2d
 ./config shared zlib
 make && make install
 mv /usr/bin/openssl /usr/bin/openssl.OFF
@@ -38,8 +38,8 @@ ldconfig
 cd ..
 
 #安装apache
-tar jxvf httpd-2.4.12.tar.bz2 && cd httpd-2.4.12
-./configure --prefix=${APP_DIR}apache-2.4.12 --sysconfdir=/etc/httpd --with-apr=${APP_DIR}apr/bin/apr-1-config --with-apr-util=${APP_DIR}apr-util/bin/apu-1-config  --with-pcre=${APP_DIR}pcre/ --enable-so --enable-mods-shared=all --enable-rewirte  --enable-ssl=shared --with-ssl=${APP_DIR}ssl --enable-ldap --enable-authnz-ldap
+tar jxvf httpd-2.4.17.tar.bz2 && cd httpd-2.4.17
+./configure --prefix=${APP_DIR}apache-2.4.17 --sysconfdir=/etc/httpd --with-apr=${APP_DIR}apr/bin/apr-1-config --with-apr-util=${APP_DIR}apr-util/bin/apu-1-config  --with-pcre=${APP_DIR}pcre/ --enable-so --enable-mods-shared=all --enable-rewirte  --enable-ssl=shared --with-ssl=${APP_DIR}ssl --enable-ldap --enable-authnz-ldap
 make && make install
 cd ..
 
@@ -77,7 +77,7 @@ cd ../../
 
 #安装sqlite
 #http://www.sqlite.org/download.html
-tar zxvf sqlite-autoconf-3081002.tar.gz  && cd   sqlite-autoconf-3081002
+tar zxvf sqlite-autoconf-3090200.tar.gz  && cd  sqlite-autoconf-3090200/
 ./configure --prefix=${APP_DIR}sqlite
 make && make install
 cd ..
@@ -97,7 +97,7 @@ cd ..
 
 ### serf [让svn可以处理http/htps方式的版本库]
 #scons# [http://sourceforge.net/projects/scons/files/scons/]
-tar zxvf scons-2.3.6.tar.gz  && cd scons-2.3.6
+tar zxvf scons-2.4.0.tar.gz  && cd scons-2.4.0
 python setup.py install 
 
 # serf# [https://serf.googlecode.com/files/serf-1.3.3.tar.bz2]
@@ -110,7 +110,7 @@ scons -c
 
 
 #安装subversion
-tar  jxvf subversion-1.8.13.tar.bz2 && cd  subversion-1.8.13
+tar  jxvf subversion-1.9.2.tar.bz2 && cd  subversion-1.9.2
 ./configure --prefix=${APP_DIR}subversion --with-apxs=${APP_DIR}apache-2.4.12/bin/apxs --with-apr=${APP_DIR}apr --with-apr-util=${APP_DIR}apr-util/ --with-sqlite=${APP_DIR}sqlite/ --with-serf=/Data/app/serf --with-sasl=/usr/lib64/sasl2
 make && make install
 #在安装目录下生成svn-tools目录，里边有一些扩展工具，比如svnauthz-validate

@@ -1,0 +1,47 @@
+# jdk & zk
+tar zxvf jdk-7u80-linux-x64.gz -C /Data/app/
+tar zxvf zookeeper-3.3.2.tar.gz -C /Data/app/
+
+echo >> /etc/profile << EOF
+# for zookeeper
+JAVA_HOME=/Data/app/jdk1.7.0_80
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/jre/lib
+ZOOKEEPER_HOME=/Data/app/zookeeper-3.4.6
+PATH=$PATH:$JAVA_HOME/bin:$ZOOKEEPER_HOME/bin
+export JAVA_HOME CLASSPATH ZOOKEEPER_HOME PATH
+EOF
+
+source /etc/profile
+
+cd /Data/app/zookeeper-3.4.6/conf
+cp zoo_sample.cfg zoo.cfg
+
+echo > zoo.cfg <<EOF
+tickTime=2000
+initLimit=10
+syncLimit=5
+dataDir=/Data/zookeeper
+clientPort=2181
+#maxClientCnxns=60
+#autopurge.snapRetainCount=3
+#autopurge.purgeInterval=1
+server.1=zookeeper-node1:2888:3888
+server.2=zookeeper-node2:2888:3888
+EOF
+
+mkdir /Data/zookeeper
+
+echo > /etc/hosts <<EOF
+10.172.190.124 zookeeper-node1
+10.170.186.91  zookeeper-node2
+EOF
+
+# start zk
+zkServer.sh start
+
+#status
+zkServer.sh status
+#lokks like this
+#JMX enabled by default
+#Using config: /Data/app/zookeeper-3.4.6/bin/../conf/zoo.cfg
+#Mode: follower(leader)
