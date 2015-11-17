@@ -74,3 +74,6 @@ EOF
 
 #codis-proxy start
 ./bin/codis-proxy -L /Data/logs/codis/codis-proxy.log --log-level=error --cpu=2 --addr=:9000 --http-addr=:9001  > /dev/null &
+
+#启动的codis-proxy默认为offline状态，通过以下命令使其online
+./bin/codis-config proxy online proxy_1

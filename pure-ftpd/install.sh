@@ -1,6 +1,6 @@
 #update openssl
 yum install zlib-devel -y
-tar zxvf openssl-1.0.1j.tar.gz && cd openssl-1.0.1j && ./config shared zlib && make && make install
+tar zxvf openssl-1.0.2d.tar.gz && cd openssl-1.0.2d && ./config shared zlib && make && make install
 #mv /usr/bin/openssl /usr/bin/openssl.OFF
 #mv /usr/include/openssl /usr/include/openssl.OFF
 ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
