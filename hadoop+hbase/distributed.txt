@@ -1,0 +1,199 @@
+# CentOS 7 + hadoop-2.6.0 + hbase-1.0.1.0
+# 服务器数量4，主机名分别为K-master K-slave1 K-slave2 K-slave3
+
+# on all servers
+useradd hadoop
+
+#配置服务器之间的SSH无密码登录(hadoop用户)，包含K-master本机无密码登录、K-master无密码登录K-slave1~K-slave3、K-slave1~K-slave3无密码登录K-master
+
+
+
+
+
+############# INSTALL HADOOP ON K-master ##################
+tar zxvf hadoop-2.6.0.tar.gz -C /Data/app && cd /Data/app && mkdir hadoop/tmp && mkdir -p hadoop/hdfs/{name,data} && chown -R hadoop:hadoop hadoop-2.6.0 && ln -s hadoop-2.6.0 ./hadoop
+
+echo >> /etc/profile <<EOF
+#JAVA
+export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JRE_HOME=$JAVA_HOME/jre
+export CLASSPATH=.:$CLASSPATH:$JAVA_HOME/lib:$JRE_HOME/lib
+export PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin
+#HADOOP
+export HADOOP_HOME=/Data/app/hadoop
+export PATH=$PATH:$HADOOP_HOME/bin
+export HADOOP_HOME_WARN_SUPPRESS=1
+#HBASE
+export  PATH=$PATH:/Data/app/hbase/bin
+EOF
+
+
+
+cd /Data/app/hadoop/etc/hadoop
+
+## hadoop-env.sh ##
+export JAVA_HOME=/Data/app/jdk1.7.0_80
+export HADOOP_IDENT_STRING=$USER
+export HADOOP_PREFIX=/Data/app/hadoop
+export HADOOP_SSH_OPTS="-p 5122"
+
+
+## core-site.xml ##
+<configuration>
+<property>
+        <name>fs.default.name</name>
+        <value>hdfs://K-master:9000</value>
+    </property>
+     <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/Data/app/hadoop/tmp</value>
+    </property>
+</configuration>
+
+
+## hdfs-site.xml ##
+<configuration>
+ <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+    </property>
+    <property>
+        <name>dfs.name.dir</name>
+        <value>/Data/app/hadoop/hdfs/name</value>
+    </property>
+    <property>
+        <name>dfs.data.dir</name>
+        <value>/Data/app/hadoop/hdfs/data</value>
+    </property>
+</configuration>
+
+
+## mapred-env.sh ##
+export JAVA_HOME=/Data/app/jdk1.7.0_80
+
+
+## mapred-site.xml ##
+<configuration>
+        <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+        <description>Execution framework set to Hadoop YARN.</description>
+        </property>
+</configuration>
+
+
+## yarn-site.xml ##
+<configuration>
+        <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>K-master</value>
+        </property>
+        <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+        </property>
+</configuration>
+
+## masters ##
+K-master
+
+
+## slaves ##
+K-slave1
+K-slave2
+K-slave3
+
+# INSTALL HADOOP ON K-slave1~K-slave3
+#过程、所有配置均与K-master完全相同，唯一不同的是K-slave上slaves文件为空，或可直接删除slaves文件
+
+
+# STAAR HADOOP (ON K-master)
+
+#格式化hdfs
+hdfs namenode -format
+
+#启动hadoop
+start-dfs.sh
+
+#启动分布式计算
+start-yarn.sh
+
+
+# 查看进程
+jps
+
+K-master上为NameNode、SecondaryNameNode、ResourceManager，其他三台为DataNode、NodeManager
+
+
+
+
+
+
+
+
+######### INSTALL HBASE ON K-master ################
+
+tar zxvf hbase-1.0.1.1-bin.tar.gz -C /Data/app && cd /Data/app && chown -R hadoop:hadoop hbase-1.0.1.1 && ln -s hbase-1.0.1.1 ./hbase
+
+cd hbase/conf
+
+## hbase-env.sh ##
+
+export HBASE_CLASSPATH=/Data/app/hadoop/etc/hadoop
+export HBASE_MANAGES_ZK=true
+export HBASE_HOME=/Data/app/hbase
+export HADOOP_HOME=/Data/app/hadoop
+export HBASE_LOG_DIR=/Data/app/hbase/logs    #Hbase日志目录
+export HBASE_SSH_OPTS="-p 5122
+
+
+## hbase-site.xml ##
+
+<configuration>
+   <property>
+       <name>hbase.rootdir</name>
+       <value>hdfs://K-master:9000/hbase</value>
+   </property>
+   <property>
+       <name>hbase.cluster.distributed</name>
+       <value>true</value>
+   </property>
+   <!-- 若不指定hbase.master.port，在启动backup-master的时候会报addressAlready in use的错误-->
+   <property>
+      <name>hbase.master.port</name>
+      <value>16000</value>
+   </property>
+    <property>
+        <name>hbase.master</name>
+        <value>K-master:60000</value>
+    </property>
+   <!--hbase.zookeeper.quorum的个数为奇数 -->
+   <property>
+       <name>hbase.zookeeper.quorum</name>
+       <value>K-slave1,K-slave2,K-slave3</value>
+   </property>
+</configuration>
+
+
+##  backup-masters ##
+
+K-slave1
+
+
+# INSTALL HBASE ON K-slave1~K-slave3
+# 过程、所有配置均与K-master完全相同，唯一不同的是K-slave上没有backup-masters文件
+# 另外，如果K-slave1作为backup-master，那么要保证K-slave1可以无密码ssh到其他任何一台机器，其他所有机器也都可以无密码ssh到K-slave1(道理同K-master)
+
+
+# START
+# 在K-master上
+start-hbase.sh
+
+
+#查看进程
+
+jps
+
+K-master上为HMaster,  K-slave1上为HMaster、HRegionServer、HQuorumPeer, K-slave2和K-slave3上为HRegionServer、HQuorumPeer
+
+
