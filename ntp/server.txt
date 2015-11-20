@@ -1,0 +1,47 @@
+#校正时区
+#校正服务器时间(系统时钟)
+ntpdate 1.cn.pool.ntp.org
+#校正硬件时间(硬件时钟)
+hwclock --systohc
+####
+# cn.pool.ntp.org
+# 0.cn.pool.ntp.org
+# 1.cn.pool.ntp.org
+# 2.cn.pool.ntp.org
+# 3.cn.pool.ntp.org
+# tw.pool.ntp.org
+# 0.tw.pool.ntp.org
+# 1.tw.pool.ntp.org
+# 2.tw.pool.ntp.org
+# 3.tw.pool.ntp.org
+####
+
+
+
+
+
+
+
+###############################################ntp.conf###################################################
+
+server 210.72.145.44 #中国国家授时中心
+server 0.cn.pool.ntp.org
+server 1.cn.pool.ntp.org
+fudge 127.127.1.0 stratum 2
+#stratum
+这行是时间服务器的层次。设为0则为顶级，如果要向别的NTP服务器更新时间，请不要把它设为0.如果是LINUX做为NTP服务器，stratum(层级)的值不能太大，如果要向上级NTP更新可以设成2
+
+driftfile /var/lib/ntp/ntp.drift
+#我们每一个systemclock的频率都有小小的误差,这个就是为什么机器运行一段时间后会不精确.
+#NTP会自动来监测我们时钟的误差值并予以调整.但问题是这是一个冗长的过程,所以它会把记录下来的误差先写入driftfile.这样即使你重新开机以后之前的计算结果也就不会丢失了
+
+restrict default ignore
+restrict 127.0.0.1
+restrict 192.168.1.0 mask 255.255.255.0 nomodify
+#以上为权限设置，首先默认拒绝所有客户端的所有操作，然后允许本机所有操作，最后允许指定网段的机器同步时间，但不允许修改服务器上的时间
+
+#############################################################################################################
+
+
+####START SERVICE####
+systemctl start ntpd
