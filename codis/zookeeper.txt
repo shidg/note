@@ -1,6 +1,6 @@
 # jdk & zk
 tar zxvf jdk-7u80-linux-x64.gz -C /Data/app/
-tar zxvf zookeeper-3.3.2.tar.gz -C /Data/app/
+tar zxvf zookeeper-3.4.6.tar.gz -C /Data/app/
 
 echo >> /etc/profile << EOF
 # for zookeeper
@@ -30,6 +30,8 @@ server.2=zookeeper-node2:2888:3888
 EOF
 
 mkdir /Data/zookeeper
+
+echo 1 > /Data/zookeeper/myid  ##各节点上的myid文件中的值不同##
 
 echo > /etc/hosts <<EOF
 10.172.190.124 zookeeper-node1
