@@ -1,0 +1,8 @@
+#LoadModule
+LoadModule rewrite_module modules/mod_rewrite.so
+
+# AllowOverride
+AllowOverride All
+
+# rewrite_file
+.htaccess
