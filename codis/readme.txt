@@ -46,6 +46,10 @@ coordinator=zookeeper
 zk=10.170.186.91:2181,10.172.190.124:2181
 product=feezu_1
 dashboard_addr=localhost:18087
+
+#连接后端codis-server是否需要密码,若开启此项，则后端codis-server要以相同密码启动(requirepass  xxxx)
+password=xxxxxxxxxx
+
 backend_ping_period=5
 session_max_timeout=1800
 session_max_bufsize=131072

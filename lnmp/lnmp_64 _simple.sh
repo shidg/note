@@ -153,7 +153,7 @@ cd ..
 echo "install nginx"
 dots &
 exec 1>&2
-tar jxvf pcre-8.37.tar.bz2 && tar zxvf openssl-1.0.2d.tar.gz && tar zxvf nginx-1.8.0.tar.gz && cd nginx-1.8.0 && ./configure --prefix=${app_dir}nginx-1.8.0  --with-pcre=../pcre-8.37 --with-openssl=../openssl-1.0.2d --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module && make && make install
+tar jxvf pcre-8.37.tar.bz2 && tar zxvf openssl-1.0.2d.tar.gz && tar zxvf nginx-1.8.0.tar.gz && cd nginx-1.8.0 && ./configure --prefix=${app_dir}nginx-1.8.0  --with-pcre=../pcre-8.37 --with-openssl=../openssl-1.0.2d --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../nginx-sticky-module-1.1 && make && make install
 
 exec 1>&6 6>&-
 exec 2>&7 7>&-
