@@ -3,7 +3,7 @@ find ./ -path './awstats*' -a -prune -o -name "*log*"  -print
 
 
 #排除两个目录
-find ./ \( -path './dir0*' -o -path './dir1*' \) -a prune -o -name *.txt -print
+find ./ \( -path './dir0*' -o -path './dir1*' \) -a -prune -o -name *.txt -print
 
 
 -a 的优先级高于-o,这里使用小括号修改了默认优先级
