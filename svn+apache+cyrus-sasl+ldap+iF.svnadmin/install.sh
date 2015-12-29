@@ -100,8 +100,8 @@ cd ..
 tar zxvf scons-2.4.0.tar.gz  && cd scons-2.4.0
 python setup.py install 
 
-# serf# [https://serf.googlecode.com/files/serf-1.3.3.tar.bz2]
-tar jxvf serf-1.3.3.tar.bz2 && cd serf-1.3.3
+# serf# [https://serf.apache.org/download]
+tar jxvf serf-1.3.8.tar.bz2 && cd serf-1.3.8
 scons PREFIX=/Data/app/serf APR=/Data/app/apr APU=/Data/app/apr-util/
 scons install
 scons -c

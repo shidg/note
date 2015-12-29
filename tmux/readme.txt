@@ -3,7 +3,7 @@ wget http://sourceforge.net/projects/tmux/files/tmux/tmux-1.9/tmux-1.9a.tar.gz
 
 
 ##git获取较新版本##
-git clone git://git.code.sf.net/p/tmux/tmux-code tmux
+git clone https://github.com/tmux/tmux.git tmux
 cd tmux
 sh autogen.sh
 #若执行autogen.sh的时候提示"aclocal: command not found"则yum install libtool即可。
