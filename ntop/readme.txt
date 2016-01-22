@@ -25,8 +25,15 @@ yum install -y libtool automake autoconf svn gdbm-devel zlib-devel rrdtool-devel
 python版本大于2.6
 
 #安装GeoIP
-rpm -ivh ftp://rpmfind.net/linux/epel/6/i386/GeoIP-1.4.8-1.el6.i686.rpm
-rpm -ivh ftp://rpmfind.net/linux/epel/6/i386/GeoIP-devel-1.4.8-1.el6.i686.rpm
+yum install geoip geoip-devel -y
+#wget ftp://rpmfind.net/linux/epel/6/x86_64/geoipupdate-2.2.1-2.el6.x86_64.rpm
+#wget ftp://rpmfind.net/linux/centos/5.11/extras/x86_64/RPMS/GeoIP-data-20090201-1.el5.centos.x86_64.rpm
+#wget ftp://rpmfind.net/linux/epel/6/x86_64/GeoIP-1.6.5-1.el6.x86_64.rpm
+#wget ftp://rpmfind.net/linux/epel/6/x86_64/GeoIP-devel-1.6.5-1.el6.x86_64.rpm
+#rpm -ivh GeoIP-* geoipupdate-2.2.1-2.el6.x86_64.rpm
+#wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
+
+
 
 tar zxvf ntop-5.0.1.tar.gz && cd ntop-5.0.1
 
