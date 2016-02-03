@@ -9,7 +9,7 @@ sh autogen.sh
 #若执行autogen.sh的时候提示"aclocal: command not found"则yum install libtool即可。
 
 #安装依赖,libevent和ncurses
-tar zxvf libevent-2.0.21-stable.tar.gz && cd libevent-2.0.21-stable && ./configure --prefix=/usr && make && make install
+tar zxvf libevent-2.0.22-stable.tar.gz && cd libevent-2.0.22-stable && ./configure --prefix=/usr && make && make install
 ldconfig
 
 yum install ncurses-devel -y

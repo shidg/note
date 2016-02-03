@@ -19,14 +19,14 @@ make && make install
 cd ..
 
 #°²×°pcre
-tar jxvf pcre-8.37.tar.bz2 && cd pcre-8.37
+tar jxvf pcre-8.38.tar.bz2 && cd pcre-8.37
 ./configure --prefix=${APP_DIR}pcre
 make && make install
 cd ..
 
 #Éý¼¶openssl
-tar zxvf openssl-1.0.2d.tar.gz
-cd openssl-1.0.2d
+tar zxvf openssl-1.0.2f.tar.gz
+cd openssl-1.0.2f
 ./config shared zlib
 make && make install
 mv /usr/bin/openssl /usr/bin/openssl.OFF
