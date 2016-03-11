@@ -94,6 +94,8 @@ expire-logs-days = 7
 binlog_cache_size = 4M
 #max_binlog_cache_size 512M~1G
 max_binlog_cache_size = 512M
+#允许创建函数
+log-bin-trust-function-creators=1
 #binlog-do-db = happigo_mall
 #binlog-ignore-db = mysql
 #binlog-ignore-db = information_schema
