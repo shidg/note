@@ -3,7 +3,7 @@
 
 #php Required
 #php>=5.3.0 gd>=2.0 libxml2>=2.6.15
-#HP option memory_limit	128M
+#PHP option memory_limit	128M
 #PHP option post_max_size	16M
 #PHP option upload_max_filesize	2M
 #PHP option max_execution_time	300	
