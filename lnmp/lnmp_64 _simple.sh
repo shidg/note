@@ -150,10 +150,13 @@ success
 #cd ..
 
 cd ..
+
+#add sticky module
+#https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/
 echo "install nginx"
 dots &
 exec 1>&2
-tar jxvf pcre-8.37.tar.bz2 && tar zxvf openssl-1.0.2d.tar.gz && tar zxvf nginx-1.8.0.tar.gz && cd nginx-1.8.0 && ./configure --prefix=${app_dir}nginx-1.8.0  --with-pcre=../pcre-8.37 --with-openssl=../openssl-1.0.2d --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../nginx-sticky-module-1.1 && make && make install
+tar jxvf pcre-8.38.tar.bz2 && tar zxvf openssl-1.0.2g.tar.gz && tar zxvf nginx-1.8.1.tar.gz && cd nginx-1.8.1 && ./configure --prefix=${app_dir}nginx-1.8.1  --with-pcre=../pcre-8.38 --with-openssl=../openssl-1.0.2g --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../nginx-sticky-module-ng && make && make install
 
 exec 1>&6 6>&-
 exec 2>&7 7>&-
