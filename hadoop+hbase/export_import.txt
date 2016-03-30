@@ -1,0 +1,14 @@
+#老HBASE数据导出
+hbase org.apache.hadoop.hbase.mapreduce.Driver export "gps" /Data/backup/gps
+
+#新HBASE数据导入
+步骤一：
+老HBASE导出的数据同步到新HBASE(集群的话同步到MASTER就可以了)
+假设仍然放在/Data/backup/gps目录
+
+步骤二：
+hadoop fs -put /Data/backup/gps/ /hbase/old_gps_demo_1
+#其中old_gps_demo_1是HADOOP中已经存在的目录，可以使用hadoop fs -ls /  查看到
+
+步骤三：
+hbase org.apache.hadoop.hbase.mapreduce.Driver import gps /hbase/old_gps_demo_1/gps/
