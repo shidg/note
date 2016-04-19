@@ -16,7 +16,7 @@ TOMCAT_HOME=/Data/app/tomcat
 #}
 
 #报警邮件的收件人列表
-MAIL_LIST=94586572@qq.com,332819226@qq.com
+MAIL_LIST=94586572@qq.com,315159578@qq.com
 
 START_TIME=`date "+%Y%m%d-%T"`
 
@@ -39,36 +39,24 @@ for i in `ls ${WAR_SRC_DIR}`
     done
 
 
-#项目配置文件修改
+#修改银联回调地址
+PAY_FILE1=${WAR_DST_DIR}/${SVN_VERSION}/orders/WEB-INF/classes/acp_sdk.properties
+PAY_FILE2=${WAR_DST_DIR}/${SVN_VERSION}/orders/WEB-INF/classes/refund.properties
+PAY_FILE3=${WAR_DST_DIR}/${SVN_VERSION}/report/WEB-INF/classes/acp_sdk.properties
+sed -i 's/111.202.44.157/demo.feezu.cn/' ${PAY_FILE1}
+sed -i 's/111.202.44.157/demo.feezu.cn/' ${PAY_FILE2}
+sed -i 's/111.202.44.157/demo.feezu.cn/' ${PAY_FILE3}
+
+#ZK_FOR_DUBBO
+sed -i '/dubbo:registry/ s/127.0.0.1/10.171.51.137/' ${WAR_DST_DIR}/${SVN_VERSION}/manage/WEB-INF/classes/applicationContext-dubbo-consumer.xml
+
+# server_id
 FILE_PATH=WEB-INF/classes
-FTP_FILE=ftpconfig.properties
-PAY_FILE1=acp_sdk.properties
-PAY_FILE2=refund.properties
-MSG_FILE=msgConfig.properties
-HBASE_FILE=hbase-site.xml
-
-
-# ftp 
-for D in metadata manage app orders
+SERVER_FILE=serverconfig.properties
+for D in analysis metadata orders report
 do
-	sed -i '/img.ftp.host/ s/image.feezu.cn/10.170.168.131/' ${WAR_DST_DIR}/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE} 	
-	sed -i '/img.http.host/ s/image.feezu.cn/123.56.86.208/' ${WAR_DST_DIR}/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE} 	
+        sed -i '/serverId/ s/serverId=.*/serverId=${D}_demo_1/' ${WAR_DST_DIR}/${SVN_VERSION}/${D}/${FILE_PATH}/${SERVER_FILE}
 done
-	sed -i '/device.host/ s/111.202.44.157/123.56.86.208/' ${WAR_DST_DIR}/${SVN_VERSION}/metadata/${FILE_PATH}/${FTP_FILE} 	
-
-# mq
-for D in analysis orders metadata
-do
-	sed -i 's/127.0.0.1/10.165.119.188/' ${WAR_DST_DIR}/${SVN_VERSION}/${D}/${FILE_PATH}/${MSG_FILE} 	
-done
-
-# hbase
-	sed -i 's/hbase.feezu.cn/10.172.169.58/' ${WAR_DST_DIR}/${SVN_VERSION}/analysis/${FILE_PATH}/${HBASE_FILE} 	
-
-# 银联回调
-	sed -i 's/111.202.44.157/final1.feezu.cn/' ${WAR_DST_DIR}/${SVN_VERSION}/orders/${FILE_PATH}/${PAY_FILE1} 	
-	sed -i 's/111.202.44.157/final1.feezu.cn/' ${WAR_DST_DIR}/${SVN_VERSION}/orders/${FILE_PATH}/${PAY_FILE2}
-	sed -i 's/111.202.44.157/final1.feezu.cn/' ${WAR_DST_DIR}/${SVN_VERSION}/report/${FILE_PATH}/${PAY_FILE1} 	
 
 
 #修改目录属主
@@ -78,7 +66,7 @@ chown -R tomcat:tomcat ${WAR_DST_DIR}/${SVN_VERSION}
 ln -s ${WAR_DST_DIR}/app-down ${WAR_DST_DIR}/${SVN_VERSION}/app-down
 ln -s ${WAR_DST_DIR}/download ${WAR_DST_DIR}/${SVN_VERSION}/download
 
-#nagios监控
+#nagios监控相关
 ln -s ${WAR_DST_DIR}/ROOT ${WAR_DST_DIR}/${SVN_VERSION}/ROOT
 
 
@@ -94,7 +82,6 @@ ln -s ${WAR_DST_DIR}/${SVN_VERSION} ${TOMCAT_HOME}/webapps
 TMPFILE=`mktemp /tmp/tmpfile.XXXX`
 if ss -tnl | grep 8080;then
     ps -ef | grep  "jsvc.exec" | grep -v grep | awk '{print $2}'> $TMPFILE
-    cat $TMPFILE
     for TPID in `cat $TMPFILE`
         do
             kill -9 $TPID
@@ -111,7 +98,7 @@ END_TIME=`date "+%Y%m%d-%T"`
 cat > /tmp/tomcatinfo <<EOF
 =================================
 tomcat restart.
-server: dev_server
+server: demo_server_1
 start at:$START_TIME
 finish at :$END_TIME
 EOF
@@ -120,6 +107,6 @@ if [ ! "ss -tnl | grep 8080" ];then
 fi
 
 # log file
-cat /tmp/tomcatinfo >> /Data/logs/wzc/autodeploy.log
+cat /tmp/tomcatinfo >> /Data/logs/deploy/deploy.log
 #delete tmpfile
 rm -f $TMPFILE
