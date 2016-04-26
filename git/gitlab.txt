@@ -1,0 +1,407 @@
+#gitlab-8.8.0 ON CentOS 7
+
+#请给/home分配较大空间
+#关闭SELINUX
+#为服务器设置FQDN
+#vi /etc/sysconfig/network
+#HOSTNAME=git
+
+#vi /etc/hosts
+#192.168.1.1 git.feezu.cn git
+
+hostname -F /etc/hostname
+
+
+
+###BEGIN
+yum update -y
+yum groupinstall 'Development Tools'
+
+##EPEL
+yum install epel-release
+yum repolist
+yum --disablerepo="*" --enablerepo="epel" list available
+##
+
+##Install the required tools for GitLab
+yum -y install readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui sudo wget crontabs logwatch logrotate perl perl-devel perl-Time-HiRes libaio nodejs
+
+
+# INSTALL REDIS
+wget http://download.redis.io/releases/redis-3.0.7.tar.gz
+tar zxf redis-3.0.7.tar.gz && cd redis-3.0.7
+make && make test
+make install
+cd utils
+./install_server.sh
+
+service redis start
+chkconfig --level 3 redis on
+
+### INSTALL GIT
+
+yum remove git
+wget https://www.kernel.org/pub/software/scm/git/git-2.8.1.tar.gz
+tar xvf git-2.8.1.tar.gz && cd git-2.8.1
+./configure --prefix=/usr/local/
+make
+make install
+
+
+#INSTALL RUBY
+yum remove ruby
+wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.0.tar.gz
+tar zxvf ruby-2.3.0.tar.gz && cd ruby-2.3.0
+./configure --disable-install-rdoc
+make
+make prefix=/usr/local install
+
+# INSTALL THE BUNDLER GEM
+gem install bundler --no-doc
+
+
+# USERADD
+useradd --system --shell /bin/bash --comment 'GitLab' --create-home --home-dir /home/git git
+visudo
+Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+
+##INSTALL MYSQL
+	
+rpm -qa | grep mariadb
+rpm -e --nodeps mariadb-*
+
+useradd mysql
+wget http://cdn.mysql.com//Downloads/MySQL-5.6/mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz
+tar zxvf mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz -C /Data/app
+cd /Data/app
+ln -s mysql-5.6.30-linux-glibc2.5-x86_64 ./mysql
+mkdir mysql/log
+chown -R mysql:mysql mysql-5.6.30-linux-glibc2.5-x86_64
+
+## my.cnf
+[client]
+default-character-set=utf8
+port = 3306
+socket = /tmp/mysql.sock
+
+[mysqld]
+user = mysql
+port = 3306
+socket  = /tmp/mysql.sock
+#basedir = /Data/app/mysql
+datadir = /home/mysql/data
+character-set-server = utf8
+collation-server = utf8_general_ci
+skip-external-locking
+explicit_defaults_for_timestamp
+transaction_isolation = READ-COMMITTED
+
+
+interactive_timeout = 120
+wait_timeout = 120
+skip-name-resolve
+slave-skip-errors = 1032,1062,126,1114,1146,1048,1396
+#back_log的值不大于tcp_max_syn_backlog的值(default 50)，否则无效。tcp连接的队列数
+back_log = 500
+max_connections = 60
+max_connect_errors = 100000
+#以下几个参数值约为max_connetions的10倍大小
+open_files_limit    = 6000
+innodb_open_files   = 6000
+table_open_cache    = 6000
+table_definition_cache  = 6000
+#以下几个参数不宜设置过大，它们是每个连接会话都会分配的，过大容易导致OOM发生
+tmp_table_size = 128M
+max_heap_table_size = 256M
+sort_buffer_size = 16M
+join_buffer_size = 16M
+read_buffer_size = 16M
+read_rnd_buffer_size = 8M
+#bulk_insert_buffer_size default 8M
+bulk_insert_buffer_size = 16M
+
+#about innodb
+default-storage-engine = InnoDB
+#innodb_buffer_pool_size 可设置为物理内存的50%-70%
+innodb_buffer_pool_size = 1G
+innodb_use_sys_malloc
+#innodb_data_file_path default 256M，提升为1G，(占用磁盘空间，与内存无关)承受高并发事务
+innodb_data_file_path = ibdata1:256M:autoextend
+#innodb_file_per_table 使用独立表空间，强烈建议开启
+innodb_file_per_table = 1
+#如果使用了file_per_table，以下参数将不影响独立表空间文件
+innodb_autoextend_increment     = 10
+#innodb_file_io_threads 只在windows下可设置，LINUX下只为4
+innodb_file_io_threads = 4
+#innodb_thread_concurrency从5.5开始设置为0
+innodb_thread_concurrency = 0
+#innodb_flush_log_at_trx_commit和sync_binlog，如果要求数据不能丢失则全部设置为1，如果允许少量丢失则分别为2和0，如果不在意数据丢失问题（如从库）则可都设置为0. 0最有利于性能。
+innodb_flush_log_at_trx_commit = 1
+#inodb_flush_method O_DSYNC/O_SYNC,前者直接写入磁盘 
+innodb_flush_method = O_DSYNC
+#log_bugger_size (2~8M,无需太大)
+innodb_log_buffer_size = 3M
+#innodb_log_file_size default 128m
+innodb_log_file_size = 256M
+#innodb_log_files_in_group default 3
+innodb_log_files_in_group = 2
+innodb_max_dirty_pages_pct = 90
+innodb_lock_wait_timeout = 120
+
+#不再使用MyISAM引擎，key_buffer_dize设置32M左右即可,并强烈建议关闭query cache
+key_buffer_size = 32M
+query_cache_type = 0
+
+
+#about binlog
+log-bin = mysql-bin-master
+binlog_format = MIXED
+sync_binlog = 1
+innodb_support_xa = 1
+max_binlog_size = 512M
+expire-logs-days = 7
+#binlog_cache_size default 32K
+binlog_cache_size = 4M
+#max_binlog_cache_size 512M~1G
+max_binlog_cache_size = 512M
+#允许创建函数
+log-bin-trust-function-creators=1
+#binlog-do-db = happigo_mall
+#binlog-ignore-db = mysql
+#binlog-ignore-db = information_schema
+#binlog-ignore-db = performance_schema 
+
+#about error_log
+log-error = /Data/app/mysql/log/mysql_error.log
+
+#about slow log
+slow_query_log = 1
+slow_query_log_file = /Data/app/mysql/log/slow.log
+long_query_time = 1
+log-queries-not-using-indexes = 1
+
+#关于主从同步
+server-id = 1
+#replicate-ignore-db = mysql
+#replicate-ignore-db = test
+#replicate-ignore-db = information_schema
+#relay-log-index = /data/mysql/relaylog/relaylog
+#relay-log-info-file = /data/mysql/relaylog/relaylog
+#relay-log = /data/mysql/relaylog/relaylog
+
+[mysqldump]
+quick
+max_allowed_packet = 16M
+
+mysql>CREATE USER 'git'@'localhost' IDENTIFIED BY '$password';
+mysql>CREATE DATABASE IF NOT EXISTS `gitlabhq_production` DEFAULT CHARACTER SET `utf8` COLLATE `utf8_unicode_ci`;
+mysql>GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON `gitlabhq_production`.* TO 'git'@'localhost';
+
+
+
+## INSTALL GITLAB
+#如无特殊说明，以下操作均以git用户身份操作
+su - git 
+cd /home/git
+git clone https://gitlab.com/gitlab-org/gitlab-ce.git gitlab
+
+cd gitlab
+# 确保GitLab可以写入log/和temp/目录
+# 确保GitLab可以写入tmp/pids/和temp/sockets/目录
+# 确保GitLab可以写入public/uploads/目录
+
+
+#生成并修改配置文件
+cp config/gitlab.yml.example config/gitlab.yml
+# 确保修改“localhost”为你的GitLab主机的FQDN
+host: git.feezu.cn
+https: true
+port: 443
+# 如果你从源代码安装了Git，修改git的bin_path为/usr/local/bin/git
+git:
+    bin_path: /usr/local/bin/git
+#LDAP setting 
+ldap:
+    enabled: true
+    servers:
+    main:
+    label: 'LDAP'
+    host: 10.10.8.8
+    port: 389
+    uid: 'sAMAccountName'
+    method: 'plain'
+    bind_dn: 'gitlab'
+    password: 'gitlab'
+    active_directory: true
+    allow_username_or_email_login: true
+    base: 'DC=feezu,DC=cn'
+
+# Create directory for satellites
+mkdir /home/git/gitlab-satellites
+chmod u+rwx,g+rx,o-rwx /home/git/gitlab-satellites
+
+
+# Copy the example Unicorn config
+# 复制Unicorn的示例配置文件
+cp config/unicorn.rb.example config/unicorn.rb
+
+
+# 复制Rack attack的示例配置文件
+cp config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
+
+
+# 为git用户配置Git全局设定，当通过web修改时有用
+# 修改user.email根据config/gitlab.yml中的设定
+sudo -u git -H git config --global user.name "GitLab"
+sudo -u git -H git config --global user.email "git@feezu.cn"
+sudo -u git -H git config --global core.autocrlf input
+
+
+
+#GITLAB 数据库设置
+cp config/database.yml.mysql config/database.yml
+production:
+  adapter: mysql2
+  encoding: utf8
+  collation: utf8_general_ci
+  reconnect: false
+  database: gitlabhq_production
+  pool: 10
+  username: git
+  password: "git"
+  # host: localhost
+  # socket: /tmp/mysql.sock
+
+
+
+# INSTALL Gems
+vi /home/git/gitlab/Gemfile
+source "http://ruby.taobao.org"
+
+bundle install --deployment --without development test postgres aws
+
+
+
+# INSTALL GitLab Shell
+su - git
+cd /home/git/gitlab
+# 仅限中国大陆用户
+vi /home/git/gitlab/Gemfile
+source "http://ruby.taobao.org" ## 原始 source "https://rubygems.org/"
+
+bundle exec rake gitlab:shell:install[v2.7.2] REDIS_URL=redis://localhost:6379 RAILS_ENV=production
+
+
+#Initialize Database and Activate Advanced Features / 初始化数据库和激活高级功能
+bundle exec rake gitlab:setup RAILS_ENV=production
+
+
+设置管理员密码通
+bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=1qaz2wsx
+
+
+
+Install Init Script / 安装初始化脚本
+su - git
+cp lib/support/init.d/gitlab /etc/init.d/gitlab
+chmod +x /etc/init.d/gitlab
+chkconfig --level 3 gitlab on
+
+# 日志切割
+cp lib/support/logrotate/gitlab /etc/logrotate.d/gitlab
+
+
+#检查应用状态
+bundle exec rake gitlab:env:info RAILS_ENV=production
+
+#编译静态文件
+bundle exec rake assets:precompile RAILS_ENV=production
+
+#INSTALL gitlab-workhorse
+wget https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz
+tar -xvf go1.6.2.linux-amd64.tar.gz -C /usr/local
+ln -sf /usr/local/go/bin/{go,godoc,gofmt} /usr/local/bin/
+
+cd /home/git
+git clone https://gitlab.com/gitlab-org/gitlab-workhorse.git
+cd gitlab-workhorse
+git checkout 0.6.4
+
+
+#服务启动
+su - root
+service gitlab start
+chkconfig --level 3 gitlab on
+
+
+###NGINX 配置
+#
+# nginx.conf
+user www www;
+
+upstream gitlab-workhorse {
+        server unix:/home/git/gitlab/tmp/sockets/gitlab-workhorse.socket fail_timeout=0;
+    }
+#
+#gitlab
+server {
+        listen 80;
+        server_name git.feezu.cn;
+        rewrite ^/(.*) https://git.feezu.cn permanent;
+        access_log off;
+}
+
+#gitlab.https
+server {
+        listen          443;
+        server_name     git.feezu.cn;
+        root /home/git/gitlab/public;
+
+        ### SSL log files ###
+        access_log      logs/ssl-access.log;
+        error_log       logs/ssl-error.log;
+
+        ### SSL cert files ###
+        ssl on;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        ssl_certificate      ssl/feezu.cn_bundle.crt;
+        ssl_certificate_key  ssl/feezu.cn.key;
+
+        ###  Limiting Ciphers ########################
+        keepalive_timeout    60;
+        ssl_protocols  TLSv1 TLSv1.1 TLSv1.2;
+#        修改默认加密方式，禁止RC4加密，应对openssl漏洞
+        ssl_ciphers "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128
+-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CB
+C3-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4";
+        ssl_prefer_server_ciphers   on;
+
+        ##############################################
+
+        access_log off;
+        location / {
+                client_max_body_size 0;
+                gzip off;
+                proxy_read_timeout      300;
+                proxy_connect_timeout   300;
+                proxy_redirect          off;
+                proxy_http_version 1.1;
+                proxy_set_header    Host                $http_host;
+                proxy_set_header    X-Real-IP           $remote_addr;
+                proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
+                proxy_set_header    X-Forwarded-Proto   $scheme;
+                proxy_pass http://gitlab-workhorse;
+        }
+}
+     
+
+# 启动nginx
+usermod -G git www
+
+
+#检验应用状态
+sudo -u git -H bundle exec rake gitlab:check RAILS_ENV=production
+#如果所有项目都通过了，说明安装GitLab配置成功！
+#提示：提供环境变量SANITIZE=true给gitlab:check以忽略检验命令的项目名称输出。
