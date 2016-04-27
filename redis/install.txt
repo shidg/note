@@ -24,6 +24,8 @@ make install 默认安装到/usr/local/bin下
 #将redis安装到指定位置
 make PREFIX=/path  install
 
+sh utils/install_server.sh 
+
 
 # settings
 echo "vm.overcommit_memory=1" >> /etc/sysctl.conf

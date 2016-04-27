@@ -43,8 +43,6 @@ cat >> /etc/security/limits.conf << EOF
 EOF
 # set sysctl
 
-modprobe bridge
-
 cat > /etc/sysctl.conf << EOF
 #不充当路由器
 net.ipv4.ip_forward = 0
@@ -453,8 +451,29 @@ $IPTABLES -P FORWARD DROP
 # save to /etc/sysconfig/iptables
 /usr/libexec/iptables/iptables.init save
 
+#MODULES AUTO LOAD ON BOOT
+# bridge
+cat > /etc/sysconfig/modules/bridge.modules << EOF
+#! /bin/bash
+/sbin/modprobe bridge
+EOF
+
+#nf_conntrack
+cat > /etc/sysconfig/modules/nf_conntrack.modules << EOF
+#! /bin/bash
+/sbin/modprobe nf_conntrack
+EOF
+
+#nf_conntrack_ipv4
+cat > /etc/sysconfig/modules/nf_conntrack_ipv4.modules << EOF
+#! /bin/bash
+/sbin/modprobe nf_conntrack_ipv4
+EOF
+
+chmod +x /etc/sysconfig/modules/*
+
 # reboot system
-echo -n "reboot system right now?[Y/n]"
+echo -e "reboot system right now?[Y/n]"
 read -n 1 answer
 case $answer in
 Y|y) echo 
