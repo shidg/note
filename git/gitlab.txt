@@ -292,6 +292,10 @@ source "http://ruby.taobao.org" ## 原始 source "https://rubygems.org/"
 
 bundle exec rake gitlab:shell:install[v2.7.2] REDIS_URL=redis://localhost:6379 RAILS_ENV=production
 
+# gitlab-shell的配置文件
+# /home/git/gitlab-shell/config.yml
+# gitlab_url: https://git.feezu.cn/  #
+# 如果开启了https，这里必须是https://,否则git clone时会有GitLab: API is not accessible的错误
 
 #Initialize Database and Activate Advanced Features / 初始化数据库和激活高级功能
 bundle exec rake gitlab:setup RAILS_ENV=production
