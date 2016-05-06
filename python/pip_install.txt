@@ -8,8 +8,7 @@ cd distribute-0.7.3
 python setup.py install
 
 #°²×°pip 
-curl -O https://raw.github.com/pypa/pip/master/contrib/get-pip.py
-
+curl -O  https://bootstrap.pypa.io/get-pip.py
 python  get-pip.py
 
 
