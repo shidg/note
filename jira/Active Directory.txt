@@ -1,0 +1,26 @@
+# crowd
+
+#connector#
+URL  ldap://domain-master.feezu.cn:389
+Base DN  dc=feezu,dc=cn
+Username  administrator@feezu.cn
+Password
+
+#Configuration
+Group DN  cn=jira-users
+
+
+
+
+
+# JIRA
+
+Hostname  domain-master.feezu.cn
+Username  administrator@feezu.cn
+
+Base DN   dc=feezu,dc=cn
+
+echo "10.10.8.8 feezu.cn" >> /etc/hosts
+
+
+

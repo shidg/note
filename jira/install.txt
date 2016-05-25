@@ -1,0 +1,92 @@
+#jira 7.1.6 + confluence 5.9.0 + crowd2.9.1 ON CentOS 7
+
+# INSTALL JDK 8
+tar zxvf jdk-8u91-linux-x64.tar.gz -C /Data/app/
+
+# ~/.bashrc
+# for java
+JAVA_HOME=/Data/app/jdk1.8.0_91                                                                                                                                          
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+MYSQL_HOME=/Data/app/mysql
+PATH=$PATH:$JAVA_HOME/bin:$MYSQL_HOME/bin
+export JAVA_HOME CLASSPATH MYSQL_HOME PATH
+
+
+# INSTALL MYSQL 5.6+
+
+
+# INSTALL NGINX 
+#配置好反向代理，在接下来安装jira等产品的时候可以直接定位URL为http://xxx.com形式，避免使用http://192.168.xx.xx:8080形式
+
+# INSTALL JIRA
+./atlassian-jira-software-7.1.6-jira-7.1.6-x64.bin
+#选择自定义安装模式，定义安装目录及数据存储目录,其他默认即可
+cd /Data/app/jira
+./bin/startup.sh
+
+#访问http://ip:8080进行jira配置，选择自定义模式，输入license
+
+#数据库选择MySQL的话，要将mysql-connector-java-5.1.39-bin.jar上传到jira安装目录下的lib目录下，然后重启jira加载该jar包
+
+
+
+#INSTALL CONFLUENCE
+tar zxvf atlassian-confluence-5.9.10.tar.gz -C /Data/app/
+
+cd /Data/app
+
+ln -s atlassian-confluence-5.9.10/ ./confluence
+
+cd confluence/confluence/WEB-INF/classes
+
+vi confluence-init.properties 
+confluence.home=/Data/app/atlassian-confluence-5.9.10
+
+cd /Data/app/confluence
+./bin/startup.sh
+
+http://ip:8090
+#数据库选择MySQL的话，要将mysql-connector-java-5.1.39-bin.jar上传到confluence安装目录下的lib目录下，然后重启confluence加载该jar包
+
+
+
+#INSTALL CROWD
+tar zxvf atlassian-crowd-2.9.1.tar.gz -C /Data/app/
+cd /Data/app
+ln -s atlassian-crowd-2.9.1/ ./crowd
+cd crowd/crowd-webapp/WEB-INF/classes
+vi crowd-init.properties
+crowd.home=/Data/app/atlassian-crowd-2.9.1
+
+
+#数据库选择MySQL的话，要将mysql-connector-java-5.1.39-bin.jar上传到crowd安装目录下的apache-tomcat/lib目录下
+
+#破解
+cd /Data/app/crowd/crowd-webapp/WEB-INF/lib
+
+#备份atlassian-extras-3.2.jar
+cp atlassian-extras-3.2.jar /root
+
+#重命名atlassian-extras-3.2.jar
+mv atlassian-extras-3.2.jar atlassian-extras-2.6.jar
+
+#下载atlassian-extras-2.6.jar到本地
+sz atlassian-extras-2.6.jar
+
+#运行keygen.bat
+#点击.patch!，然后选择atlassian-extras-2.6.jar,提示成功后会生成一个新的atlassian-extras-2.6.jar
+#将新生成的atlassian-extras-2.6.jar重命名为atlassian-extras-3.2.jar,覆盖上传回服务器
+
+#启动crowd
+
+cd /Data/app/crowd
+./start_crowd.sh
+
+#
+http://ip:8095
+
+#获取SERVER ID
+#SERVER ID 粘贴进keygen的Server ID 输入框，修改name email等信息为自己想要的
+#点击.gen!生成license
+
+#继续剩余安装
