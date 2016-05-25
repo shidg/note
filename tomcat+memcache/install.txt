@@ -1,0 +1,38 @@
+asm-3.3.1.jar
+kryo-1.04.jar
+kryo-serializers-0.11.jar
+memcached-session-manager-1.8.3.jar
+memcached-session-manager-tc7-1.8.3.jar
+minlog-1.2.jar
+msm-kryo-serializer-1.8.3.jar
+reflectasm-1.01.jar
+spymemcached-2.12.0.jar
+
+#以上jar包放到tomcat安装目录下的lib目录
+
+#TOMCAT_HOME/conf/context.xml 
+
+<Context>
+    <Manager className="de.javakaffee.web.msm.MemcachedBackupSessionManager"
+    memcachedNodes="n1:10.51.61.186:11211"
+    sticky="false"
+    sessionBackupAsync="false"
+    lockingMode="uriPattern:/path1|/path2"
+    requestUriIgnorePattern=".*\.(ico|png|gif|jpg|css|js)$"
+    transcoderFactoryClass="de.javakaffee.web.msm.serializer.kryo.KryoTranscoderFactory"/>
+
+    <!-- Default set of monitored resources -->
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+
+    <!-- Uncomment this to disable session persistence across Tomcat restarts -->
+    <!--
+    <Manager pathname="" />
+    -->
+
+    <!-- Uncomment this to enable Comet connection tacking (provides events
+         on session expiration as well as webapp lifecycle) -->
+    <!--
+    <Valve className="org.apache.catalina.valves.CometConnectionManagerValve" />
+    -->
+</Context>
+
