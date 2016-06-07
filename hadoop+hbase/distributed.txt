@@ -259,3 +259,22 @@ start-hbase.sh
 jps
 
 K-master上为HMaster,  K-slave1上为HMaster、HRegionServer、HQuorumPeer, K-slave2和K-slave3上为HRegionServer、HQuorumPeer
+
+
+
+#服务启动
+
+# 第一步: 启动hadoop
+# 在K-master上,
+./sbin/start-dfs.sh
+./sbin/start-yarn.sh
+
+#第二步，启动ZK
+#在K-slave1~K-slave3上
+#zkServer.sh start
+#
+#第三步，启动hbase
+#在K-master上
+#./bin/start-hbase.sh
+
+
