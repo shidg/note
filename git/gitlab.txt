@@ -1,16 +1,19 @@
-#gitlab-8.8.0 ON CentOS 7
+#gitlab-8.8.5 ON CentOS 7
 
 #请给/home分配较大空间
 #关闭SELINUX
 #为服务器设置FQDN
-#vi /etc/sysconfig/network
-#HOSTNAME=git
 
 #vi /etc/hosts
-#192.168.1.1 git.feezu.cn git
+192.168.1.1 git.feezu.cn git
+
+#vi /etc/hostname
+git
 
 hostname -F /etc/hostname
 
+#print FQDN
+hostname -f
 
 
 ###BEGIN
@@ -18,47 +21,58 @@ yum update -y
 yum groupinstall 'Development Tools'
 
 ##EPEL
-yum install epel-release
+yum install epel-release -y
 yum repolist
 yum --disablerepo="*" --enablerepo="epel" list available
 ##
 
 ##Install the required tools for GitLab
-yum -y install readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui sudo wget crontabs logwatch logrotate perl perl-devel perl-Time-HiRes libaio nodejs
+yum -y install readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-devel openssl-devel curl-devel expat-devel db4-devel byacc sqlite-devel libyaml libyaml-devel libffi libffi-devel libxml2 libxml2-devel libxslt libxslt-devel libicu libicu-devel system-config-firewall-tui sudo wget crontabs logwatch logrotate perl perl-devel perl-Time-HiRes libaio nodejs cmake
 
 
 # INSTALL REDIS
-wget http://download.redis.io/releases/redis-3.0.7.tar.gz
-tar zxf redis-3.0.7.tar.gz && cd redis-3.0.7
+wget http://download.redis.io/releases/redis-2.8.4.tar.gz
+tar zxf redis-2.8.4.tar.gz && cd redis-2.8.4
 make && make test
 make install
 cd utils
 ./install_server.sh
 
-service redis start
-chkconfig --level 3 redis on
+echo 'unixsocket /var/run/redis/redis.sock' | sudo tee -a /etc/redis/6379.conf
+
+# Grant permission to the socket to all members of the redis group
+echo 'unixsocketperm 770' | sudo tee -a /etc/redis/6379.conf
+
+# Create the directory which contains the socket
+mkdir /var/run/redis
+chmod 755 /var/run/redis
+
+service redis_6379 start
+chkconfig --level 3 redis_6379 on
 
 ### INSTALL GIT
 
 yum remove git
-wget https://www.kernel.org/pub/software/scm/git/git-2.8.1.tar.gz
-tar xvf git-2.8.1.tar.gz && cd git-2.8.1
-./configure --prefix=/usr/local/
+yum install zlib-devel perl-CPAN gettext curl-devel expat-devel gettext-devel openssl-devel
+wget https://www.kernel.org/pub/software/scm/git/git-2.9.0.tar.gz
+tar xvf git-2.9.0.tar.gz && cd git-2.9.0
+./configure 
 make
-make install
+make prefix=/usr/local install
 
 
 #INSTALL RUBY
 yum remove ruby
-wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.0.tar.gz
-tar zxvf ruby-2.3.0.tar.gz && cd ruby-2.3.0
+tar zxvf ruby-2.1.9.tar.gz && cd ruby-2.1.9
 ./configure --disable-install-rdoc
 make
 make prefix=/usr/local install
 
 # INSTALL THE BUNDLER GEM
-gem install bundler --no-doc
+gem source --remove https://rubygems.org/
+gem source -a https://ruby.taobao.org/   
 
+gem install bundler --no-doc
 
 # USERADD
 useradd --system --shell /bin/bash --comment 'GitLab' --create-home --home-dir /home/git git
@@ -69,7 +83,8 @@ Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 ##INSTALL MYSQL
 	
 rpm -qa | grep mariadb
-rpm -e --nodeps mariadb-*
+rpm -e --nodeps mariadb-xxx
+
 
 useradd mysql
 wget http://cdn.mysql.com//Downloads/MySQL-5.6/mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz
@@ -89,8 +104,9 @@ socket = /tmp/mysql.sock
 user = mysql
 port = 3306
 socket  = /tmp/mysql.sock
-#basedir = /Data/app/mysql
+basedir = /usr/local/mysql
 datadir = /home/mysql/data
+pid-file = /usr/local/mysql/mysql.pid
 character-set-server = utf8
 collation-server = utf8_general_ci
 skip-external-locking
@@ -173,13 +189,13 @@ log-bin-trust-function-creators=1
 #binlog-ignore-db = performance_schema 
 
 #about error_log
-log-error = /Data/app/mysql/log/mysql_error.log
+log-error = /usr/local/mysql/log/mysql_error.log
 
 #about slow log
-slow_query_log = 1
-slow_query_log_file = /Data/app/mysql/log/slow.log
-long_query_time = 1
-log-queries-not-using-indexes = 1
+#slow_query_log = 1
+#slow_query_log_file = /usr/local/mysql/log/slow.log
+#long_query_time = 1
+#log-queries-not-using-indexes = 1
 
 #关于主从同步
 server-id = 1
@@ -194,6 +210,20 @@ server-id = 1
 quick
 max_allowed_packet = 16M
 
+echo "/usr/local/mysql/lib" >> /etc/ld.so.conf
+ldconfig
+
+mysql>CREATE USER 'git'@'localhost' IDENTIFIED BY '$password';
+mysql>CREATE DATABASE IF NOT EXISTS `gitlabhq_production` DEFAULT CHARACTER SET `utf8` COLLATE `utf8_unicode_ci`;
+mysql>GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON `gitlabhq_production`.* TO 'git'@'localhost';
+
+
+service mysql start
+
+mysql_secure_installation
+
+
+
 mysql>CREATE USER 'git'@'localhost' IDENTIFIED BY '$password';
 mysql>CREATE DATABASE IF NOT EXISTS `gitlabhq_production` DEFAULT CHARACTER SET `utf8` COLLATE `utf8_unicode_ci`;
 mysql>GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON `gitlabhq_production`.* TO 'git'@'localhost';
@@ -204,17 +234,16 @@ mysql>GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, AL
 #如无特殊说明，以下操作均以git用户身份操作
 su - git 
 cd /home/git
-git clone https://gitlab.com/gitlab-org/gitlab-ce.git gitlab
+git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 8-9-stable gitlab
 
 cd gitlab
-# 确保GitLab可以写入log/和temp/目录
-# 确保GitLab可以写入tmp/pids/和temp/sockets/目录
-# 确保GitLab可以写入public/uploads/目录
 
 
 #生成并修改配置文件
 cp config/gitlab.yml.example config/gitlab.yml
 # 确保修改“localhost”为你的GitLab主机的FQDN
+
+
 host: git.feezu.cn
 https: true
 port: 443
@@ -237,14 +266,33 @@ ldap:
     allow_username_or_email_login: true
     base: 'DC=feezu,DC=cn'
 
-# Create directory for satellites
-mkdir /home/git/gitlab-satellites
-chmod u+rwx,g+rx,o-rwx /home/git/gitlab-satellites
+cp config/secrets.yml.example config/secrets.yml
+chmod 0600 config/secrets.yml
 
+
+sudo chown -R git log/
+sudo chown -R git tmp/
+sudo chmod -R u+rwX,go-w log/
+sudo chmod -R u+rwX tmp/
+
+sudo chmod -R u+rwX tmp/pids/
+sudo chmod -R u+rwX tmp/sockets/
+
+# Create the public/uploads/ directory
+mkdir public/uploads/
+
+# Make sure only the GitLab user has access to the public/uploads/ directory
+# now that files in public/uploads are served by gitlab-workhorse
+chmod 0700 public/uploads
+
+chmod -R u+rwX builds/
+
+# Change the permissions of the directory where CI artifacts are stored
+chmod -R u+rwX shared/artifacts/
 
 # Copy the example Unicorn config
-# 复制Unicorn的示例配置文件
-cp config/unicorn.rb.example config/unicorn.rb
+sudo -u git -H cp config/unicorn.rb.example config/unicorn.rb
+
 
 
 # 复制Rack attack的示例配置文件
@@ -253,11 +301,18 @@ cp config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
 
 # 为git用户配置Git全局设定，当通过web修改时有用
 # 修改user.email根据config/gitlab.yml中的设定
-sudo -u git -H git config --global user.name "GitLab"
-sudo -u git -H git config --global user.email "git@feezu.cn"
+# Configure Git global settings for git user
+# 'autocrlf' is needed for the web editor
 sudo -u git -H git config --global core.autocrlf input
 
+# Disable 'git gc --auto' because GitLab already runs 'git gc' when needed
+sudo -u git -H git config --global gc.auto 0
 
+sudo -u git -H git config --global user.name "GitLab"
+sudo -u git -H git config --global user.email "git@feezu.cn"
+
+
+cp config/resque.yml.example config/resque.yml
 
 #GITLAB 数据库设置
 cp config/database.yml.mysql config/database.yml
@@ -273,13 +328,14 @@ production:
   # host: localhost
   # socket: /tmp/mysql.sock
 
+chmod o-rwx config/database.yml
 
 
 # INSTALL Gems
 vi /home/git/gitlab/Gemfile
 source "http://ruby.taobao.org"
 
-bundle install --deployment --without development test postgres aws
+bundle install --deployment --without development test postgres aws kerberos
 
 
 
@@ -290,7 +346,10 @@ cd /home/git/gitlab
 vi /home/git/gitlab/Gemfile
 source "http://ruby.taobao.org" ## 原始 source "https://rubygems.org/"
 
-bundle exec rake gitlab:shell:install[v2.7.2] REDIS_URL=redis://localhost:6379 RAILS_ENV=production
+setfacl -R -m u:git:rwx /var/run/redis
+
+# cat /home/git/gitlab/GITLAB_SHELL_VERSION
+bundle exec rake gitlab:shell:install[v3.0.0] REDIS_URL=unix:/var/run/redis/redis.sock RAILS_ENV=production
 
 # gitlab-shell的配置文件
 # /home/git/gitlab-shell/config.yml
@@ -302,12 +361,12 @@ bundle exec rake gitlab:setup RAILS_ENV=production
 
 
 设置管理员密码通
-bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=1qaz2wsx
+bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=1234qwer GITLAB_ROOT_EMAIL=git@feezu.cn
 
 
 
 Install Init Script / 安装初始化脚本
-su - git
+# as root
 cp lib/support/init.d/gitlab /etc/init.d/gitlab
 chmod +x /etc/init.d/gitlab
 chkconfig --level 3 gitlab on
@@ -316,6 +375,7 @@ chkconfig --level 3 gitlab on
 cp lib/support/logrotate/gitlab /etc/logrotate.d/gitlab
 
 
+su - git
 #检查应用状态
 bundle exec rake gitlab:env:info RAILS_ENV=production
 
@@ -330,7 +390,8 @@ ln -sf /usr/local/go/bin/{go,godoc,gofmt} /usr/local/bin/
 cd /home/git
 git clone https://gitlab.com/gitlab-org/gitlab-workhorse.git
 cd gitlab-workhorse
-git checkout 0.6.4
+git checkout v0.7.5
+make
 
 
 #服务启动
@@ -342,7 +403,7 @@ chkconfig --level 3 gitlab on
 ###NGINX 配置
 #
 # nginx.conf
-user www www;
+user git git;
 
 upstream gitlab-workhorse {
         server unix:/home/git/gitlab/tmp/sockets/gitlab-workhorse.socket fail_timeout=0;
@@ -403,9 +464,67 @@ C3-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SH
 
 # 启动nginx
 usermod -G git www
+chmod 770 /home/git
 
 
 #检验应用状态
 sudo -u git -H bundle exec rake gitlab:check RAILS_ENV=production
 #如果所有项目都通过了，说明安装GitLab配置成功！
 #提示：提供环境变量SANITIZE=true给gitlab:check以忽略检验命令的项目名称输出。
+#
+
+# UPDATE
+1. Stop server
+
+sudo service gitlab stop
+2. Get latest code for the stable branch
+
+In the commands below, replace LATEST_TAG with the latest GitLab tag you want to update to, for example v8.0.3. Use git tag -l 'v*.[0-9]' --sort='v:refname' to see a list of all tags. Make sure to update patch versions only (check your current version with cat VERSION).
+cd /home/git/gitlab
+sudo -u git -H git fetch --all
+sudo -u git -H git checkout -- Gemfile.lock db/schema.rb
+sudo -u git -H git add .
+sudo -u git -H git commit
+sudo -u git -H git checkout LATEST_TAG -b LATEST_TAG
+3. Update gitlab-shell to the corresponding version
+
+cd /home/git/gitlab-shell
+sudo -u git -H git fetch
+sudo -u git -H git checkout v`cat /home/git/gitlab/GITLAB_SHELL_VERSION` -b v`cat /home/git/gitlab/GITLAB_SHELL_VERSION`
+4. Update gitlab-workhorse to the corresponding version
+
+cd /home/git/gitlab-workhorse
+sudo -u git -H git fetch
+sudo -u git -H git checkout v`cat /home/git/gitlab/GITLAB_WORKHORSE_VERSION` -b v`cat /home/git/gitlab/GITLAB_WORKHORSE_VERSION`
+sudo -u git -H make
+
+ Install libs, migrations, etc.
+
+cd /home/git/gitlab
+
+# PostgreSQL
+sudo -u git -H bundle install --without development test mysql --deployment
+
+# MySQL
+sudo -u git -H bundle install --without development test postgres --deployment
+
+# Optional: clean up old gems
+sudo -u git -H bundle clean
+
+# Run database migrations
+sudo -u git -H bundle exec rake db:migrate RAILS_ENV=production
+
+# Clean up assets and cache
+sudo -u git -H bundle exec rake assets:clean assets:precompile cache:clear RAILS_ENV=production
+6. Start application
+
+sudo service gitlab start
+sudo service nginx restart
+
+
+7. Check application status
+
+Check if GitLab and its environment are configured correctly:
+sudo -u git -H bundle exec rake gitlab:env:info RAILS_ENV=production
+To make sure you didn't miss anything run a more thorough check with:
+sudo -u git -H bundle exec rake gitlab:check RAILS_ENV=production

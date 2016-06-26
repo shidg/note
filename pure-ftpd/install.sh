@@ -6,7 +6,7 @@ tar zxvf openssl-1.0.2d.tar.gz && cd openssl-1.0.2d && ./config shared zlib && m
 ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
 ln -s /usr/local/ssl/include/openssl /usr/include/openssl
 #获取软件
-#wget http://download.pureftpd.org/pub/pure-ftpd/releases/pure-ftpd-1.0.36.tar.gz
+#wget http://download.pureftpd.org/pub/pure-ftpd/releases/pure-ftpd-1.0.42.tar.gz
 
 #安装pure-ftpd
 cd ..

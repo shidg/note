@@ -21,6 +21,7 @@ export JAVA_HOME CLASSPATH MYSQL_HOME PATH
 # INSTALL JIRA
 ./atlassian-jira-software-7.1.6-jira-7.1.6-x64.bin
 #选择自定义安装模式，定义安装目录及数据存储目录,其他默认即可
+#数据库连接字符集选择utf8_bin
 cd /Data/app/jira
 ./bin/startup.sh
 
