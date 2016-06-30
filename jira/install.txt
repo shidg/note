@@ -13,6 +13,12 @@ export JAVA_HOME CLASSPATH MYSQL_HOME PATH
 
 
 # INSTALL MYSQL 5.6+
+# my.cnf
+[mysqld]
+collation-server = utf8_bin
+max_allowed_packet = 256M
+
+#jira、confluence安装过程中，与MYSQL的连接编码都要选择utf8_bin，不然安装完成后的Support Tools--->Passed Checks会报编码错误
 
 
 # INSTALL NGINX 
@@ -47,7 +53,8 @@ cd /Data/app/confluence
 ./bin/startup.sh
 
 http://ip:8090
-#数据库选择MySQL的话，要将mysql-connector-java-5.1.39-bin.jar上传到confluence安装目录下的lib目录下，然后重启confluence加载该jar包
+#数据库选择MySQL的话，要将mysql-connector-java-5.1.39-bin.jar上传到confluence安装目录下的lib目录下，然后重启confluence加载该jar包,数据库连接字符集选择utf8_bin
+
 
 
 
