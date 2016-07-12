@@ -1,4 +1,4 @@
-#gitlab-8.8.5 ON CentOS 7
+#gitlab-8.10.0 ON CentOS 7
 
 #请给/home分配较大空间
 #关闭SELINUX
@@ -18,7 +18,7 @@ hostname -f
 
 ###BEGIN
 yum update -y
-yum groupinstall 'Development Tools'
+yum groupinstall 'Development Tools' -y
 
 ##EPEL
 yum install epel-release -y
@@ -31,8 +31,8 @@ yum -y install readline readline-devel ncurses-devel gdbm-devel glibc-devel tcl-
 
 
 # INSTALL REDIS
-wget http://download.redis.io/releases/redis-2.8.4.tar.gz
-tar zxf redis-2.8.4.tar.gz && cd redis-2.8.4
+wget http://download.redis.io/releases/redis-3.2.1.tar.gz
+tar zxf redis-3.2.1.tar.gz && cd redis-3.2.1
 make && make test
 make install
 cd utils
@@ -47,8 +47,9 @@ echo 'unixsocketperm 770' | sudo tee -a /etc/redis/6379.conf
 mkdir /var/run/redis
 chmod 755 /var/run/redis
 
-service redis_6379 start
-chkconfig --level 3 redis_6379 on
+mv /etc/init.d/redis_6379 /etc/init.d/redis
+service redis start
+chkconfig --level 3 redis on
 
 ### INSTALL GIT
 
@@ -58,7 +59,7 @@ wget https://www.kernel.org/pub/software/scm/git/git-2.9.0.tar.gz
 tar xvf git-2.9.0.tar.gz && cd git-2.9.0
 ./configure 
 make
-make prefix=/usr/local install
+make prefix=/usr install
 
 
 #INSTALL RUBY
@@ -88,8 +89,8 @@ rpm -e --nodeps mariadb-xxx
 
 useradd mysql
 wget http://cdn.mysql.com//Downloads/MySQL-5.6/mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz
-tar zxvf mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz -C /Data/app
-cd /Data/app
+tar zxvf mysql-5.6.30-linux-glibc2.5-x86_64.tar.gz -C /usr/local
+cd /usr/local
 ln -s mysql-5.6.30-linux-glibc2.5-x86_64 ./mysql
 mkdir mysql/log
 chown -R mysql:mysql mysql-5.6.30-linux-glibc2.5-x86_64
@@ -108,7 +109,7 @@ basedir = /usr/local/mysql
 datadir = /home/mysql/data
 pid-file = /usr/local/mysql/mysql.pid
 character-set-server = utf8
-collation-server = utf8_general_ci
+collation-server = utf8_unicode_ci
 skip-external-locking
 explicit_defaults_for_timestamp
 transaction_isolation = READ-COMMITTED
@@ -223,18 +224,14 @@ service mysql start
 mysql_secure_installation
 
 
-
-mysql>CREATE USER 'git'@'localhost' IDENTIFIED BY '$password';
-mysql>CREATE DATABASE IF NOT EXISTS `gitlabhq_production` DEFAULT CHARACTER SET `utf8` COLLATE `utf8_unicode_ci`;
-mysql>GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON `gitlabhq_production`.* TO 'git'@'localhost';
-
+#MySQL strings limits
 
 
 ## INSTALL GITLAB
 #如无特殊说明，以下操作均以git用户身份操作
 su - git 
 cd /home/git
-git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 8-9-stable gitlab
+git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 8-10-stable gitlab
 
 cd gitlab
 
@@ -270,13 +267,13 @@ cp config/secrets.yml.example config/secrets.yml
 chmod 0600 config/secrets.yml
 
 
-sudo chown -R git log/
-sudo chown -R git tmp/
-sudo chmod -R u+rwX,go-w log/
-sudo chmod -R u+rwX tmp/
+chown -R git log/
+chown -R git tmp/
+chmod -R u+rwX,go-w log/
+chmod -R u+rwX tmp/
 
-sudo chmod -R u+rwX tmp/pids/
-sudo chmod -R u+rwX tmp/sockets/
+chmod -R u+rwX tmp/pids/
+chmod -R u+rwX tmp/sockets/
 
 # Create the public/uploads/ directory
 mkdir public/uploads/
@@ -291,7 +288,7 @@ chmod -R u+rwX builds/
 chmod -R u+rwX shared/artifacts/
 
 # Copy the example Unicorn config
-sudo -u git -H cp config/unicorn.rb.example config/unicorn.rb
+cp config/unicorn.rb.example config/unicorn.rb
 
 
 
@@ -303,13 +300,13 @@ cp config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
 # 修改user.email根据config/gitlab.yml中的设定
 # Configure Git global settings for git user
 # 'autocrlf' is needed for the web editor
-sudo -u git -H git config --global core.autocrlf input
+git config --global core.autocrlf input
 
 # Disable 'git gc --auto' because GitLab already runs 'git gc' when needed
-sudo -u git -H git config --global gc.auto 0
+git config --global gc.auto 0
 
-sudo -u git -H git config --global user.name "GitLab"
-sudo -u git -H git config --global user.email "git@feezu.cn"
+git config --global user.name "GitLab"
+git config --global user.email "git@feezu.cn"
 
 
 cp config/resque.yml.example config/resque.yml
@@ -335,6 +332,7 @@ chmod o-rwx config/database.yml
 vi /home/git/gitlab/Gemfile
 source "http://ruby.taobao.org"
 
+gem install mysql2 -v '0.3.20' -- --with-mysql-dir=/Data/app/mysql
 bundle install --deployment --without development test postgres aws kerberos
 
 
@@ -349,7 +347,7 @@ source "http://ruby.taobao.org" ## 原始 source "https://rubygems.org/"
 setfacl -R -m u:git:rwx /var/run/redis
 
 # cat /home/git/gitlab/GITLAB_SHELL_VERSION
-bundle exec rake gitlab:shell:install[v3.0.0] REDIS_URL=unix:/var/run/redis/redis.sock RAILS_ENV=production
+bundle exec rake gitlab:shell:install[v3.2.0] REDIS_URL=unix:/var/run/redis/redis.sock RAILS_ENV=production
 
 # gitlab-shell的配置文件
 # /home/git/gitlab-shell/config.yml
@@ -383,16 +381,21 @@ bundle exec rake gitlab:env:info RAILS_ENV=production
 bundle exec rake assets:precompile RAILS_ENV=production
 
 #INSTALL gitlab-workhorse
+# as root
 wget https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz
-tar -xvf go1.6.2.linux-amd64.tar.gz -C /usr/local
+tar -xvf go1.6.2.linux-amd64.tar.gz -C /usr/local/
 ln -sf /usr/local/go/bin/{go,godoc,gofmt} /usr/local/bin/
 
+su - git
 cd /home/git
 git clone https://gitlab.com/gitlab-org/gitlab-workhorse.git
 cd gitlab-workhorse
-git checkout v0.7.5
+git checkout v0.7.7
 make
 
+
+#After installation or upgrade, remember to run the add_limits_mysql Rake task:
+bundle exec rake add_limits_mysql
 
 #服务启动
 su - root
