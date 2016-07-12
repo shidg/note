@@ -531,3 +531,9 @@ Check if GitLab and its environment are configured correctly:
 sudo -u git -H bundle exec rake gitlab:env:info RAILS_ENV=production
 To make sure you didn't miss anything run a more thorough check with:
 sudo -u git -H bundle exec rake gitlab:check RAILS_ENV=production
+
+
+
+# 清除缓存，用于无法提交修改，页面不显示项目下的文件时
+# run as git
+bundle exec rake cache:clear RAILS_ENV=production
