@@ -98,3 +98,35 @@ http://ip:8095
 #点击.gen!生成license
 
 #继续剩余安装
+
+
+
+#fisheye+crucible
+tar zxvf fecru-4.1.1.tgz -C /Data/app && cd fecru-4.1.1
+
+#将mysql-connector-java-5.1.39-bin.jar放到fecru-4.1.1/lib目录下，使fisheye+crucible支持MySQL
+
+frecru-4.1.1/bin/start.sh
+
+http://ip:8060,记录SERVERID
+
+#破解
+#
+# 将fecru-4.1.1/lib/下的atlassian-extras-2.5.jar下载到本地,重命名为atlassian-extras-2.3.1-SNAPSHOT.jar
+#
+#运行fisheye_keygen.bat,点击.patch!,选择atlassian-extras-2.3.1-SNAPSHOT.jar，会生成新的atlassian-extras-2.3.1-SNAPSHOT.jar，将新生成的atlassian-extras-2.3.1-SNAPSHOT.jar重命名为atlassian-extras-2.5.jar，重新传回服务器frecru-4.1.1/lib目录下
+#
+#运行.gen!生成license
+#
+
+
+
+
+
+
+#JIRA添加fileeye+crucible
+#
+#登录JIRA-->SETTING-->系统--->应用程序---->Application links----> create new link
+#
+#Application名字写为http://fisheye的主机名:8060，例如http://yanfajira:8060
+
