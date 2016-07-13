@@ -102,7 +102,8 @@ http://ip:8095
 
 
 #fisheye+crucible
-tar zxvf fecru-4.1.1.tgz -C /Data/app && cd fecru-4.1.1
+
+unzip crucible-4.1.1.tgz  -d /Data/app && cd fecru-4.1.1
 
 #将mysql-connector-java-5.1.39-bin.jar放到fecru-4.1.1/lib目录下，使fisheye+crucible支持MySQL
 
@@ -111,6 +112,8 @@ frecru-4.1.1/bin/start.sh
 http://ip:8060,记录SERVERID
 
 #破解
+#
+####注意： fecru-4.1.1.tgz是已经破解完成的安装包##
 #
 # 将fecru-4.1.1/lib/下的atlassian-extras-2.5.jar下载到本地,重命名为atlassian-extras-2.3.1-SNAPSHOT.jar
 #
