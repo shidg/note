@@ -1,0 +1,137 @@
+http://bbs.chinaunix.net/thread-3652807-1-1.html
+
+
+实验环境：
+四台 RHEL5u7 服务器，其中：
+主 LVS 服务器一台（192.168.56.101）；
+从 LVS 服务器一台（192.168.56.102）；
+realserver 服务器两台（192.168.56.103 和 192.168.56.104）。
+
+【配置主 LVS 服务器】
+
+1. 安装 piranha 包。
+
+2. 通过 piranha-gui 工具图形配置 Apache 和 FTP 两个服务。
+Apache 监听 80/tcp 端口；
+FTP 监听 21/tcp 端口。
+
+3. 手动修改主配置文件中的几个地方：
+
+# cat /etc/sysconfig/ha/lvs.cf 
+serial_no = 77
+primary = 192.168.56.101
+service = lvs
+backup_active = 1
+backup = 192.168.56.102
+heartbeat = 1
+heartbeat_port = 539
+keepalive = 6
+deadtime = 18
+network = direct
+debug_level = NONE
+monitor_links = 0
+syncdaemon = 0
+virtual Apache {
+     active = 1
+     address = 192.168.56.100 eth0:1
+     vip_nmask = 255.255.255.0
+     port = 80
+     send = "GET / HTTP/1.0\r\n\r\n"
+     expect = "HTTP"
+     use_regex = 0
+     load_monitor = none
+     scheduler = rr
+     protocol = tcp
+     timeout = 6
+     reentry = 15
+     quiesce_server = 0
+     server Apache_realserver1 {
+         address = 192.168.56.103
+         active = 1
+         weight = 1
+     }
+     server Apache_realserver2 {
+         address = 192.168.56.104
+         active = 1
+         weight = 1
+     }
+}
+virtual FTP {
+     active = 1
+     address = 192.168.56.200 eth0:2
+     vip_nmask = 255.255.255.0
+     fwmark = 21                <---- 这个要和后面配置的 iptables 规则搭配使用
+     port = 21
+     persistent = 10                <---- 这个非常重要，后面讲解
+     send = "quit"                <---- 这个是根据 FTP 协议来的
+     expect = "220"                <---- 这个也是根据 FTP 协议来的
+     use_regex = 0
+     load_monitor = none
+     scheduler = wrr
+     protocol = tcp
+     timeout = 6
+     reentry = 15
+     quiesce_server = 0
+     server FTP_realserver1 {
+         address = 192.168.56.103
+         active = 1
+         weight = 1
+     }
+     server FTP_realserver2 {
+         address = 192.168.56.104
+         active = 1
+         weight = 1
+     }
+}
+
+4. 启动 pulse 服务。
+
+
+【配置从 LVS 服务器】
+
+1. 安装 piranha 包。
+
+2. 从主 LVS 服务器上复制 /etc/sysconfig/ha/lvs.conf 文件。
+
+3. 启动 pulse 服务。
+
+
+【两台 realserver 的配置】
+
+1. 安装 httpd 和 vsftpd 两个包。
+
+2. httpd 不需要配置，但是 vsftpd 需要配置：
+
+pasv_min_port=10000
+pasv_max_port=20000
+
+3. 启动两个服务。
+
+4. 配置 arp：
+
+net.ipv4.conf.eth0.arp_ignore = 1
+net.ipv4.conf.eth0.arp_announce = 2
+
+
+【测试及修改】
+
+Apache 没问题，负载均衡很顺利。但是 FTP 只可以进行数据连接。这是为什么呢？
+
+我们需要分两部分考虑 FTP 的问题：主动模式和被动模式。
+
+之所以数据连接可以，是因为数据连接只使用 21/tcp 端口，而 LVS 服务器已经配置分发 21/tcp 的请求。
+
+主动模式下，是 FTP 服务器用自己的 TCP 的 20 端口去连接客户端的某一个随机高端口。LVS 服务器是用来分发客户端发送给服务器的请求的，所以当客户端收到 FTP 服务器（浮动 IP）发来的包之后，必定要回复一个包给服务器（浮动 IP），这个回包的目的端口是 TCP 的 20 端口，这时候 LVS 并不会分发 20/tcp 的包，连接断开。解决这个问题的方法是通过 LVS 的 fwmark。fwmask（firewall mark） 是配合防火墙标记一起使用，用来把一个服务使用的多个端口的请求定向到一台机器上。所以我们需要在 LVS 的配置文件中添加一个 fwmark=21，这里的 21 是随便设置的，但是必须要和下面的 iptables 规则的 mark 一致。我们需要在两台 LVS 服务器上配置如下的 iptables 规则：
+
+# iptables -t mangle -A PREROUTING -p tcp -d 192.168.56.200 --dport 20 -j MARK --set-mark 21 
+
+就是说，从客户端发给 192.168.56.200（浮动 IP）的 22/tcp 的包，打上 21 这个 mark，交给 LVS 处理。
+
+被动模式下，是 FTP 服务器告诉客户端一个随机高端口，让客户端用自己的随机高端口来连接 FTP 服务器的随机高端口。我们首先要做的是把 FTP 服务器的被动连接端口范围固定，就是上面配置的 pasv_min_port 和 pasv_max_port。然后需要让 LVS 分发从客户端发给浮动 IP 的 pasv_min_port/tcp ～ pasv_max_port/tcp 的包，因此需要设置下面的 iptables 的规则：
+
+# iptables -t mangle -A PREROUTING -p tcp -d 192.168.56.200 --dport 21 -j MARK --set-mark 21
+# iptables -t mangle -A PREROUTING -p tcp -d 192.168.56.200 --dport 10000:20000 -j MARK --set-mark 21
+
+
+现在理论上应该主动连接和被动连接都可以了，但是没有想象中的那么顺利。还有一个很关键的原因，我们通常配置的 LVS 是通过请求来分发给不同的 realserver 的。但是 FTP 这样的复杂协议，每一次连接都可能会被分发给不同的 realserver，导致数据连接意外中断（比如，控制连接和第一个 realserver 建立，但是数据连接却发给了第二个 realserver，导致数据连接失败）。所以还有一个很关键的参数要加进来——persistent。persistent 会让同一个客户端发来的请求在这一时间段内总能转发到一台 realserver 上。
+
