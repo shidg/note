@@ -19,3 +19,18 @@ ip nat inside source static tcp 10.10.38.xx 3389 124.65.xxx.xxx 34013 extendable
 
 #去除一条映射
 no ip nat inside source static tcp 10.10.38.xx 3389 124.65.xxx.xxx 34013 extendable
+
+
+##cisco 2921/k9恢复初始设置
+1. PC通过COM口连接到路由器
+2. 路由器断电
+3. 拔掉闪存卡(路由器背面)
+4. 启动路由器，路由器在尝试几次找不到闪存卡之后，会进入到rommon模式
+5. 在rommon 1> 界面输入 confreg 0x2142
+6. 在rommon 2> 界面输入 reset ,路由器会重启
+7. Would you like to enter the initial configuration dialog? [yes/no]: no
+8. Router>enable
+9. Router#
+10. configure memory 或copy startup-config running-config和write
+11. show running-config
+12. configure terminal
