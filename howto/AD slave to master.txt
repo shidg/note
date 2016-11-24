@@ -1,0 +1,63 @@
+http://www.360doc.com/content/10/0830/13/1997902_49867027.shtml
+
+
+
+原主域控制器
+
+System: windows 20003 Server
+
+FQDN:
+
+PDC.test.com
+
+IP：192.168.50.1
+
+Mask:255.255.255.0
+
+DNS:192.168.50.1
+
+2、
+
+辅助域控制器
+
+System: windows 2003 Server
+
+FQDN：BDC.test.com
+
+IP： 192.168.50.2
+
+Mask: 255.255.255.0
+
+DNS:192.168.50.1
+
+
+现在登陆PDC（主域控制器），进入命令提示符窗口，在命令提示符下输入：ntdsutil 回车，再输入:roles 回车，再输入connections 回车，再输入connect to server BDC（备注：这里的dc-1是指服务器名称），提示绑定成功后，输入q退出
+
+
+然后分别输入：
+
+Transfer domain naming master 回车
+
+Transfer infrastructure master回车
+
+Transfer PDC 回车
+
+Transfer RID master 回车
+
+Transfer schema master 回车
+
+以上的命令在输入完成一条后都会有提示是否传送角色到新的服务器，选择YES，如图：然后接着一条一条完成既可，完成以上按Q退出界面，
+
+
+这五个步骤完成以后，检查一下是否全部转移到BDC上了，打开在第9步时装windows support tools,开始－>程序->windows support tools->command prompt,输入netdom query fsmo,如图:全部转移成功.现在五个角色的owner都是BDC了.
+
+
+
+角色转移成功以后，还要把GC也转移过去，打开活动目录站点和服务，展开site->default-first-site-name->servers,你会看到两台域控制器都在下面。展开BDC，右击【NTDS Settings】点【属性】，勾上全局编录前面的勾，点确定
+
+
+然后展开PDC，右击【NTDS Settings】点【属性】，去掉全局编录前面的勾。如图：这样全局编录也转到BDC上去了，致此主域控制器已经变成BDC了。而PDC就成了辅助域控制器了
+
+
+现在已经可以把原来的主域控制器（PDC）删除掉了，在(PDC)现在的辅助域控制器上运行dcpromo按照提示一步一步的删除它，然后将它退出域。就完成了整个升级过程。这里还有一点要注要的：升级完以后，你现在的主域控制器的IP地址是新的，而不是原来的那个IP地址了，而下面所有的客户端的DNS都是指向原来的主域控制器的，这样就会出现很多问题，包括你的Exchange 就找不到域控制器，所以我最简单的方法就是把BDC（现在的主域控制器）的IP改为PDC（原来的主域控制器）的IP就好了。
+

@@ -1,0 +1,2 @@
+V	261112055529Z		01	unknown	/C=CN/ST=BJ/L=BeiJing/O=WEIZUCHE/OU=FEEZU/CN=server/name=EasyRSA/emailAddress=shidg@feezu.cn
+V	261112055629Z		02	unknown	/C=CN/ST=BJ/L=BeiJing/O=WEIZUCHE/OU=FEEZU/CN=client/name=EasyRSA/emailAddress=shidg@feezu.cn

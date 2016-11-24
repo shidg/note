@@ -1,0 +1,97 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=CN, ST=BJ, L=BeiJing, O=WEIZUCHE, OU=FEEZU, CN=WEIZUCHE CA/name=EasyRSA/emailAddress=shidg@feezu.cn
+        Validity
+            Not Before: Nov 14 05:55:29 2016 GMT
+            Not After : Nov 12 05:55:29 2026 GMT
+        Subject: C=CN, ST=BJ, L=BeiJing, O=WEIZUCHE, OU=FEEZU, CN=server/name=EasyRSA/emailAddress=shidg@feezu.cn
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bd:44:43:dd:3d:65:c2:ed:99:40:ba:ce:a3:96:
+                    89:38:ff:7f:69:f1:f7:bd:ec:e1:48:ef:e2:67:0a:
+                    83:59:43:52:5d:c1:bb:41:55:6f:e2:22:46:0f:5a:
+                    bd:d1:87:c4:33:4a:d3:8b:a0:c4:35:9c:c1:36:ff:
+                    07:c5:b0:e8:f6:9e:bf:85:71:21:cf:8f:cd:91:fc:
+                    20:3c:fe:6a:bf:81:de:58:fd:05:ff:fc:5a:54:26:
+                    7d:f1:98:f9:ad:bb:8e:70:f1:20:14:ff:a3:35:6f:
+                    c1:fd:f3:d5:fe:ab:01:02:0e:77:80:49:13:e0:84:
+                    29:de:f1:fc:ab:e8:f8:f3:c2:fe:fd:9b:92:40:e1:
+                    1b:0e:fb:62:c4:10:0d:7f:3c:59:ee:1d:86:e3:67:
+                    b9:08:58:49:69:1d:89:61:9c:d9:f9:ed:1b:27:75:
+                    55:ff:9c:26:39:ee:17:86:e4:6b:ba:2b:60:be:24:
+                    85:c7:b0:f3:a5:33:fe:67:6f:95:6b:10:4d:e7:08:
+                    b6:7b:e6:1f:61:82:a4:d4:c5:b0:82:01:ce:62:b4:
+                    60:d4:2b:b3:fd:9b:d6:18:ac:93:a2:db:c8:60:79:
+                    44:6e:0e:2f:e1:d0:2d:a3:ed:87:2a:4b:0d:0f:df:
+                    5c:31:63:23:1d:e0:82:81:28:25:c6:f1:03:6e:67:
+                    ef:09
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Cert Type: 
+                SSL Server
+            Netscape Comment: 
+                Easy-RSA Generated Server Certificate
+            X509v3 Subject Key Identifier: 
+                29:31:72:05:D3:5D:CD:1C:00:17:CC:9A:71:4F:F9:81:CD:0E:D8:6C
+            X509v3 Authority Key Identifier: 
+                keyid:44:E9:6E:E6:9B:20:2F:B9:28:0B:4C:CE:35:B9:D8:8E:15:01:D4:97
+                DirName:/C=CN/ST=BJ/L=BeiJing/O=WEIZUCHE/OU=FEEZU/CN=WEIZUCHE CA/name=EasyRSA/emailAddress=shidg@feezu.cn
+                serial:C9:B5:D7:8F:71:D0:72:7A
+
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication
+            X509v3 Key Usage: 
+                Digital Signature, Key Encipherment
+    Signature Algorithm: sha256WithRSAEncryption
+         15:a0:73:b2:b4:ec:4b:e3:af:95:45:67:96:3a:e4:36:cc:c1:
+         6c:a1:1c:80:80:27:6b:2f:ee:2b:67:10:1e:7e:5e:31:4e:f9:
+         da:53:8e:a3:bd:ab:bb:87:64:ad:54:36:f3:6c:b6:62:d6:e4:
+         e1:7d:42:63:dd:3e:eb:37:c5:65:2b:e2:04:81:bd:7a:98:21:
+         0f:70:db:b4:0c:9f:01:6f:e5:26:55:fd:33:28:f8:e6:3d:1f:
+         bc:ab:35:cb:90:9a:40:97:a7:38:79:db:93:d4:00:9d:c5:69:
+         93:1d:01:9a:7b:75:58:cd:70:d1:b1:b9:1b:0f:67:36:b1:74:
+         a7:2d:74:26:d1:eb:d5:20:6b:ec:8b:1b:88:cb:07:a8:d4:a9:
+         2d:a3:17:65:b9:fc:b7:19:49:14:f3:59:42:85:fe:5d:ba:32:
+         3c:d4:24:c0:d6:41:01:69:89:04:11:a9:c8:b6:cc:11:27:b9:
+         d7:2a:ae:50:a7:38:bd:2a:25:3f:25:46:b7:17:c9:5e:7c:36:
+         5b:e9:6b:a6:dc:31:71:26:a0:4c:10:21:ba:1d:30:58:3b:ad:
+         f2:c3:a8:28:31:1e:f4:e3:93:8f:a9:e2:5e:ac:2e:8b:81:7b:
+         4a:d7:cf:a5:62:a0:7e:67:d6:09:25:14:be:c4:5c:a7:7c:3c:
+         4a:1f:04:0d
+-----BEGIN CERTIFICATE-----
+MIIFDTCCA/WgAwIBAgIBATANBgkqhkiG9w0BAQsFADCBljELMAkGA1UEBhMCQ04x
+CzAJBgNVBAgTAkJKMRAwDgYDVQQHEwdCZWlKaW5nMREwDwYDVQQKEwhXRUlaVUNI
+RTEOMAwGA1UECxMFRkVFWlUxFDASBgNVBAMTC1dFSVpVQ0hFIENBMRAwDgYDVQQp
+EwdFYXN5UlNBMR0wGwYJKoZIhvcNAQkBFg5zaGlkZ0BmZWV6dS5jbjAeFw0xNjEx
+MTQwNTU1MjlaFw0yNjExMTIwNTU1MjlaMIGRMQswCQYDVQQGEwJDTjELMAkGA1UE
+CBMCQkoxEDAOBgNVBAcTB0JlaUppbmcxETAPBgNVBAoTCFdFSVpVQ0hFMQ4wDAYD
+VQQLEwVGRUVaVTEPMA0GA1UEAxMGc2VydmVyMRAwDgYDVQQpEwdFYXN5UlNBMR0w
+GwYJKoZIhvcNAQkBFg5zaGlkZ0BmZWV6dS5jbjCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAL1EQ909ZcLtmUC6zqOWiTj/f2nx973s4Ujv4mcKg1lDUl3B
+u0FVb+IiRg9avdGHxDNK04ugxDWcwTb/B8Ww6Paev4VxIc+PzZH8IDz+ar+B3lj9
+Bf/8WlQmffGY+a27jnDxIBT/ozVvwf3z1f6rAQIOd4BJE+CEKd7x/Kvo+PPC/v2b
+kkDhGw77YsQQDX88We4dhuNnuQhYSWkdiWGc2fntGyd1Vf+cJjnuF4bka7orYL4k
+hcew86Uz/mdvlWsQTecItnvmH2GCpNTFsIIBzmK0YNQrs/2b1hisk6LbyGB5RG4O
+L+HQLaPthypLDQ/fXDFjIx3ggoEoJcbxA25n7wkCAwEAAaOCAWcwggFjMAkGA1Ud
+EwQCMAAwEQYJYIZIAYb4QgEBBAQDAgZAMDQGCWCGSAGG+EIBDQQnFiVFYXN5LVJT
+QSBHZW5lcmF0ZWQgU2VydmVyIENlcnRpZmljYXRlMB0GA1UdDgQWBBQpMXIF013N
+HAAXzJpxT/mBzQ7YbDCBywYDVR0jBIHDMIHAgBRE6W7mmyAvuSgLTM41udiOFQHU
+l6GBnKSBmTCBljELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMRAwDgYDVQQHEwdC
+ZWlKaW5nMREwDwYDVQQKEwhXRUlaVUNIRTEOMAwGA1UECxMFRkVFWlUxFDASBgNV
+BAMTC1dFSVpVQ0hFIENBMRAwDgYDVQQpEwdFYXN5UlNBMR0wGwYJKoZIhvcNAQkB
+Fg5zaGlkZ0BmZWV6dS5jboIJAMm1149x0HJ6MBMGA1UdJQQMMAoGCCsGAQUFBwMB
+MAsGA1UdDwQEAwIFoDANBgkqhkiG9w0BAQsFAAOCAQEAFaBzsrTsS+OvlUVnljrk
+NszBbKEcgIAnay/uK2cQHn5eMU752lOOo72ru4dkrVQ282y2Ytbk4X1CY90+6zfF
+ZSviBIG9epghD3DbtAyfAW/lJlX9Myj45j0fvKs1y5CaQJenOHnbk9QAncVpkx0B
+mnt1WM1w0bG5Gw9nNrF0py10JtHr1SBr7IsbiMsHqNSpLaMXZbn8txlJFPNZQoX+
+XboyPNQkwNZBAWmJBBGpyLbMESe51yquUKc4vSolPyVGtxfJXnw2W+lrptwxcSag
+TBAhuh0wWDut8sOoKDEe9OOTj6niXqwui4F7StfPpWKgfmfWCSUUvsRcp3w8Sh8E
+DQ==
+-----END CERTIFICATE-----
