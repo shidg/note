@@ -21,6 +21,9 @@ ip add 10.10.8.1 255.255.255.0
 no shut
 exit
 
+#三层交换与路由器相连的接口的状态：
+no switchport
+ip address 10.10.9.1 255.255.255.0
 
 
 
@@ -35,3 +38,23 @@ no int vlan 10
 show ip int b
 
 
+# dhcp (为不同VLAN下的设备分配不同的ip地址)
+conf t
+ip dhcp pool vlan50
+network 10.10.10.0 255.255.255.0
+default-router 10.10.10.2
+dns-server 10.10.8.8
+lease 2
+
+exit
+
+ip dhcp pool vlan60
+network 10.10.11.0 255.255.255.0
+default-router 10.10.11.2
+dns-server 10.10.8.8
+lease 2
+
+exit
+
+#设置保留ip
+ip dhcp excluded-address low-address [high-address]
