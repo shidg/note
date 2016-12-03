@@ -1,0 +1,8 @@
+#!/bin/bash
+day=`date +%F`
+if [ -f /Data/logs/openvpn/$day ];then
+echo "`date '+%F %H:%M:%S'` User $common_name is logged off" >>/Data/logs/openvpn/$day
+else
+touch /Data/logs/openvpn/$day
+echo "`date '+%F %H:%M:%S'` User $common_name is logged off" >>/Data/logs/openvpn/$day
+fi
