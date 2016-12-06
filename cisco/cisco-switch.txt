@@ -58,3 +58,25 @@ exit
 
 #设置保留ip
 ip dhcp excluded-address low-address [high-address]
+
+
+##ACL
+# 6网段(vlan 20)禁止访问8网段(vlan 30)，但10.10.8.8除外
+conf t
+access-list 100 permit ip 10.10.6.0 0.0.0.255 10.10.8.8 0.0.0.0
+access-list 100 deny ip 10.10.6.0 0.0.0.255 10.10.8.0 0.0.0.255
+access list 100 permit any any
+
+int vlan 20
+ip access-group 100 in
+
+#或者
+int vlan 30
+ip access-group 100 out
+
+
+#添加一条ACL
+conf t
+ip access-list extended 100
+12 permit ip 10.10.6.0 0.0.0.255 10.10.8.15 0.0.0.0
+no 12 #删除一条ACL
