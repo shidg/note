@@ -16,6 +16,9 @@ systemctl stop firewalld && systemctl disable firewalld
 #install iptables service
 yum install iptables-services -y
 
+#install killall
+yum install psmisc -y
+
 #修改ssh端口为
 port=5122
 sed  -i "/^#Port/ {s/^#//;s/22/$port/}" /etc/ssh/sshd_config

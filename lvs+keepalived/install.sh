@@ -21,7 +21,7 @@ net.ipv4.conf.all.arp_announce = 2
 
 
 #keepalived
-
+yum install -y libnfnetlink-devel openssl-devel 
 tar zxvf keepalived-1.2.8.tar.gz && cd keepalived-1.2.8
 
 ./configure && make && make install

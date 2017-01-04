@@ -1,0 +1,7 @@
+# csr
+openssl genrsa -des3 -out server.key 2048
+mv server.key  server.origin.key
+openssl rsa -in server.origin.key -out server.key
+openssl req -new -key server.key -out server.csr
+
+# give csr to ssl owner,and then get the ssl key

@@ -133,3 +133,9 @@ http://ip:8060,记录SERVERID
 #
 #Application名字写为http://fisheye的主机名:8060，例如http://yanfajira:8060
 
+
+
+
+###jira中文语言包下载###
+
+https://translations.atlassian.com/dashboard/download?lang=zh_CN#/
