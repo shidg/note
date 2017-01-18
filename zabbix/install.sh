@@ -12,6 +12,7 @@
 #PHP always_populate_raw_post_data off  (php5.6中取消了该项设置，可设置为-1)
 #mbstring bcmatch  gettext sockets
 #putenv()
+#scandir()
 
 
 #java环境
@@ -55,3 +56,14 @@ useradd zabbix
 cd /Data/software/zabbix-2.4.5
 cp -a frontends/php/* /Data/code/zabbix
 #http://monitor.my.com开始zabbix的配置及访问,初始用户名密码admin/zabbix
+
+# zabbix client
+tar zxvf zabbix-3.2.3.tar.gz && cd zabbix-3.2.3
+./configure --prefix=/Data/app/zabbix-3.2.3/ --enable-agent
+make && make install
+
+mkdir /etc/zabbix
+cp /etc/zabbix_agentd.conf /etc/zabbix/
+
+useradd zabbix
+/Data/app/zabbix-3.2.3/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf

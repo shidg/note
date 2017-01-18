@@ -92,11 +92,10 @@ export JAVA_HOME=/Data/app/jdk1.7.0_80
         </property>
 </configuration>
 
-## masters ##
+## cat  masters ##
 K-master
 
-
-## slaves ##
+## cat slaves ##
 K-slave1
 K-slave2
 K-slave3
@@ -181,8 +180,7 @@ export HBASE_SSH_OPTS="-p 5122
 </configuration>
 
 
-##  backup-masters ##
-
+## cat backup-masters ##
 K-slave1
 
 
@@ -276,5 +274,4 @@ K-master上为HMaster,  K-slave1上为HMaster、HRegionServer、HQuorumPeer, K-s
 #第三步，启动hbase
 #在K-master上
 #./bin/start-hbase.sh
-
 
