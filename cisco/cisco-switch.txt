@@ -80,3 +80,7 @@ conf t
 ip access-list extended 100
 12 permit ip 10.10.6.0 0.0.0.255 10.10.8.15 0.0.0.0
 no 12 #删除一条ACL
+
+
+# 清除所有已建立连接，效果相当于重启
+clear ip nat translation *

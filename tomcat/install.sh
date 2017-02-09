@@ -9,6 +9,11 @@ tar jxvf apr-util-1.5.4.tar.bz2 && cd apr-util-1.5.4/
 ./configure --prefix=/Data/app/apr-util --with-apr=/Data/app/apr --with-apr-iconv=/Data/app/apr-iconv/bin/apriconv
 Make && make install
 
+tar -zxvf apache-tomcat-7.0.65.tar.gz -C /Data/app/
+cd /Data/app
+chown –R tomcat:tomcat apache-tomcat-7.0.65
+ln -s apache-tomcat-7.0.65/ tomcat 
+
 cd  /Data/app/tomcat/bin
 tar zxvf tomcat-native.tar.gz
 cd  tomcat-native-1.1.33-src/jni/native/
@@ -20,10 +25,6 @@ make && make install
 #tomcat以普通用户身份运行
 #创建用户
 useradd -M -s /sbin/nologin tomcat
-tar -zxvf apache-tomcat-7.0.65.tar.gz -C /Data/app/
-cd /Data/app
-chown –R tomcat:tomcat apache-tomcat-7.0.65
-ln -s apache-tomcat-7.0.65/ tomcat 
 
 #编译jsvc
 cd /Data/app/tomcat/bin
