@@ -66,3 +66,9 @@ access-list 1 permit 10.10.5.0 0.0.0.255
 access-list 1 permit 10.10.11.0 0.0.0.255
 access-list 1 permit 10.10.10.0 0.0.0.255
 access-list 1 permit 10.10.9.0 0.0.0.255
+
+
+
+# 清除所有已建立连接，效果相当于重启
+clear ip nat translation *
+
