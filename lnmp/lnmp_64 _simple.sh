@@ -151,12 +151,21 @@ success
 
 cd ..
 
+# add lua-nginx-module
+mkdir -p /Data/app/LuaJIT
+tar zxvf LuaJIT-2.0.4.tar.gz && cd LuaJIT-2.0.4
+make PREFIX=/Data/app/LuaJIT
+make install PREFIX=/Data/app/LuaJIT
+
+ln -s /Data/app/LuaJIT/lib/libluajit-5.1.so.2.0.4 /usr/lib/libluajit-5.1.so.2
+
 #add sticky module
 #https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/
+#https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/downloads/
 echo "install nginx"
 dots &
 exec 1>&2
-tar jxvf pcre-8.39.tar.bz2 && tar zxvf openssl-1.0.2h.tar.gz && tar zxvf nginx-1.8.1.tar.gz && cd nginx-1.8.1 && ./configure --prefix=${app_dir}nginx-1.8.1  --with-pcre=../pcre-8.39 --with-openssl=../openssl-1.0.2h --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../nginx-sticky-module-ng && make && make install
+tar jxvf pcre-8.40.tar.bz2 && tar zxvf openssl-1.0.2k.tar.gz && tar zxvf nginx-1.8.1.tar.gz && cd nginx-1.8.1 && export LUAJIT_LIB=/Data/app/LuaJIT/lib/ && export LUAJIT_INC=/Data/app/LuaJIT/include/luajit-2.0/ && ./configure --prefix=/Data/app/nginx-1.8.1  --with-pcre=../pcre-8.40 --with-openssl=../openssl-1.0.2k --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../nginx-sticky-module-ng --add-module=../ngx_devel_kit-0.3.0 --add-module=../form-input-nginx-module-master --add-module=../lua-nginx-module-master
 
 exec 1>&6 6>&-
 exec 2>&7 7>&-
