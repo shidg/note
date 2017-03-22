@@ -21,7 +21,8 @@ sort -t -k ,设定间隔符，对指定的列进行排序
 
 sort -M 以月份排序
 
-sort -m -t " " -k 4 -o log_all log1 log2 log3  多日志合并
+sort -t " " -k 4 -o log_all log1 log2 log3  多日志合并
+sort -m  -o log_all log1 log2 log3  多日志合并 -t选项可以用来替代-t -k，是sort提供的优化算法
 
 sort -b 忽略每行前面的所有空白字符，从第一个可见字符开始比较
 
