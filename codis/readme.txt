@@ -27,6 +27,8 @@ EOF
 
 go run /tmp/hello.go
 
+cd /usr/local/codis
+
 # install codis
 go get github.com/wandoulabs/codis
 

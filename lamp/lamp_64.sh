@@ -60,7 +60,7 @@ success
 echo "install libiconv..."
 dots &
 exec 1>&2
-tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr && make && make install
+tar zxvf libiconv-1.15.tar.gz && cd libiconv-1.15 && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
 
@@ -74,7 +74,7 @@ cd ..
 echo "install libxslt..."
 dots &
 exec 1>&2
-tar zxvf libxslt-1.1.28.tar.gz && cd libxslt-1.1.28
+tar zxvf libxslt-1.1.29.tar.gz && cd libxslt-1.1.29
 #½â¾ö¡°/bin/rm: cannot remove `libtoolT¡¯: No such file or directory ¡±
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
 ./configure --prefix=/usr && make && make install
@@ -113,7 +113,7 @@ cd ..
 echo "install libevent"
 dots &
 exec 1>&2
-tar zxvf libevent-2.0.22-stable.tar.gz && cd libevent-2.0.22-stable && ./configure --prefix=/usr && make && make install
+tar zxvf libevent-2.1.8-stable.tar.gz && cd libevent-2.1.8-stable && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
 
@@ -121,7 +121,7 @@ cd ..
 echo "install re2c"
 dots &
 exec 1>&2
-tar zxvf re2c-0.14.3.tar.gz && cd re2c-0.14.3 && ./configure && make && make install
+tar zxvf re2c-0.16.tar.gz && cd re2c-0.16 && ./configure && make && make install
 exec 1>&6
 success
 
@@ -148,14 +148,14 @@ cd ..
 echo "install pcre"
 dots &
 exec 1>&2
-tar jxvf pcre-8.37.tar.bz2 && cd pcre-8.37
+tar jxvf pcre-8.40.tar.bz2 && cd pcre-8.40
 ./configure --prefix=${app_dir}pcre && make && make install
 exec 1>&6
 success
 
 cd ..
 echo "install apache"
-tar zjvf httpd-2.4.17.tar.bz2 && cd httpd-2.4.17 && ./configure --prefix=${app_dir}apache2.4.17 --sysconfdir=/etc/httpd --with-apr=${app_dir}apr/bin/apr-1-config --with-apr-util=${app_dir}apr-util/bin/apu-1-config  --with-pcre=${app_dir}pcre/ --enable-mods-shared=most  --enable-rewirte --enable-so --enable-ssl=static --with-ssl --enable-cache --enable-disk-cache --enable-mem-cache && make && make install
+tar jxvf httpd-2.4.17.tar.bz2 && cd httpd-2.4.17 && ./configure --prefix=${app_dir}apache2.4.17 --sysconfdir=/etc/httpd --with-apr=${app_dir}apr/bin/apr-1-config --with-apr-util=${app_dir}apr-util/bin/apu-1-config  --with-pcre=${app_dir}pcre/ --enable-mods-shared=most  --enable-rewirte --enable-so --enable-ssl=static --with-ssl --enable-cache --enable-disk-cache --enable-mem-cache && make && make install
 exec 1>&6
 success
 
@@ -172,15 +172,29 @@ echo "install mysql"
 dots &
 exec 1>&2
 tar zxvf mysql-5.5.40-linux2.6-x86_64.tar.gz -C ${app_dir}
+cd /Data/app/mysql-5.5.40-linux2.6-x86_64 && mkdir log
+cd ..
+chown -R mysql:mysql mysql-5.5.40-linux2.6-x86_64
+ln -s /Data/app/mysql-5.5.40-linux2.6-x86_64/my.cnf /etc/my.cnf
+cd /Data/app/mysql
+./scripts/mysql_install_db --defaults-file=/etc/my.cnf
+cp support-files/mysql.server /etc/init.d/mysqld
+
+vi /etc/init.d/mysqld
+basedir=/Data/app/mysql
+datadir=/Data/app/mysql/data
+
+service mysqld start
+
 exec 1>&6
 success
 
-#openssl
-#cd ext/openssl
+#add openssl extension for php
+#cd {php_source_dir}/ext/openssl
 #mv mv config0.m4 config.m4
-#/usr/local/php/bin/phpize
-#./configure --with-openssl --with-php-config=/usr/local/php/bin/php-config && make && make install
-#cp /usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/openssl.so /usr/local/php/ext
+#/path/php/bin/phpize
+#./configure --with-openssl --with-php-config=/path/php/bin/php-config && make && make install
+#cp /path/php/lib/php/extensions/no-debug-non-zts-20090626/openssl.so /path/php/ext
 #cd ..
 
 
