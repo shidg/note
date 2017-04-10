@@ -37,15 +37,14 @@ systemctl enable $i;;
 systemctl disable $i;;
 esac
 done
-#set ulimit
-cat >> /etc/security/limits.conf << EOF
-* soft nofile 65535
-* hard nofile 65535
-* soft core   0
-* hard core   0
-EOF
-# set sysctl
 
+#set ulimit
+sed  -i '$ i\*             soft    nofile          65535 \
+*               hard    nofile          65535 \
+*               soft    core            unlimited \
+*               hard    core            unlimited' /etc/security/limits.conf
+
+# set sysctl
 cat > /etc/sysctl.conf << EOF
 #不充当路由器
 net.ipv4.ip_forward = 0
@@ -84,6 +83,8 @@ kernel.msgmax = 65536
 kernel.shmall = 2097152
 kernel.shmmax = 4294967296
 kernel.shmmni = 4096
+#coredump
+kernel.core_pattern=/Data/corefiles/core-%e-%s-%u-%g-%p-%t
 net.ipv4.tcp_sack = 1
 net.ipv4.tcp_window_scaling = 1
 net.ipv4.tcp_rmem = 4096 87380 4194304
@@ -147,6 +148,7 @@ net.bridge.bridge-nf-call-arptables = 0
 net.ipv4.tcp_mem = 94500000 915000000 927000000
 net.ipv4.ip_local_port_range = 1024 65535
 vm.swappiness = 0
+
 EOF
 
 #修改ssh端口为
@@ -387,7 +389,7 @@ $IPTABLES -F
 $IPTABLES -A INPUT -m conntrack --ctstate INVALID -j DROP
 $IPTABLES -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 $IPTABLES -A INPUT -i lo -j ACCEPT
-$IPTABLES -A INPUT -p tcp -m tcp --dport $port --syn -m state --state NEW -j ACCEPT
+$IPTABLES -A INPUT -p tcp -m tcp --dport $port -m state --state NEW -j ACCEPT
 $IPTABLES -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 $IPTABLES -P INPUT DROP
 $IPTABLES -A OUTPUT -m conntrack --ctstate INVALID -j DROP
@@ -423,6 +425,9 @@ cat > /etc/sysconfig/modules/nf_conntrack_ipv4.modules << EOF
 EOF
 
 chmod +x /etc/sysconfig/modules/*
+
+#kerneldump file_pattern
+mkdir -p /Data/corefiles && chmod 777 /Data/corefiles
 
 # reboot system
 echo -e "reboot system right now?[Y/n]"

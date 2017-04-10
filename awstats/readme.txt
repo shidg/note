@@ -213,8 +213,8 @@ LoadPlugin="decodeutfkeys"” #打开这个插件的话可能需要perl安装了URI::Escape模块
 
 也就是，如果perl awstats.pl config=3g.happigo.com -update
 
-那么页面访问时，http://host/awstats/awstats/pl?config=3g.happigo.com
+那么页面访问时，http://host/awstats/awstats.pl?config=3g.happigo.com
 
 如果perl awstats.pl config=awstats.3g.happigo.com.conf -update
 
-那么页面访问时，http://host/awstats/awstats/pl?config=awstats.3g.happigo.com.conf
+那么页面访问时，http://host/awstats/awstats.pl?config=awstats.3g.happigo.com.conf
