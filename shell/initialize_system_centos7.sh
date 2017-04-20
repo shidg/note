@@ -64,6 +64,14 @@ net.ipv4.conf.default.accept_source_route = 0
 net.ipv4.conf.all.rp_filter = 1
 net.ipv4.conf.default.rp_filter = 1
 
+#####for  lvs ######
+#net.ipv4.conf.all.rp_filter = 0
+#net.ipv4.conf.default.rp_filter = 0
+#net.ipv4.conf.lo.arp_ignore = 1
+#net.ipv4.conf.lo.arp_announce = 2
+#net.ipv4.conf.all.arp_ignore = 1
+#net.ipv4.conf.all.arp_announce = 2
+#################################################
 
 # 开启并记录欺骗，源路由和重定向包
 net.ipv4.conf.all.log_martians = 1
@@ -80,18 +88,18 @@ kernel.sysrq = 0
 kernel.core_uses_pid = 1
 kernel.msgmnb = 65536
 kernel.msgmax = 65536
+# next 单个共享内存段的大小（单位：字节）限制，计算公式64G*1024*1024*1024(字节) 
+kernel.shmmax = 4294967296 
+#next 所有内存大小（单位：页，1页 = 4Kb），计算公式16G*1024*1024*1024/4KB(页)
 kernel.shmall = 2097152
-kernel.shmmax = 4294967296
 kernel.shmmni = 4096
 #coredump
 kernel.core_pattern=/Data/corefiles/core-%e-%s-%u-%g-%p-%t
 net.ipv4.tcp_sack = 1
 net.ipv4.tcp_window_scaling = 1
-net.ipv4.tcp_rmem = 4096 87380 4194304
-net.ipv4.tcp_wmem = 4096 16384 4194304
-net.core.wmem_default = 262144
+net.core.wmem_default = 8388608
 net.core.wmem_max = 16777216
-net.core.rmem_default = 262144
+net.core.rmem_default = 8388608
 net.core.rmem_max = 16777216
 
 #网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目
@@ -100,8 +108,8 @@ net.core.netdev_max_backlog = 3000
 # 系统中每一个端口最大的监听队列的长度
 net.core.somaxconn = 2048
 
-#统所能处理的不属于任何进程的TCP sockets最大数量
-net.ipv4.tcp_max_orphans = 2000
+#系统所能处理的不属于任何进程的TCP sockets最大数量，不能过分依靠它或者人为地减小这个值，更应该增加这个值(如果增加了内存之后) 每个孤儿套接字最多能够吃掉64K不可交换的内存
+net.ipv4.tcp_max_orphans = 3276800
 
 net.ipv4.tcp_syncookies = 1
 net.ipv4.tcp_max_syn_backlog = 8192
@@ -145,9 +153,13 @@ net.bridge.bridge-nf-call-ip6tables = 0
 net.bridge.bridge-nf-call-iptables = 0
 net.bridge.bridge-nf-call-arptables = 0
 
-net.ipv4.tcp_mem = 94500000 915000000 927000000
+net.ipv4.tcp_mem =  3145728 8388608 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 16384 16777216
 net.ipv4.ip_local_port_range = 1024 65535
 vm.swappiness = 0
+vm.dirty_background_ratio = 5
+vm.dirty_ratio = 10
 
 EOF
 

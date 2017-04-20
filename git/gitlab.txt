@@ -55,16 +55,16 @@ chkconfig --level 3 redis on
 
 yum remove git
 yum install zlib-devel perl-CPAN gettext curl-devel expat-devel gettext-devel openssl-devel
-wget https://www.kernel.org/pub/software/scm/git/git-2.9.0.tar.gz
-tar xvf git-2.9.0.tar.gz && cd git-2.9.0
+wget https://www.kernel.org/pub/software/scm/git/git-2.9.3.tar.gz
+tar xvf git-2.9.3.tar.gz && cd git-2.9.3
 ./configure 
 make
-make prefix=/usr install
+make prefix=/usr/local install
 
 
 #INSTALL RUBY
 yum remove ruby
-tar zxvf ruby-2.1.9.tar.gz && cd ruby-2.1.9
+tar zxvf ruby-2.3.4.tar.gz && cd ruby-2.3.4
 ./configure --disable-install-rdoc
 make
 make prefix=/usr/local install
@@ -73,7 +73,7 @@ make prefix=/usr/local install
 gem source --remove https://rubygems.org/
 gem source -a https://ruby.taobao.org/   
 
-gem install bundler --no-doc
+gem install bundler --no-ri --no-doc
 
 # USERADD
 useradd --system --shell /bin/bash --comment 'GitLab' --create-home --home-dir /home/git git
@@ -332,7 +332,7 @@ chmod o-rwx config/database.yml
 vi /home/git/gitlab/Gemfile
 source "http://ruby.taobao.org"
 
-gem install mysql2 -v '0.3.20' -- --with-mysql-dir=/Data/app/mysql
+gem install mysql2 -v '0.3.20' -- --with-mysql-dir=/usr/local/mysql
 bundle install --deployment --without development test postgres aws kerberos
 
 
@@ -535,5 +535,12 @@ sudo -u git -H bundle exec rake gitlab:check RAILS_ENV=production
 
 
 # 清除缓存，用于无法提交修改，页面不显示项目下的文件时
-# run as git
+# run as user "git"
 bundle exec rake cache:clear RAILS_ENV=production
+
+#数据备份
+
+su - git
+cd ~/gitlab
+bundle exec rake gitlab:backup:create RAILS_ENV=production
+#备份文件存储位置在gitlab.yml中配置
