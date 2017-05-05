@@ -107,6 +107,12 @@ unzip crucible-4.1.1.tgz  -d /Data/app && cd fecru-4.1.1
 
 #将mysql-connector-java-5.1.39-bin.jar放到fecru-4.1.1/lib目录下，使fisheye+crucible支持MySQL
 
+
+#FISHEYE_OPTS
+#/etc/profile  or  ~/.bashrc
+FISHEYE_OPTS="-Dsvnkit.http.spoolDirectory=/tmp/fisheye -Xms128m -Xmx1024m -XX:MaxPermSize=256m"
+export FISHEYE_OPTS
+
 frecru-4.1.1/bin/start.sh
 
 http://ip:8060,记录SERVERID

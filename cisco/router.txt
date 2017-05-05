@@ -72,3 +72,16 @@ access-list 1 permit 10.10.9.0 0.0.0.255
 # 清除所有已建立连接，效果相当于重启
 clear ip nat translation *
 
+
+#CISCO 2921/K9
+ip nat translation timeout 600
+ip nat translation tcp-timeout 600
+ip nat translation udp-timeout 600
+ip nat translation finrst-timeout 15
+ip nat translation syn-timeout 30
+ip nat translation dns-timeout 15
+ip nat translation routemap-entry-timeout 15
+ip nat translation icmp-timeout 10
+ip nat translation arp-ping-timeout 10
+ip nat translation max-entries 65000
+ip nat translation max-entries all-host 200

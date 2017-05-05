@@ -7,7 +7,7 @@ showmount -e (ip)  #扫描服务器共享信息
 #挂载服务器共享目录到本地，挂载参数可控
 mount -t nfs -o rw,ro,bg,fg,nosuid,nodev,noexec,soft,hard,intr,rsize=,wsize=  ip:/data/nfs  /mnt
 
-#autofs自动挂载
+#autofs自动挂载，非必需，可略过
 #主要配置文件 auto.master
 vi  /etc/auto.master
 /home   /etc/auto.nfs  #auto.nfs文件名为自定义

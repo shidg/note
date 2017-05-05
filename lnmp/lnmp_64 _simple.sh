@@ -60,21 +60,15 @@ success
 echo "install libiconv..."
 dots &
 exec 1>&2
-tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr && make && make install
+tar zxvf libiconv-1.15.tar.gz && cd libiconv-1.15 && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
-
-## for CentOS 7 ##
-#tar zxvf libiconv-1.14.tar.gz && cd libiconv-1.14 && ./configure --prefix=/usr
-#(cd /Data/software/lnmp/libiconv-1.14;make)
-#sed  -i -e '/_GL_WARN_ON_USE (gets/a\#endif' -e '/_GL_WARN_ON_USE (gets/i\#if defined(__GLIBC__) && !defined(__UCLIBC__) && !__GLIBC_PREREQ(2, 16)' srclib/stdio.h
-#make && make install
 
 cd ..
 echo "install libxslt..."
 dots &
 exec 1>&2
-tar zxvf libxslt-1.1.28.tar.gz && cd libxslt-1.1.28
+tar zxvf libxslt-1.1.29.tar.gz && cd libxslt-1.1.29
 #½â¾ö¡°/bin/rm: cannot remove `libtoolT¡¯: No such file or directory ¡±
 sed -i '/$RM "$cfgfile"/ s/^/#/' configure
 ./configure --prefix=/usr && make && make install
@@ -113,7 +107,7 @@ cd ..
 echo "install libevent"
 dots &
 exec 1>&2
-tar zxvf libevent-2.0.22-stable.tar.gz && cd libevent-2.0.22-stable && ./configure --prefix=/usr && make && make install
+tar zxvf libevent-2.1.8-stable.tar.gz && cd libevent-2.1.8-stable && ./configure --prefix=/usr && make && make install
 exec 1>&6
 success
 
@@ -121,7 +115,7 @@ cd ..
 echo "install re2c"
 dots &
 exec 1>&2
-tar zxvf re2c-0.14.3.tar.gz && cd re2c-0.14.3 && ./configure && make && make install
+tar zxvf re2c-0.16.tar.gz && cd re2c-0.16 && ./configure && make && make install
 exec 1>&6
 success
 

@@ -1,10 +1,10 @@
 #tcl##
 #"You need tcl 8.5 or newer in order to run the Redis test"
-tar zxvf tcl8.6.4-src.tar.gz && cd tcl8.6.4/unix
+tar zxvf tcl8.6.5-src.tar.gz && cd tcl8.6.5/unix
 ./configure --prefix=/usr && make && make install
 
 ###################################################################
-tar zxvf redis-3.0.5.tar.gz && cd redis-3.0.5
+tar zxvf redis-3.2.8.tar.gz && cd redis-3.2.8
 
 make
 
@@ -39,3 +39,6 @@ echo "vm.overcommit_memory=1" >> /etc/sysctl.conf
 echo "never" > /sys/kernel/mm/transparent_hugepage/enabled
 
 sysctl -p
+
+#·şÎñÆô¶¯
+service redis start
