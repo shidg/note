@@ -1,8 +1,8 @@
 #伪分布式安装
 
 #java环境
-tar zxvf jdk-7u80-linux-x64.gz -C /Data/app/
-echo -ne "JAVA_HOME=/Data/app/jdk1.7.0_80\nPATH=\$PATH:\$JAVA_HOME/bin\nCLASSPATH=.:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar\nexport JAVA_HOME PATH CLASSPATH" >> .bashrc
+tar zxvf jdk-8u131-linux-x64.tar.gz -C /Data/app/
+echo -ne "JAVA_HOME=/Data/app/jdk1.8.0_131\nPATH=\$PATH:\$JAVA_HOME/bin\nCLASSPATH=.:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar\nexport JAVA_HOME PATH CLASSPATH" >> .bashrc
 source ~/.bashrc
 
 # ssh免密码登录
@@ -16,7 +16,7 @@ ssh-copy-id -i ~/.ssh/id.rsa.pub "-p 5122 root@localhost"
 
 # ################################hadoop begin#################################
 
-tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0 /Data/app/hadoop && cd /Data/app/hadoop/etc/hadoop
+tar zxvf hadoop-2.7.3.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.7.3 /Data/app/hadoop && cd /Data/app/hadoop/etc/hadoop
 
 # vi core-site.xml
 <configuration>
@@ -49,7 +49,7 @@ tar zxvf hadoop-2.6.0.tar.gz -C /Data/app/ && ln -s /Data/app/hadoop-2.6.0 /Data
 
 
 #vi hadoop-env.sh
-export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JAVA_HOME=/Data/app/jdk1.8.0_131
 export HADOOP_PREFIX=/Data/app/hadoop
 export HADOOP_SSH_OPTS="-p 5122"   
 
@@ -90,10 +90,10 @@ export HADOOP_SSH_OPTS="-p 5122"
 
 
 #########hbase begin#############
-tar zxvf hbase-1.0.1.1-bin.tar.gz -C /Data/app/ && ln -s /Data/app/hbase-1.0.1.1 /Data/app/hbase && cd /Data/app/hbase/conf
+tar zxvf hbase-1.2.6-bin.tar.gz -C /Data/app/ && ln -s /Data/app/hbase-1.2.6 /Data/app/hbase && cd /Data/app/hbase/conf
 
 #vi hbase-env.sh
-export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JAVA_HOME=/Data/app/jdk1.8.0_131
 export HBASE_CLASSPATH=/Data/app/hadoop/etc/hadoop
 export HBASE_SSH_OPTS="-p 5122" 
 
