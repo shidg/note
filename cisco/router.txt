@@ -46,10 +46,23 @@ interface GigabitEthernet0/1
 ip address 10.10.9.2 255.255.255.0
 ip nat inside
 
+# 定义nat池1
+ip nat pool wired 123.127.240.42 123.127.240.42 netmask 255.255.255.248
+
+
+#定义nat池2
+ip nat pool wireless 123.127.240.43 123.127.240.43 netmask 255.255.255.248
+
+#定义access list 1，使用nat池1,对外ip为42
+ip nat inside source list 1 pool wired overload
+
+#定义access list 2，使用nat池2,对外ip为43
+ip nat inside source list 2 pool wireless overload
+
 #外网网关
 ip route 0.0.0.0 0.0.0.0 123.127.xxx.xxx
 
-#内网网段默认路由（三层交换上与路由器相连的借口的ip地址）
+#内网网段默认路由（三层交换上与路由器相连的接口的ip地址）
 ip route 10.10.5.0 255.255.255.0 10.10.9.1
 ip route 10.10.6.0 255.255.255.0 10.10.9.1
 ip route 10.10.7.0 255.255.255.0 10.10.9.1
@@ -57,15 +70,20 @@ ip route 10.10.8.0 255.255.255.0 10.10.9.1
 ip route 10.10.9.0 255.255.255.0 10.10.9.1
 ip route 10.10.10.0 255.255.255.0 10.10.9.1
 ip route 10.10.11.0 255.255.255.0 10.10.9.1
+ip route 10.10.12.0 255.255.255.0 10.10.9.1
 
 
+#定义不同网段使用的access list，这里有线网络和无线网络分开，对外ip分别为42和43
+#有线
 access-list 1 permit 10.10.8.0 0.0.0.255
-access-list 1 permit 10.10.7.0 0.0.0.255
-access-list 1 permit 10.10.6.0 0.0.0.255
-access-list 1 permit 10.10.5.0 0.0.0.255
+access-list 1 permit 10.10.9.0 0.0.0.255
 access-list 1 permit 10.10.11.0 0.0.0.255
 access-list 1 permit 10.10.10.0 0.0.0.255
-access-list 1 permit 10.10.9.0 0.0.0.255
+access-list 1 permit 10.10.12.0 0.0.0.255
+#无线
+access-list 2 permit 10.10.6.0 0.0.0.255
+access-list 2 permit 10.10.7.0 0.0.0.255
+access-list 2 permit 10.10.5.0 0.0.0.255
 
 
 
