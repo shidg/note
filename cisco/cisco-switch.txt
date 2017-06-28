@@ -76,8 +76,15 @@ ip access-group 100 out
 
 
 #添加一条ACL
+#进入特权模式
 conf t
-ip access-list extended 100
+
+#进入到想要修改的access-list
+ip access-list extended vlan100 (vlan100是access-list的名字)
+
+#添加规则
 12 permit ip 10.10.6.0 0.0.0.255 10.10.8.15 0.0.0.0
-no 12 #删除一条ACL
+
+#删除一条ACL
+no 12
 

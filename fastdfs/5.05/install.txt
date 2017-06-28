@@ -1,4 +1,4 @@
-##FastDFS_v5.05 On CentOS-6.5##
+##FastDFS_v5.08 On CentOS-7.3##
 
 ##http://sourceforge.net/projects/fastdfs/files/##
 
@@ -6,6 +6,7 @@
 
 ##libfastcommon#
 #https://github.com/happyfish100/libfastcommon
+#https://codeload.github.com/happyfish100/libfastcommon/zip/master
 unzip libfastcommon-master.zip
 cd libfastcommon-master
 ./make.sh
@@ -13,7 +14,7 @@ cd libfastcommon-master
 
 
 # FastDFS <所有机器>
-tar zxvf FastDFS_v5.05.tar.gz && cd FastDFS
+tar zxvf FastDFS_v5.08.tar.gz && cd FastDFS
 ./make.sh
 ./make.sh install
 

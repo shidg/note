@@ -51,6 +51,7 @@ cp conf/zabbix_server.conf /etc/zabbix
 #start zabbix_server(default port 10051)
 useradd zabbix
 /Data/app/zabbix/sbin/zabbix_server -c /etc/zabbix/zabbix_server.conf
+/Data/app/zabbix/sbin/zabbix_java/startup.sh
 
 #nginx配置好虚拟机，如 vhosts/monitor.my.com，假设根目录设置为/Data/code/zabbix
 cd /Data/software/zabbix-2.4.5
