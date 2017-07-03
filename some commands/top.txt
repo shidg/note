@@ -1,0 +1,51 @@
+# 找出占用CPU最多的线程
+
+# 执行top，查看占用CPU最多的PID 
+
+Tasks: 176 total,   1 running, 175 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  6.2 us,  0.9 sy,  0.0 ni, 92.6 id,  0.0 wa,  0.0 hi,  0.2 si,  0.1 st
+KiB Mem:  32520424 total, 31813584 used,   706840 free,   102064 buffers
+KiB Swap:        0 total,        0 used,        0 free. 24664172 cached Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                                                            P
+20888 tomcat    20   0 21.024g 5.263g  14668 S  67.5 17.0 195:48.18 jsvc                                                                                               1
+ 5694 root      20   0  123660   1672   1156 R   0.3  0.0   0:00.12 top                                                                                                7
+32289 root      20   0   25352   1652   1016 S   0.3  0.0   4:50.31 AliYunDunUpdate                                                                                    1
+32394 root      20   0  129844   9096   4196 S   0.3  0.0  21:31.22 AliYunDun                                                                                          4
+    1 root      20   0   49596   3308   1844 S   0.0  0.0   0:15.46 systemd 
+
+
+# 查看该进程下的所有线程
+top -p 20888 -H
+
+Threads: 1030 total,   1 running, 1029 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 16.8 us,  1.3 sy,  0.0 ni, 81.1 id,  0.3 wa,  0.0 hi,  0.3 si,  0.2 st
+KiB Mem:  32520424 total, 31838436 used,   681988 free,   102260 buffers
+KiB Swap:        0 total,        0 used,        0 free. 24689884 cached Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                                                                             P
+21150 tomcat    20   0 21.023g 5.266g  14668 R 18.0 17.0   6:53.70 jsvc                                                                                                1
+21860 tomcat    20   0 21.023g 5.266g  14668 S 12.0 17.0   2:16.23 jsvc                                                                                                1
+21162 tomcat    20   0 21.023g 5.266g  14668 S  6.0 17.0   3:35.02 jsvc                                                                                                0
+21249 tomcat    20   0 21.023g 5.266g  14668 S  6.0 17.0   0:39.16 jsvc                                                                                                0
+21737 tomcat    20   0 21.023g 5.266g  14668 S  6.0 17.0   0:00.78 jsvc                                                                                                5
+21747 tomcat    20   0 21.023g 5.266g  14668 S  6.0 17.0   1:45.83 jsvc                                                                                                1
+21752 tomcat    20   0 21.023g 5.266g  14668 S  6.0 17.0   2:14.21 jsvc                                                                                                1
+
+#linux下，所有的java内部线程，其实都对应了一个PID，
+#也就是说，linux上的sun
+jvm将java程序中的线程映射为了操作系统进程。可以看到占用cpu最高的java线程被影射为PID21150,这个PID对应的是java线程信息中的nid
+
+
+#查看21150对应的java代码
+
+#打印出当前java栈信息到文件，20888是tomcat父进程的PID号(可以使用jps得到)
+jstack  20888 > stack.log
+
+#在打印出的文件中查找nid为21150的内容，由于打印出的文件中nid为16进制，所以要先将21150转换为16进制
+python -c "print hex(21150)"
+
+
+#grep "0x5686" stack.log
+
+
