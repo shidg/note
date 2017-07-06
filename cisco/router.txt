@@ -86,6 +86,11 @@ access-list 2 permit 10.10.7.0 0.0.0.255
 access-list 2 permit 10.10.5.0 0.0.0.255
 
 
+#查看NAT运行情况
+
+show ip nat  statistics
+
+show ip nat translations
 
 # 清除所有已建立连接，效果相当于重启
 clear ip nat translation *

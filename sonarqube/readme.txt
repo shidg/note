@@ -30,7 +30,7 @@ edit the file sonar.properties
 #install nginx as a proxy server#
 
 
-# install ldap-plugin,then log in with AD domain users#
+# install ldap-plugin(2.2.0.601),then log in with AD domain users#
 
 
 
