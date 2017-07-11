@@ -31,10 +31,10 @@ ln -s rabbitmq_server-3.6.10/ ./rabbitmq
 
 ./sbin/rabbitmq-server start
 
-./rabbitmqctl status|stop
+./sbin/rabbitmqctl status|stop
 
 mkdir /etc/rabbitmq
-./rabbitmq-plugins enable rabbitmq_management
+./sbin/rabbitmq-plugins enable rabbitmq_management
 
 #http://10.10.x.x:15672
 #默认帐号guest/guest只支持localhost登录，不支持远程登录
