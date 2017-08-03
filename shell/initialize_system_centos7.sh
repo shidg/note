@@ -315,12 +315,6 @@ set cursorline
 "搜索时忽略大小写
 set ignorecase
  
-" 插入匹配括号
-inoremap ( ()<LEFT>
-inoremap [ []<LEFT>
-inoremap { {}<LEFT>
-
- 
 "在执行宏命令时，不进行显示重绘；在宏命令执行完成后，一次性重绘，以便提高性能。
 set lazyredraw
  

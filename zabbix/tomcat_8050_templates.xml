@@ -9,8 +9,8 @@
     </groups>
     <templates>
         <template>
-            <template>Template App Tomcat 8030</template>
-            <name>Template App Tomcat 8030</name>
+            <template>Template App Tomcat 8050</template>
+            <name>Template App Tomcat 8050</name>
             <description/>
             <groups>
                 <group>
@@ -19,29 +19,29 @@
             </groups>
             <applications>
                 <application>
-                    <name>Tomcat Class[8030]</name>
+                    <name>Tomcat Class[8050]</name>
                 </application>
                 <application>
-                    <name>Tomcat HeapStatistics[8030]</name>
+                    <name>Tomcat HeapStatistics[8050]</name>
                 </application>
                 <application>
-                    <name>Tomcat Session[8030]</name>
+                    <name>Tomcat Session[8050]</name>
                 </application>
                 <application>
-                    <name>Tomcat ThreadStatistics[8030]</name>
+                    <name>Tomcat ThreadStatistics[8050]</name>
                 </application>
                 <application>
-                    <name>Tomcat Version[8030]</name>
+                    <name>Tomcat Version[8050]</name>
                 </application>
             </applications>
             <items>
                 <item>
-                    <name>Tomcat activeSessions[8030]</name>
+                    <name>Tomcat activeSessions[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   activeSessions]</key>
+                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     activeSessions]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -72,19 +72,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Session[8030]</name>
+                            <name>Tomcat Session[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat maxActiveSessions[8030]</name>
+                    <name>Tomcat maxActiveSessions[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   maxActiveSessions]</key>
+                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     maxActiveSessions]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -115,19 +115,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Session[8030]</name>
+                            <name>Tomcat Session[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat maxActive[8030]</name>
+                    <name>Tomcat maxActive[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   maxActive]</key>
+                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     maxActive]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -158,19 +158,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Session[8030]</name>
+                            <name>Tomcat Session[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat rejectedSessions[8030]</name>
+                    <name>Tomcat rejectedSessions[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   rejectedSessions]</key>
+                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     rejectedSessions]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -201,19 +201,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Session[8030]</name>
+                            <name>Tomcat Session[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat sessionCounter[8030]</name>
+                    <name>Tomcat sessionCounter[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   sessionCounter]</key>
+                    <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     sessionCounter]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -244,19 +244,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Session[8030]</name>
+                            <name>Tomcat Session[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat 8030 compression</name>
+                    <name>Tomcat 8050 compression</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=ProtocolHandler,port=8030&quot;,compression]</key>
+                    <key>jmx[&quot;Catalina:type=ProtocolHandler,port=8050&quot;,      compression]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>0</trends>
@@ -295,7 +295,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;Catalina:type=Server&quot;,   serverInfo]</key>
+                    <key>jmx[&quot;Catalina:type=Server&quot;,     serverInfo]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>0</trends>
@@ -326,19 +326,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Version[8030]</name>
+                            <name>Tomcat Version[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat LoadedClassCount[8030]</name>
+                    <name>Tomcat LoadedClassCount[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=ClassLoading&quot;,   &quot;LoadedClassCount&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=ClassLoading&quot;,     &quot;LoadedClassCount&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -369,19 +369,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Class[8030]</name>
+                            <name>Tomcat Class[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat TotalLoadedClassCount[8030]</name>
+                    <name>Tomcat TotalLoadedClassCount[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=ClassLoading&quot;,   &quot;TotalLoadedClassCount&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=ClassLoading&quot;,     &quot;TotalLoadedClassCount&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -412,19 +412,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Class[8030]</name>
+                            <name>Tomcat Class[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat UnloadedClassCount[8030]</name>
+                    <name>Tomcat UnloadedClassCount[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=ClassLoading&quot;,   &quot;UnloadedClassCount&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=ClassLoading&quot;,     &quot;UnloadedClassCount&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -455,19 +455,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat Class[8030]</name>
+                            <name>Tomcat Class[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat HeapMemoryUsage.committed[8030]</name>
+                    <name>Tomcat HeapMemoryUsage.committed[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=Memory&quot;,   &quot;HeapMemoryUsage.committed&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=Memory&quot;,     &quot;HeapMemoryUsage.committed&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -498,19 +498,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat HeapStatistics[8030]</name>
+                            <name>Tomcat HeapStatistics[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat HeapMemoryUsage.max[8030]</name>
+                    <name>Tomcat HeapMemoryUsage.max[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=Memory&quot;,   &quot;HeapMemoryUsage.max&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=Memory&quot;,     &quot;HeapMemoryUsage.max&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -541,19 +541,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat HeapStatistics[8030]</name>
+                            <name>Tomcat HeapStatistics[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat HeapMemoryUsage.used[8030]</name>
+                    <name>Tomcat HeapMemoryUsage.used[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=Memory&quot;,   &quot;HeapMemoryUsage.used&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=Memory&quot;,     &quot;HeapMemoryUsage.used&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -584,19 +584,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat HeapStatistics[8030]</name>
+                            <name>Tomcat HeapStatistics[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat PeakThreadCount[8030]</name>
+                    <name>Tomcat PeakThreadCount[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=Threading&quot;,   &quot;PeakThreadCount&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=Threading&quot;,     &quot;PeakThreadCount&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -627,19 +627,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat ThreadStatistics[8030]</name>
+                            <name>Tomcat ThreadStatistics[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat ThreadCount[8030]</name>
+                    <name>Tomcat ThreadCount[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=Threading&quot;,   &quot;ThreadCount&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=Threading&quot;,     &quot;ThreadCount&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -670,19 +670,19 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat ThreadStatistics[8030]</name>
+                            <name>Tomcat ThreadStatistics[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat TotalStartedThreadCount[8030]</name>
+                    <name>Tomcat TotalStartedThreadCount[8050]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>jmx[&quot;java.lang:type=Threading&quot;,   &quot;TotalStartedThreadCount&quot;]</key>
+                    <key>jmx[&quot;java.lang:type=Threading&quot;,     &quot;TotalStartedThreadCount&quot;]</key>
                     <delay>30</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -713,7 +713,7 @@
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>Tomcat ThreadStatistics[8030]</name>
+                            <name>Tomcat ThreadStatistics[8050]</name>
                         </application>
                     </applications>
                     <valuemap/>
@@ -729,7 +729,7 @@
     </templates>
     <graphs>
         <graph>
-            <name>Tomcat Class Status[8030]</name>
+            <name>Tomcat Class Status[8050]</name>
             <width>900</width>
             <height>200</height>
             <yaxismin>0.0000</yaxismin>
@@ -754,8 +754,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=ClassLoading&quot;,   &quot;LoadedClassCount&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=ClassLoading&quot;,     &quot;LoadedClassCount&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -766,8 +766,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=ClassLoading&quot;,   &quot;UnloadedClassCount&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=ClassLoading&quot;,     &quot;UnloadedClassCount&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -778,14 +778,14 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=ClassLoading&quot;,   &quot;TotalLoadedClassCount&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=ClassLoading&quot;,     &quot;TotalLoadedClassCount&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
         </graph>
         <graph>
-            <name>Tomcat HeapMemory Status[8030]</name>
+            <name>Tomcat HeapMemory Status[8050]</name>
             <width>900</width>
             <height>200</height>
             <yaxismin>0.0000</yaxismin>
@@ -810,8 +810,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=Memory&quot;,   &quot;HeapMemoryUsage.used&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=Memory&quot;,     &quot;HeapMemoryUsage.used&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -822,8 +822,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=Memory&quot;,   &quot;HeapMemoryUsage.committed&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=Memory&quot;,     &quot;HeapMemoryUsage.committed&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -834,14 +834,14 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=Memory&quot;,   &quot;HeapMemoryUsage.max&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=Memory&quot;,     &quot;HeapMemoryUsage.max&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>
         </graph>
         <graph>
-            <name>Tomcat Session Status[8030]</name>
+            <name>Tomcat Session Status[8050]</name>
             <width>900</width>
             <height>200</height>
             <yaxismin>0.0000</yaxismin>
@@ -866,8 +866,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   maxActive]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     maxActive]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -878,8 +878,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   activeSessions]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     activeSessions]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -890,8 +890,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   sessionCounter]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     sessionCounter]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -902,8 +902,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   rejectedSessions]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     rejectedSessions]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -914,14 +914,14 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,   maxActiveSessions]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;Catalina:type=Manager,context=/,host=localhost&quot;,     maxActiveSessions]</key>
                     </item>
                 </graph_item>
             </graph_items>
         </graph>
         <graph>
-            <name>Tomcat Thread Status[8030]</name>
+            <name>Tomcat Thread Status[8050]</name>
             <width>900</width>
             <height>200</height>
             <yaxismin>0.0000</yaxismin>
@@ -946,8 +946,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=Threading&quot;,   &quot;ThreadCount&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=Threading&quot;,     &quot;ThreadCount&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -958,8 +958,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=Threading&quot;,   &quot;PeakThreadCount&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=Threading&quot;,     &quot;PeakThreadCount&quot;]</key>
                     </item>
                 </graph_item>
                 <graph_item>
@@ -970,8 +970,8 @@
                     <calc_fnc>2</calc_fnc>
                     <type>0</type>
                     <item>
-                        <host>Template App Tomcat 8030</host>
-                        <key>jmx[&quot;java.lang:type=Threading&quot;,   &quot;TotalStartedThreadCount&quot;]</key>
+                        <host>Template App Tomcat 8050</host>
+                        <key>jmx[&quot;java.lang:type=Threading&quot;,     &quot;TotalStartedThreadCount&quot;]</key>
                     </item>
                 </graph_item>
             </graph_items>

@@ -1,8 +1,7 @@
-set nocompatible	" Use Vim defaults (much better!)
-set bs=indent,eol,start		" allow backspacing over everything in insert mode
-"set ai			" always set autoindenting on
-set viminfo='20,\"50	" read/write a .viminfo file, don't store more
-			" than 50 lines of registers
+set nocompatible" Use Vim defaults (much better!)
+set bs=indent,eol,start" allow backspacing over everything in insert mode
+set viminfo='20,\"50" read/write a .viminfo file, don't store more
+" than 50 lines of registers
 
 " Only do this part when compiled with support for autocommands
 if has("autocmd")
@@ -31,8 +30,8 @@ if has("cscope") && filereadable("/usr/bin/cscope")
    if filereadable("cscope.out")
       cs add cscope.out
    " else add database pointed to by environment
-   elseif $CSCOPE_DB != ""
-      cs add $CSCOPE_DB
+   elseif  != ""
+      cs add 
    endif
    set csverb
 endif
@@ -50,12 +49,6 @@ endif
 
 filetype plugin on
 
-if &term=="xterm"
-     set t_Co=8
-     set t_Sb=[4%dm
-     set t_Sf=[3%dm
-endif
-
 " Don't wake up system with blinking cursor:
 " http://www.linuxpowertop.org/known.php
 let &guicursor = &guicursor . ",a:blinkon0"
@@ -68,8 +61,8 @@ syntax on
 
 "配色方案
 execute pathogen#infect()
-set background=dark
-colorscheme solarized
+"set background=dark
+"colorscheme solarized
  
 "显示行数标示
 set number
@@ -98,59 +91,6 @@ set cursorline
 "搜索时忽略大小写
 set ignorecase
  
-" 插入匹配括号
-inoremap ( ()<LEFT>
-inoremap [ []<LEFT>
-inoremap { {}<LEFT>
-
-" 按退格键时判断当前光标前一个字符，如果是左括号，则删除对应的右括号以及括号中间的内容
-function! RemovePairs()
-    let l:line = getline(".")
-    let l:previous_char = l:line[col(".")-1] " 取得当前光标前一个字符
- 
-    if index(["(", "[", "{"], l:previous_char) != -1
-        let l:original_pos = getpos(".")
-        execute "normal %"
-        let l:new_pos = getpos(".")
- 
-        " 如果没有匹配的右括号
-        if l:original_pos == l:new_pos
-            execute "normal! a\<BS>"
-            return
-        end
- 
-        let l:line2 = getline(".")
-        if len(l:line2) == col(".")
-            " 如果右括号是当前行最后一个字符
-            execute "normal! v%xa"
-        else
-            " 如果右括号不是当前行最后一个字符
-            execute "normal! v%xi"
-        end
- 
-    else
-        execute "normal! a\<BS>"
-    end
-endfunction
-
-" 用退格键删除一个左括号时同时删除对应的右括号
-inoremap <BS> <ESC>:call RemovePairs()<CR>a
-
-" 输入一个字符时，如果下一个字符也是括号，则删除它，避免出现重复字符
-function! RemoveNextDoubleChar(char)
-    let l:line = getline(".")
-    let l:next_char = l:line[col(".")] " 取得当前光标后一个字符
- 
-    if a:char == l:next_char
-        execute "normal! l"
-    else
-        execute "normal! i" . a:char . ""
-    end
-endfunction
-inoremap ) <ESC>:call RemoveNextDoubleChar(')')<CR>a
-inoremap ] <ESC>:call RemoveNextDoubleChar(']')<CR>a
-inoremap } <ESC>:call RemoveNextDoubleChar('}')<CR>a
- 
 "在执行宏命令时，不进行显示重绘；在宏命令执行完成后，一次性重绘，以便提高性能。
 set lazyredraw
  
@@ -160,16 +100,12 @@ set tabstop=4
 "在按退格键时，如果前面有4个空格，则会统一清除
 set softtabstop=4
  
-"cindent对c语法的缩进更加智能灵活，
-"而shiftwidth则是在使用&lt;和&gt;进行缩进调整时用来控制缩进量。
-"换行自动缩进，是按照shiftwidth值来缩进的
-set cindent shiftwidth=4
  
 "最基本的自动缩进
 "set autoindent shiftwidth=4
  
 "比autoindent稍智能的自动缩进
-set smartindent shiftwidth=4
+"set smartindent shiftwidth=4
 
 "字符编码
 set encoding=utf-8
@@ -203,7 +139,7 @@ let mapleader=","
 map es :/.*\s\+$<CR>
  
 "删除行末尾的空格或TAB（ed：Endspace Delete）
-map ed :s#\s\+$##<CR>
+map ed :s#\s\+0#<CR>
  
 "如果所选行的行首没有#，则给所选行行首加上注释符#（#a：# add）
 map #a :s/^\([^#]\s*\)/#\1/<CR>
@@ -217,22 +153,3 @@ map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
 "如果所选行行首有//，则将所选行行首的//都去掉（/d：/ delete）
 map /d :s/^\/\/\(\s*\)/\1/<CR>
 
-"在同一vim窗口中打开man手册
-source $VIMRUNTIME/ftplugin/man.vim
-
-"NERDTree
-"打开vim时自动运行NERDTree
-autocmd vimenter * NERDTree
-"运行NERDTree后自动将光标定位在右侧窗口
-autocmd VimEnter * wincmd w
-autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-"退出编辑区自动退出NERDTree
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
-"默认显示bookmarks
-let NERDTreeShowBookmarks=1 
-"打开/关闭NERDTree的快捷键
-map <C-n> :NERDTreeToggle<CR>
-
-"vim-nerdtree-tabs
-let g:nerdtree_tabs_open_on_console_startup=1

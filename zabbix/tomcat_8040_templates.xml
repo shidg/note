@@ -290,7 +290,7 @@
                     <logtimefmt/>
                 </item>
                 <item>
-                    <name>Tomcat Version[8082]</name>
+                    <name>Tomcat Version[8020]</name>
                     <type>16</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
