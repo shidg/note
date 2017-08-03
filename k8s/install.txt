@@ -1,0 +1,500 @@
+##CentOS 7.3  (3.10.0-514.26.2.el7.x86_64)
+
+# 3 servers
+# 10.10.8.210(k8s-master)
+# 10.10.8.211(k8s-node-1)
+# 10.10.8.212(k8s-node-2)
+
+
+
+######  定义全局变量(ON ALL SERVERS) ##########
+
+cat > /root/environment.sh << EOF
+#!/usr/bin/bash                                                                                                                                                          
+
+# TLS Bootstrapping 使用的 Token，可以使用命令 head -c 16 /dev/urandom | od -An -t x | tr -d ' ' 生成
+BOOTSTRAP_TOKEN="41f7e4ba8b7be874fcff18bf5cf41a7c"
+
+# 最好使用 主机未用的网段 来定义服务网段和 Pod 网段
+
+# 服务网段 (Service CIDR），部署前路由不可达，部署后集群内使用IP:Port可达
+SERVICE_CIDR="10.254.0.0/16"
+    
+# POD 网段 (Cluster CIDR），部署前路由不可达，**部署后**路由可达(flanneld保)
+CLUSTER_CIDR="172.30.0.0/16"
+    
+# 服务端口范围 (NodePort Range)
+export NODE_PORT_RANGE="8400-9000"
+    
+# etcd 集群服务地址列表
+export ETCD_ENDPOINTS="https://10.10.8.210:2379,https://10.10.8.211:2379,https://10.10.8.212:2379"
+    
+# flanneld 网络配置前缀
+export FLANNEL_ETCD_PREFIX="/feezu/network"
+    
+# kubernetes 服务 IP (一般是 SERVICE_CIDR 中第一个IP)
+export CLUSTER_KUBERNETES_SVC_IP="10.254.0.1"
+    
+# 集群 DNS 服务 IP (从 SERVICE_CIDR 中预分)
+export CLUSTER_DNS_SVC_IP="10.254.0.2"
+    
+# 集群 DNS 域名
+export CLUSTER_DNS_DOMAIN="cluster.local."
+
+EOF
+
+
+################ INSTALL CFSSL (ON Any Server) ############### 
+##PKI工具集 (public key infrastructure，缩写为PKI)
+
+cd /usr/sbin
+wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -O cfssl
+wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -O cfssljson
+wget https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -O cfssl-certinfo
+chmod +x cfssl*
+
+mkdir /root/ssl && cd /root/ssl
+cfssl print-defaults config > config.json
+cfssl print-defaults csr > csr.json
+
+cat  > ca-config.json <<EOF
+{
+  "signing": {
+    "default": {
+      "expiry": "8760h"
+    },
+    "profiles": {
+      "kubernetes": {
+        "usages": [
+            "signing",
+            "key encipherment",
+            "server auth",
+            "client auth"
+        ],
+        "expiry": "8760h"
+      }
+    }
+  }
+}
+EOF
+
+#ca-config.json：可以定义多个 profiles，分别指定不同的过期时间、使用场景等参数；后续在签名证书时使用某个 profile；
+#signing：表示该证书可用于签名其它证书；生成的 ca.pem 证书中 CA=TRUE；
+#server auth：表示 client 可以用该 CA 对 server 提供的证书进行验证；
+#client auth：表示 server 可以用该 CA 对 client 提供的证书进行验证；
+
+
+cat > ca-csr.json << EOF
+{
+  "CN": "kubernetes",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "System"
+    }
+  ]
+}
+EOF
+
+#"CN"：Common Name，kube-apiserver 从证书中提取该字段作为请求的用户名 (User Name)；浏览器使用该字段验证网站是否合法；
+#"O"：Organization，kube-apiserver 从证书中提取该字段作为请求用户所属的组 (Group)；
+
+
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+
+#分发证书，将证书拷贝到所有机器上
+#ON ALL SERVERS,DO THIS:
+mkdir /etc/kubernetes/ssl
+cp ca* /etc/kubernetes/ssl
+
+
+
+###############INSTALL ETCD CLUSTER ################
+# 当前部署的机器名称
+export NODE_NAME=k8s-master
+
+# 当前部署的机器 IP
+export NODE_IP=10.10.8.210 
+
+# etcd 集群所有机器 IP
+export NODE_IPS="10.10.8.210 10.10.8.211 10.10.8.212" 
+
+# etcd 集群间通信的IP和端口
+export ETCD_NODES=k8s-master=https://10.10.8.210:2380,k8s-node-1=https://10.10.8.211:2380,k8s-node-2=https://10.10.8.212:2380
+
+# 导入用到的其它全局变量：ETCD_ENDPOINTS、FLANNEL_ETCD_PREFIX、CLUSTER_CIDR
+source /root/environment.sh
+
+
+cd /Data/app
+wget https://github.com/coreos/etcd/releases/download/v3.1.6/etcd-v3.1.6-linux-amd64.tar.gz
+tar -zxvf etcd-v3.1.6-linux-amd64.tar.gz
+mv etcd-v3.1.6-linux-amd64/etcd*  /usr/sbin
+
+
+
+#创建etcd证书签名请求
+cat > etcd-csr.json << EOF
+{
+  "CN": "etcd",
+  "hosts": [
+    "127.0.0.1",
+    "${NODE_IP}"
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "System"
+    }
+  ]
+}
+EOF
+# hosts 字段指定授权使用该证书的 etcd 节点 IP；
+
+
+#生成etcd证书和私钥
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes etcd-csr.json | cfssljson -bare etcd
+
+
+mkdir -p /etc/etcd/ssl
+mv etcd*.pem /etc/etcd/ssl
+rm -f etcd.csr etcd-csr.json
+
+
+
+#创建etcd的systemd unit文件
+cat > /usr/lib/systemd/system/etcd.service << EOF
+[Unit]
+Description=Etcd Server
+After=network.target
+After=network-online.target
+Wants=network-online.target
+Documentation=https://github.com/coreos
+
+[Service]
+Type=notify
+WorkingDirectory=/var/lib/etcd/
+ExecStart=/usr/sbin/etcd \\
+  --name=${NODE_NAME} \\
+  --cert-file=/etc/etcd/ssl/etcd.pem \\
+  --key-file=/etc/etcd/ssl/etcd-key.pem \\
+  --peer-cert-file=/etc/etcd/ssl/etcd.pem \\
+  --peer-key-file=/etc/etcd/ssl/etcd-key.pem \\
+  --trusted-ca-file=/etc/kubernetes/ssl/ca.pem \\
+  --peer-trusted-ca-file=/etc/kubernetes/ssl/ca.pem \\
+  --initial-advertise-peer-urls=https://${NODE_IP}:2380 \\
+  --listen-peer-urls=https://${NODE_IP}:2380 \\
+  --listen-client-urls=https://${NODE_IP}:2379,http://127.0.0.1:2379 \\
+  --advertise-client-urls=https://${NODE_IP}:2379 \\
+  --initial-cluster-token=etcd-cluster-0 \\
+  --initial-cluster=${ETCD_NODES} \\
+  --initial-cluster-state=new \\
+  --data-dir=/var/lib/etcd
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+mkdir -p /var/lib/etcd
+
+#指定 etcd 的工作目录和数据目录为 /var/lib/etcd，需在启动服务前创建这个目录；
+#为了保证通信安全，需要指定 etcd 的公私钥(cert-file和key-file)、Peers 通信的公私钥和 CA 证书(peer-cert-file、peer-key-file、peer-trusted-ca-file)、客户端的CA证书（trusted-ca-file）；
+#--initial-cluster-state 值为 new 时，--name 的参数值必须位于 --initial-cluster 列表中；
+
+
+systemctl daemon-reload
+systemctl enable etcd
+systemctl start etcd
+systemctl status etcd
+
+
+# INSTALL ETCD ON OTHER SERVETS#
+
+# 验证etcd集群的运行状态
+# 部署完 etcd 集群后，在任一 etcd 集群节点上执行如下命令：
+for ip in ${NODE_IPS};do
+  ETCDCTL_API=3 /usr/sbin/etcdctl \
+  --endpoints=https://${ip}:2379  \
+  --cacert=/etc/kubernetes/ssl/ca.pem \
+  --cert=/etc/etcd/ssl/etcd.pem \
+  --key=/etc/etcd/ssl/etcd-key.pem \
+  endpoint health;
+done
+
+#三台 etcd 的输出均为 healthy 时表示集群服务正常（忽略 warning 信息）
+#2017-08-03 23:56:07.495929 I | warning: ignoring ServerName for user-provided CA for backwards compatibility is deprecated
+#https://10.10.8.210:2379 is healthy: successfully committed proposal: took = 2.099047ms
+#2017-08-03 23:56:07.535874 I | warning: ignoring ServerName for user-provided CA for backwards compatibility is deprecated
+#https://10.10.8.211:2379 is healthy: successfully committed proposal: took = 1.920639ms
+#2017-08-03 23:56:07.574565 I | warning: ignoring ServerName for user-provided CA for backwards compatibility is deprecated
+#https://10.10.8.212:2379 is healthy: successfully committed proposal: took = 1.999241ms
+
+
+
+
+#############INSTALL kubectl (ON k8s-master)###############
+
+#kubectl 默认从 ~/.kube/config 配置文件获取访问 kube-apiserver 地址、证书、用户名等信息，如果没有配置该文件，执行命令时出错：
+
+#定义变量
+export MASTER_IP=10.10.8.210
+export KUBE_APISERVER="https://${MASTER_IP}:6443"
+
+
+# download kubectl
+cd /Data/app
+wget https://dl.k8s.io/v1.6.2/kubernetes-client-linux-amd64.tar.gz
+tar zxvf kubernetes-client-linux-amd64.tar.gz
+cp kubernetes/client/bin/kube* /usr/sbin
+
+
+#创建admin证书
+# kubectl 与 kube-apiserver 的安全端口通信，需要为安全通信提供 TLS 证书和秘钥
+# 创建 admin 证书签名请求
+cat > admin-csr.json << EOF
+{
+  "CN": "admin",
+  "hosts": [],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "system:masters",
+      "OU": "System"
+    }
+  ]
+}
+EOF
+
+#后续 kube-apiserver 使用 RBAC 对客户端(如 kubelet、kube-proxy、Pod)请求进行授权；
+#kube-apiserver 预定义了一些 RBAC 使用的 RoleBindings，如 cluster-admin 将 Group system:masters 与 Role cluster-admin 绑定，该 Role 授予了调用kube-apiserver 所有 API的权限；
+#O 指定该证书的 Group 为 system:masters，kubelet 使用该证书访问 kube-apiserver 时 ，由于证书被 CA 签名，所以认证通过，同时由于证书用户组为经过预授权的 system:masters，所以被授予访问所有 API 的权限；
+#hosts 属性值为空列表；
+
+#生成 admin 证书和私钥：
+
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes admin-csr.json | cfssljson -bare admin
+
+mv admin*.pem /etc/kubernetes/ssl/
+rm -f admin.csr admin-csr.json
+
+# 创建kubectl kubeconfig 文件
+# 设置集群参数
+kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/ssl/ca.pem \
+  --embed-certs=true \
+  --server=${KUBE_APISERVER}
+# 设置客户端认证参数
+kubectl config set-credentials admin \
+  --client-certificate=/etc/kubernetes/ssl/admin.pem \
+  --embed-certs=true \
+  --client-key=/etc/kubernetes/ssl/admin-key.pem
+# 设置上下文参数
+kubectl config set-context kubernetes \
+  --cluster=kubernetes \
+  --user=admin
+# 设置默认上下文
+kubectl config use-context kubernetes
+
+#admin.pem 证书 O 字段值为 system:masters，kube-apiserver 预定义的 RoleBinding cluster-admin 将 Group system:masters 与 Role cluster-admin 绑定，该 Role 授予了调用kube-apiserver 相关 API 的权限；
+#生成的 kubeconfig 被保存到 ~/.kube/config 文件；
+
+
+
+############INSTALL Flannel网络(ON ALL SERVERS)#############
+# kubernetes 要求集群内各节点能通过 Pod 网段互联互通
+#定义变量
+export NODE_IP=10.10.8.210
+#当前节点的IP
+
+source /root/environment.sh
+#导入其他全局变量 ETCD_ENDPOINTS、FLANNEL_ETCD_PREFIX、CLUSTER_CIDR
+
+
+#创建TLS密钥和证书。etcd集群启用了双向TLS认证,所以需要为flanneld指定与etcd集群通信的CA和秘钥
+#创建 flanneld 证书签名请求：
+cat > flanneld-csr.json <<EOF
+{
+  "CN": "flanneld",
+  "hosts": [],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "System"
+    }
+  ]
+}
+EOF
+#hosts 字段为空；
+
+#生成 flanneld 证书和私钥
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes flanneld-csr.json | cfssljson -bare flanneld
+
+mkdir -p /etc/flanneld/ssl
+mv flanneld*.pem /etc/flanneld/ssl
+rm -f flanneld.csr  flanneld-csr.json
+
+
+
+# 向 etcd 写入集群 Pod 网段信息#
+# 注意：本步骤只需在第一次部署 Flannel 网络时执行，后续在其它节点上部署 Flannel 时无需再写入该信息！
+etcdctl \
+  --endpoints=${ETCD_ENDPOINTS} \
+  --ca-file=/etc/kubernetes/ssl/ca.pem \
+  --cert-file=/etc/flanneld/ssl/flanneld.pem \
+  --key-file=/etc/flanneld/ssl/flanneld-key.pem \
+  set ${FLANNEL_ETCD_PREFIX}/config '{"Network":"'${CLUSTER_CIDR}'", "SubnetLen": 24, "Backend": {"Type": "vxlan"}}'
+
+#flanneld 目前版本 (v0.7.1) 不支持 etcd v3，故使用 etcd v2 API 写入配置 key 和网段数据；
+#写入的 Pod 网段(${CLUSTER_CIDR}，172.30.0.0/16) 必须与 kube-controller-manager 的 --cluster-cidr 选项值一致；
+
+
+#安装和配置Flanneld
+
+#download flannel
+cd /Data/app
+wget https://github.com/coreos/flannel/releases/download/v0.7.1/flannel-v0.7.1-linux-amd64.tar.gz
+tar zxvf flannel-v0.7.1-linux-amd64.tar.gz -C flannel
+cp flannel/{flanneld,mk-docker-opts.sh} /usr/sbin
+
+
+#创建 flanneld 的 systemd unit 文件
+
+cat > /usr/lib/systemd/system/flanneld.service << EOF
+[Unit]
+Description=Flanneld overlay address etcd agent
+After=network.target
+After=network-online.target
+Wants=network-online.target
+After=etcd.service
+Before=docker.service
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/flanneld \\
+  -etcd-cafile=/etc/kubernetes/ssl/ca.pem \\
+  -etcd-certfile=/etc/flanneld/ssl/flanneld.pem \\
+  -etcd-keyfile=/etc/flanneld/ssl/flanneld-key.pem \\
+  -etcd-endpoints=${ETCD_ENDPOINTS} \\
+  -etcd-prefix=${FLANNEL_ETCD_PREFIX}
+ExecStartPost=/usr/sbin/mk-docker-opts.sh -k DOCKER_NETWORK_OPTIONS -d /run/flannel/docker
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=docker.service
+EOF
+
+#mk-docker-opts.sh 脚本将分配给 flanneld 的 Pod 子网网段信息写入到 /run/flannel/docker 文件中，后续 docker 启动时使用这个文件中参数值设置 docker0 网桥；
+#flanneld 使用系统缺省路由所在的接口和其它节点通信，对于有多个网络接口的机器（如，内网和公网），可以用 -iface 选项值指定通信接口(上面的 systemd unit 文件没指定这个选项)；
+
+#启动flanneld
+systemctl daemon-reload
+systemctl enable flanneld
+systemctl start flanneld
+systemctl status flanneld
+
+
+#检查 flanneld 服务
+journalctl  -u flanneld |grep 'Lease acquired'
+ip addr show flannel.1
+
+
+#检查分配给各 flanneld 的 Pod 网段信息
+ # 查看集群 Pod 网段(/16)
+etcdctl \
+  --endpoints=${ETCD_ENDPOINTS} \
+  --ca-file=/etc/kubernetes/ssl/ca.pem \
+  --cert-file=/etc/flanneld/ssl/flanneld.pem \
+  --key-file=/etc/flanneld/ssl/flanneld-key.pem \
+  get ${FLANNEL_ETCD_PREFIX}/config
+#输出如下:
+{"Network": "172.30.0.0/16", "SubnetLen": 24, "Backend": { "Type": "vxlan" }}
+
+
+# 查看已分配的 Pod 子网段列表(/24)
+etcdctl \
+  --endpoints=${ETCD_ENDPOINTS} \
+  --ca-file=/etc/kubernetes/ssl/ca.pem \
+  --cert-file=/etc/flanneld/ssl/flanneld.pem \
+  --key-file=/etc/flanneld/ssl/flanneld-key.pem \
+  ls ${FLANNEL_ETCD_PREFIX}/subnets
+
+#输出如下:
+/feezu/network/subnets/172.30.83.0-2
+
+
+# 查看某一 Pod 网段对应的 flanneld 进程监听的 IP 和网络参数
+etcdctl \
+  --endpoints=${ETCD_ENDPOINTS} \
+  --ca-file=/etc/kubernetes/ssl/ca.pem \
+  --cert-file=/etc/flanneld/ssl/flanneld.pem \
+  --key-file=/etc/flanneld/ssl/flanneld-key.pem \
+  get ${FLANNEL_ETCD_PREFIX}/subnets/172.30.19.0-24
+
+#输出如下：
+{"PublicIP":"10.10.8.210","BackendType":"vxlan","BackendData":{"VtepMAC":"b6:62:58:65:97:ed"}}
+
+
+#确保各节点间 Pod 网段能互联互通
+
+#在各节点上部署完 Flannel 后，查看已分配的 Pod 子网段列表(/24)(ON any server)
+
+etcdctl \
+  --endpoints=${ETCD_ENDPOINTS} \
+  --ca-file=/etc/kubernetes/ssl/ca.pem \
+  --cert-file=/etc/flanneld/ssl/flanneld.pem \
+  --key-file=/etc/flanneld/ssl/flanneld-key.pem \
+  ls ${FLANNEL_ETCD_PREFIX}/subnets
+
+#输出如下：
+/feezu/network/subnets/172.30.83.0-24
+/feezu/network/subnets/172.30.66.0-24
+/feezu/network/subnets/172.30.67.0-24
+
+#当前三个节点分配的 Pod 网段分别是：172.30.83.0-24、172.30.66.0-24、172.30.67.0-24。
+
+
+
+#在各节点上分配 ping 这三个网段的网关地址，确保能通：
+ping 172.30.83.0
+ping 172.30.66.0
+ping 172.30.67.0
