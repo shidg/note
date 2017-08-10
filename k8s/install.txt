@@ -6,45 +6,7 @@
 # 10.10.8.212(k8s-node-2)
 
 
-
-######  定义全局变量(ON ALL SERVERS) ##########
-
-cat > /root/environment.sh << EOF
-#!/usr/bin/bash                                                                                                                                                          
-
-# TLS Bootstrapping 使用的 Token，可以使用命令 head -c 16 /dev/urandom | od -An -t x | tr -d ' ' 生成
-BOOTSTRAP_TOKEN="41f7e4ba8b7be874fcff18bf5cf41a7c"
-
-# 最好使用 主机未用的网段 来定义服务网段和 Pod 网段
-
-# 服务网段 (Service CIDR），部署前路由不可达，部署后集群内使用IP:Port可达
-SERVICE_CIDR="10.254.0.0/16"
-    
-# POD 网段 (Cluster CIDR），部署前路由不可达，**部署后**路由可达(flanneld保)
-CLUSTER_CIDR="172.30.0.0/16"
-    
-# 服务端口范围 (NodePort Range)
-export NODE_PORT_RANGE="8400-9000"
-    
-# etcd 集群服务地址列表
-export ETCD_ENDPOINTS="https://10.10.8.210:2379,https://10.10.8.211:2379,https://10.10.8.212:2379"
-    
-# flanneld 网络配置前缀
-export FLANNEL_ETCD_PREFIX="/feezu/network"
-    
-# kubernetes 服务 IP (一般是 SERVICE_CIDR 中第一个IP)
-export CLUSTER_KUBERNETES_SVC_IP="10.254.0.1"
-    
-# 集群 DNS 服务 IP (从 SERVICE_CIDR 中预分)
-export CLUSTER_DNS_SVC_IP="10.254.0.2"
-    
-# 集群 DNS 域名
-export CLUSTER_DNS_DOMAIN="cluster.local."
-
-EOF
-
-
-################ INSTALL CFSSL (ON Any Server) ############### 
+################ INSTALL CFSSL (ON All Server) ############### 
 ##PKI工具集 (public key infrastructure，缩写为PKI)
 
 cd /usr/sbin
@@ -52,6 +14,9 @@ wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -O cfssl
 wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -O cfssljson
 wget https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -O cfssl-certinfo
 chmod +x cfssl*
+
+
+#生成证书(任意一台机器生成，之后发布到所有机器)
 
 mkdir /root/ssl && cd /root/ssl
 cfssl print-defaults config > config.json
@@ -111,12 +76,54 @@ cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 
 #分发证书，将证书拷贝到所有机器上
 #ON ALL SERVERS,DO THIS:
-mkdir /etc/kubernetes/ssl
+mkdir -p /etc/kubernetes/ssl
 cp ca* /etc/kubernetes/ssl
 
 
+######  定义全局变量(ON ALL SERVERS) ##########
 
-###############INSTALL ETCD CLUSTER ################
+cat > /root/environment.sh << EOF
+#!/usr/bin/bash                                                                                                                                                          
+
+# TLS Bootstrapping 使用的 Token，可以使用命令 head -c 16 /dev/urandom | od -An -t x | tr -d ' ' 生成
+BOOTSTRAP_TOKEN="41f7e4ba8b7be874fcff18bf5cf41a7c"
+
+# 最好使用 主机未用的网段 来定义服务网段和 Pod 网段
+
+# 服务网段 (Service CIDR），部署前路由不可达，部署后集群内使用IP:Port可达
+SERVICE_CIDR="10.254.0.0/16"
+    
+# POD 网段 (Cluster CIDR），部署前路由不可达，**部署后**路由可达(flanneld保)
+CLUSTER_CIDR="172.30.0.0/16"
+    
+# 服务端口范围 (NodePort Range)
+export NODE_PORT_RANGE="8400-9000"
+    
+# etcd 集群服务地址列表
+export ETCD_ENDPOINTS="https://10.10.8.210:2379,https://10.10.8.211:2379,https://10.10.8.212:2379"
+    
+# flanneld 网络配置前缀
+export FLANNEL_ETCD_PREFIX="/feezu/network"
+    
+# kubernetes 服务 IP (一般是 SERVICE_CIDR 中第一个IP)
+export CLUSTER_KUBERNETES_SVC_IP="10.254.0.1"
+    
+# 集群 DNS 服务 IP (从 SERVICE_CIDR 中预分)
+export CLUSTER_DNS_SVC_IP="10.254.0.2"
+    
+# 集群 DNS 域名
+export CLUSTER_DNS_DOMAIN="cluster.local."
+
+EOF
+
+
+###############INSTALL ETCD CLUSTER (ON All SERVERS) ################
+cat > /etc/hosts <<EOF
+10.10.8.210 k8s-master
+10.10.8.211 k8s-node-1
+10.10.8.212 k8s-node-2
+EOF
+
 # 当前部署的机器名称
 export NODE_NAME=k8s-master
 
@@ -135,7 +142,7 @@ source /root/environment.sh
 
 cd /Data/app
 wget https://github.com/coreos/etcd/releases/download/v3.1.6/etcd-v3.1.6-linux-amd64.tar.gz
-tar -zxvf etcd-v3.1.6-linux-amd64.tar.gz
+tar zxvf etcd-v3.1.6-linux-amd64.tar.gz
 mv etcd-v3.1.6-linux-amd64/etcd*  /usr/sbin
 
 
@@ -180,6 +187,9 @@ rm -f etcd.csr etcd-csr.json
 
 
 #创建etcd的systemd unit文件
+#创建工作目录
+mkdir /var/lib/etcd
+
 cat > /usr/lib/systemd/system/etcd.service << EOF
 [Unit]
 Description=Etcd Server
@@ -215,13 +225,11 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
-mkdir -p /var/lib/etcd
-
 #指定 etcd 的工作目录和数据目录为 /var/lib/etcd，需在启动服务前创建这个目录；
 #为了保证通信安全，需要指定 etcd 的公私钥(cert-file和key-file)、Peers 通信的公私钥和 CA 证书(peer-cert-file、peer-key-file、peer-trusted-ca-file)、客户端的CA证书（trusted-ca-file）；
 #--initial-cluster-state 值为 new 时，--name 的参数值必须位于 --initial-cluster 列表中；
 
-
+#启动etcd
 systemctl daemon-reload
 systemctl enable etcd
 systemctl start etcd
@@ -252,7 +260,7 @@ done
 
 
 
-#############INSTALL kubectl (ON k8s-master)###############
+#############INSTALL kubectl (ON ALL SERVERS)###############
 
 #kubectl 默认从 ~/.kube/config 配置文件获取访问 kube-apiserver 地址、证书、用户名等信息，如果没有配置该文件，执行命令时出错：
 
@@ -392,8 +400,8 @@ etcdctl \
 #download flannel
 cd /Data/app
 wget https://github.com/coreos/flannel/releases/download/v0.7.1/flannel-v0.7.1-linux-amd64.tar.gz
-tar zxvf flannel-v0.7.1-linux-amd64.tar.gz -C flannel
-cp flannel/{flanneld,mk-docker-opts.sh} /usr/sbin
+tar zxvf flannel-v0.7.1-linux-amd64.tar.gz
+cp flanneld,mk-docker-opts.sh /usr/sbin
 
 
 #创建 flanneld 的 systemd unit 文件
@@ -458,9 +466,10 @@ etcdctl \
   --key-file=/etc/flanneld/ssl/flanneld-key.pem \
   ls ${FLANNEL_ETCD_PREFIX}/subnets
 
-#输出如下:
-/feezu/network/subnets/172.30.83.0-2
-
+#输出如下(具体网段可能与示例不同):
+/feezu/network/subnets/172.30.40.0-24
+/feezu/network/subnets/172.30.56.0-24
+/feezu/network/subnets/172.30.28.0-24
 
 # 查看某一 Pod 网段对应的 flanneld 进程监听的 IP 和网络参数
 etcdctl \
@@ -468,7 +477,7 @@ etcdctl \
   --ca-file=/etc/kubernetes/ssl/ca.pem \
   --cert-file=/etc/flanneld/ssl/flanneld.pem \
   --key-file=/etc/flanneld/ssl/flanneld-key.pem \
-  get ${FLANNEL_ETCD_PREFIX}/subnets/172.30.19.0-24
+  get ${FLANNEL_ETCD_PREFIX}/subnets/172.30.56.0-24
 
 #输出如下：
 {"PublicIP":"10.10.8.210","BackendType":"vxlan","BackendData":{"VtepMAC":"b6:62:58:65:97:ed"}}
@@ -521,7 +530,7 @@ wget https://dl.k8s.io/v1.6.2/kubernetes-server-linux-amd64.tar.gz
 
 tar zxvf  kubernetes-server-linux-amd64.tar.gz
 cd kubernetes
-cp -r server/bin/{kube-apiserver,kube-controller-manager,kube-scheduler,kubectl,kube-proxy,kubelet}  /usr/sbin/
+cp -r server/bin/{kube-apiserver,kube-controller-manager,kube-scheduler}  /usr/sbin/
 
 
 #安装和配置flanneld(之前步骤已完成)
@@ -574,8 +583,6 @@ cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
   -config=/etc/kubernetes/ssl/ca-config.json \
   -profile=kubernetes kubernetes-csr.json | cfssljson -bare kubernetes
 
-ls kubernetes*
-kubernetes.csr  kubernetes-csr.json  kubernetes-key.pem  kubernetes.pem
 mkdir -p /etc/kubernetes/ssl/
 mv kubernetes*.pem /etc/kubernetes/ssl/
 rm -f kubernetes.csr  kubernetes-csr.json
@@ -771,12 +778,14 @@ source /root/environment.sh
 #安装和配置 docker
 cd /Data/software
 wget https://get.docker.com/builds/Linux/x86_64/docker-17.04.0-ce.tgz
-tar -xvf docker-17.04.0-ce.tgz
+tar zxvf docker-17.04.0-ce.tgz
 cp docker/docker* /usr/sbin/
 cp docker/completion/bash/docker /etc/bash_completion.d/
 
 
 #创建 docker 的 systemd unit 文件
+
+DOCKER_NETWORK_OPTIONS=`grep "DOCKER_NETWORK_OPTIONS" /run/flannel/docker  | awk -F '"' '{print $2}'`
 
 cat > /usr/lib/systemd/system/docker.service << EOF
 [Unit]
@@ -832,9 +841,9 @@ kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bo
 
 #下载最新的 kubelet 和 kube-proxy 二进制文件
 wget https://dl.k8s.io/v1.6.2/kubernetes-server-linux-amd64.tar.gz
-tar -xzvf kubernetes-server-linux-amd64.tar.gz
+tar zxvf kubernetes-server-linux-amd64.tar.gz
 cd kubernetes
-tar -xzvf  kubernetes-src.tar.gz
+tar zxvf  kubernetes-src.tar.gz
 cp -r ./server/bin/{kube-proxy,kubelet} /usr/sbin/
 
 
@@ -875,7 +884,7 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=/var/lib/kubelet
-ExecStart=/root/local/bin/kubelet \\
+ExecStart=/usr/sbin/kubelet \\
   --address=${NODE_IP} \\
   --hostname-override=${NODE_IP} \\
   --pod-infra-container-image=registry.access.redhat.com/rhel7/pod-infrastructure:latest \\
@@ -932,13 +941,13 @@ kubectl get nodes
 #输出内容:
 No resources found.
 
-#通过 CSR 请求(在master上执行)：
+#通过 CSR 请求(在master上执行,每新增一个Node执行一次)：
 kubectl certificate approve csr-2b308
 #输出内容：
 certificatesigningrequest "csr-2b308" approved
 kubectl get nodes
 NAME        STATUS    AGE       VERSION
-10.64.3.7   Ready     49m       v1.6.2
+10.10.8.212   Ready     49m       v1.6.2
 
 #自动在node端生成了 kubelet kubeconfig 文件和公私钥：
 ls -l /etc/kubernetes/kubelet.kubeconfig
@@ -952,4 +961,201 @@ ls -l /etc/kubernetes/ssl/kubelet*
 
 
 
-#配置 kube-proxy
+
+
+
+#配置 kube-proxy (ON All SERVERS)
+
+#创建 kube-proxy 证书
+
+#创建 kube-proxy 证书签名请求：
+
+cat > kube-proxy-csr.json << EOF
+{
+  "CN": "system:kube-proxy",
+  "hosts": [],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "System"
+    }
+  ]
+}
+EOF
+
+#CN 指定该证书的 User 为 system:kube-proxy；
+#kube-apiserver 预定义的 RoleBinding system:node-proxier 将User system:kube-proxy 与 Role system:node-proxier 绑定，该 Role 授予了调用 kube-apiserver Proxy 相关 API 的权限；
+#hosts 属性值为空列表；
+
+
+
+#生成 kube-proxy 客户端证书和私钥：
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes  kube-proxy-csr.json | cfssljson -bare kube-proxy
+
+mv kube-proxy*.pem /etc/kubernetes/ssl/
+rm -f kube-proxy.csr  kube-proxy-csr.json
+
+
+#创建 kube-proxy kubeconfig 文件
+
+# 设置集群参数
+kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/ssl/ca.pem \
+  --embed-certs=true \
+  --server=${KUBE_APISERVER} \
+  --kubeconfig=kube-proxy.kubeconfig
+# 设置客户端认证参数
+kubectl config set-credentials kube-proxy \
+  --client-certificate=/etc/kubernetes/ssl/kube-proxy.pem \
+  --client-key=/etc/kubernetes/ssl/kube-proxy-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-proxy.kubeconfig
+# 设置上下文参数
+kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=kube-proxy \
+  --kubeconfig=kube-proxy.kubeconfig
+# 设置默认上下文
+kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+mv kube-proxy.kubeconfig /etc/kubernetes/
+
+
+#设置集群参数和客户端认证参数时 --embed-certs 都为 true，这会将 certificate-authority、client-certificate 和 client-key 指向的证书文件内容写入到生成的 kube-proxy.kubeconfig 文件中；
+#kube-proxy.pem 证书中 CN 为 system:kube-proxy，kube-apiserver 预定义的 RoleBinding cluster-admin 将User system:kube-proxy 与 Role system:node-proxier 绑定，该 Role 授予了调用 kube-apiserver Proxy 相关 API 的权限；
+
+
+#创建 kube-proxy 的 systemd unit 文件
+
+#创建工作目录
+mkdir -p /var/lib/kube-proxy 
+
+cat > /usr/lib/systemd/system/kube-proxy.service <<EOF
+[Unit]
+Description=Kubernetes Kube-Proxy Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+
+[Service]
+WorkingDirectory=/var/lib/kube-proxy
+ExecStart=/usr/sbin/kube-proxy \\
+  --bind-address=${NODE_IP} \\
+  --hostname-override=${NODE_IP} \\
+  --cluster-cidr=${SERVICE_CIDR} \\
+  --kubeconfig=/etc/kubernetes/kube-proxy.kubeconfig \\
+  --logtostderr=true \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+#--hostname-override 参数值必须与 kubelet 的值一致，否则 kube-proxy 启动后会找不到该 Node，从而不会创建任何 iptables 规则；
+#--cluster-cidr 必须与 kube-apiserver 的 --service-cluster-ip-range 选项值一致；
+#kube-proxy 根据 --cluster-cidr 判断集群内部和外部流量，指定 --cluster-cidr 或 --masquerade-all 选项后 kube-proxy 才会对访问 Service IP 的请求做 SNAT；
+#--kubeconfig 指定的配置文件嵌入了 kube-apiserver 的地址、用户名、证书、秘钥等请求和认证信息；
+#预定义的 RoleBinding cluster-admin 将User system:kube-proxy 与 Role system:node-proxier 绑定，该 Role 授予了调用 kube-apiserver Proxy 相关 API 的权限；
+
+
+#启动kube-proxy
+systemctl daemon-reload
+systemctl enable kube-proxy
+systemctl start kube-proxy
+systemctl status kube-proxy
+
+
+##验证集群功能(全部node配置完成之后,在master上进行)
+
+#定义文件：
+cd /Data/app
+cat > nginx-ds.yml << EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ds
+  labels:
+    app: nginx-ds
+spec:
+  type: NodePort
+  selector:
+    app: nginx-ds
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+
+---
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: nginx-ds
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  template:
+    metadata:
+      labels:
+        app: nginx-ds
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+EOF
+
+#创建 Pod 和服务：
+kubectl create -f nginx-ds.yml
+service "nginx-ds" created
+daemonset "nginx-ds" created
+
+#检查节点状态
+
+kubectl get nodes
+NAME        STATUS    AGE       VERSION
+10.64.3.7   Ready     8d        v1.6.2
+10.64.3.8   Ready     8d        v1.6.2
+#都为 Ready 时正常。
+
+#检查各 Node 上的 Pod IP 连通性
+
+kubectl get pods  -o wide|grep nginx-ds
+nginx-ds-6ktz8              1/1       Running            0          5m        172.30.25.19   10.64.3.7
+nginx-ds-6ktz9              1/1       Running            0          5m        172.30.20.20   10.64.3.8
+#可见，nginx-ds 的 Pod IP 分别是 172.30.25.19、172.30.20.20，在所有 Node 上分别 ping 这两个 IP，看是否连通。
+
+#检查服务 IP 和端口可达性
+
+kubectl get svc |grep nginx-ds
+nginx-ds     10.254.136.178   <nodes>       80:8744/TCP         11m
+#可见：
+
+#服务IP：10.254.136.178
+#服务端口：80
+#NodePort端口：8744
+
+#在所有 Node 上执行：
+curl 10.254.136.178 # `kubectl get svc |grep nginx-ds` 输出中的服务 IP
+#预期输出 nginx 欢迎页面内容。
+
+#检查服务的 NodePort 可达性
+
+#在所有 Node 上执行：
+
+export NODE_IP=10.64.3.7 # 当前 Node 的 IP
+export NODE_PORT=8744 # `kubectl get svc |grep nginx-ds` 输出中 80 端口映射的 NodePort
+curl ${NODE_IP}:${NODE_PORT}
+#预期输出 nginx 欢迎页面内容。
