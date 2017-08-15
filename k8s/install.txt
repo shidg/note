@@ -271,9 +271,11 @@ export KUBE_APISERVER="https://${MASTER_IP}:6443"
 
 # download kubectl
 cd /Data/app
-wget https://dl.k8s.io/v1.6.2/kubernetes-client-linux-amd64.tar.gz
-tar zxvf kubernetes-client-linux-amd64.tar.gz
-cp kubernetes/client/bin/kube* /usr/sbin
+wget https://dl.k8s.io/v1.6.2/kubernetes-server-linux-amd64.tar.gz
+tar zxvf  kubernetes-server-linux-amd64.tar.gz
+#wget https://dl.k8s.io/v1.6.2/kubernetes-client-linux-amd64.tar.gz
+#tar zxvf kubernetes-client-linux-amd64.tar.gz
+cp kubernetes/server/bin/kubectl /usr/sbin
 
 
 #创建admin证书
@@ -835,7 +837,7 @@ systemctl start docker
 #安装和配置 kubelet
 #kubelet 启动时向 kube-apiserver 发送 TLS bootstrapping 请求，需要先将 bootstrap token 文件中的 kubelet-bootstrap 用户赋予 system:node-bootstrapper 角色，然后 kubelet 才有权限创建认证请求(certificatesigningrequests)：
 
-#在master上执行：
+#在master上执行(只需执行一次)：
 kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap
 #--user=kubelet-bootstrap 是文件 /etc/kubernetes/token.csv 中指定的用户名，同时也写入了文件 /etc/kubernetes/bootstrap.kubeconfig
 
@@ -959,12 +961,11 @@ ls -l /etc/kubernetes/ssl/kubelet*
 -rw-r--r-- 1 root root 1103 Apr  7 02:07 /etc/kubernetes/ssl/kubelet.crt
 -rw------- 1 root root 1675 Apr  7 02:07 /etc/kubernetes/ssl/kubelet.key
 
+#在其他node上重复以上步骤(部署NODE节点)
 
 
 
-
-
-#配置 kube-proxy (ON All SERVERS)
+#配置 kube-proxy (ON All NODES)
 
 #创建 kube-proxy 证书
 
@@ -1159,3 +1160,126 @@ export NODE_IP=10.64.3.7 # 当前 Node 的 IP
 export NODE_PORT=8744 # `kubectl get svc |grep nginx-ds` 输出中 80 端口映射的 NodePort
 curl ${NODE_IP}:${NODE_PORT}
 #预期输出 nginx 欢迎页面内容。
+
+
+
+
+##################kube-dns插件(在master上)###############
+#使用到的文件
+#kubedns-cm.yaml  
+#kubedns-controller.yaml  
+#kubedns-sa.yaml  
+#kubedns-svc.yaml
+
+##查看系统预定义的 RoleBinding
+kubectl get clusterrolebindings system:kube-dns -o yaml
+#输出如下：
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  creationTimestamp: 2017-08-14T08:21:46Z
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:kube-dns
+  resourceVersion: "56"
+  selfLink: /apis/rbac.authorization.k8s.io/v1beta1/clusterrolebindingssystem%3Akube-dns
+  uid: 9c79f3a2-80c9-11e7-aa28-005056a05d28
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:kube-dns
+subjects:
+- kind: ServiceAccount
+  name: kube-dns
+  namespace: kube-system
+
+#预定义的RoleBinding system:kube-dns将kube-system命名空间的kube-dns ServiceAccount与system:kube-dns Role绑定，该Role具有访问kube-apiserver DNS 相关API的权限
+#kubedns-controller.yaml中定义的Pods时使用了kubedns-sa.yaml文件定义的 kube-dns ServiceAccount，所以具有访问kube-apiserver DNS相关API的权限
+
+
+#配置 kube-dns ServiceAccount
+#无需修改
+
+#配置 kube-dns 服务
+cd /root/cluster/dns
+ls
+kubedns-cm.yaml  kubedns-controller.yaml  kubedns-sa.yaml  kubedns-svc.yaml
+#需要将kubedns-svc.yaml中的 spec.clusterIP 设置为集群环境变量中变量 CLUSTER_DNS_SVC_IP 值，这个 IP 需要和 kubelet 的 —cluster-dns 参数值一致
+#kubedns-controller.yaml中的--domain 为集群环境文档 变量 CLUSTER_DNS_DOMAIN 的值；
+#使用系统已经做了 RoleBinding 的 kube-dns ServiceAccount，该账户具有访问 kube-apiserver DNS 相关 API 的权限；
+
+#执行所有文件
+kubectl create -f .
+
+
+
+#检查 kubedns 功能
+cd /Data/app
+
+#启动一个新service
+cat > my-nginx.yaml <<EOF
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+EOF
+
+kubectl create -f my-nginx.yaml
+
+#Export 该 Deployment, 生成 my-nginx 服务
+kubectl expose deploy my-nginx
+
+
+#启动一个新pod
+cat > pod-nginx.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+EOF
+
+kubectl create -f pod-nginx.yaml
+
+#进入到新启动的pod中,列出所有pod，找到刚刚启动的新pod
+kubectl get pods --all-namespaces -o wide
+NAMESPACE     NAME                        READY     STATUS    RESTARTS   AGE       IP            NODE
+default       my-nginx-3418754612-ntgr9   1/1       Running   0          24m       172.30.93.4   10.10.8.212
+default       my-nginx-3418754612-trzmn   1/1       Running   0          24m       172.30.8.3    10.10.8.211
+default       nginx                       1/1       Running   0          22m       172.30.8.4    10.10.8.211
+default       nginx-ds-5ll7b              1/1       Running   1          1d        172.30.8.2    10.10.8.211
+default       nginx-ds-7wnd1              1/1       Running   1          1d        172.30.93.2   10.10.8.212
+kube-system   kube-dns-699984412-00wmp    3/3       Running   0          31m       172.30.93.3   10.10.8.212
+
+kubectl exec -it my-nginx-3418754612-ntgr9 /bin/bash
+
+root@my-nginx-3418754612-ntgr9:/#cat /etc/resolv.conf
+nameserver 10.254.0.2
+search default.svc.cluster.local. svc.cluster.local. cluster.local. localhost
+options ndots:5
+
+root@my-nginx-3418754612-ntgr9:/# ping my-nginx
+PING my-nginx.default.svc.cluster.local (10.254.218.8): 48 data bytes
+^C--- my-nginx.default.svc.cluster.local ping statistics ---
+12 packets transmitted, 0 packets received, 100% packet loss
+#可以将服务名解析成ip地址即为正常
+
