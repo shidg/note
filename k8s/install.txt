@@ -6,6 +6,8 @@
 # 10.10.8.212(k8s-node-2)
 
 
+## echo 0 > /proc/sys/net/ipv4/ip_forward
+
 ################ INSTALL CFSSL (ON All Server) ############### 
 ##PKI工具集 (public key infrastructure，缩写为PKI)
 
@@ -787,8 +789,6 @@ cp docker/completion/bash/docker /etc/bash_completion.d/
 
 #创建 docker 的 systemd unit 文件
 
-DOCKER_NETWORK_OPTIONS=`grep "DOCKER_NETWORK_OPTIONS" /run/flannel/docker  | awk -F '"' '{print $2}'`
-
 cat > /usr/lib/systemd/system/docker.service << EOF
 [Unit]
 Description=Docker Application Container Engine
@@ -798,7 +798,7 @@ Documentation=http://docs.docker.io
 Environment="PATH=/bin:/sbin:/usr/bin:/usr/sbin"
 EnvironmentFile=-/run/flannel/docker
 ExecStart=/usr/sbin/dockerd --log-level=error $DOCKER_NETWORK_OPTIONS
-ExecReload=/bin/kill -s HUP $MAINPID
+ExecReload=/bin/kill -s HUP \$MAINPID
 Restart=on-failure
 RestartSec=5                                                                                                                                                             
 LimitNOFILE=infinity
@@ -1283,3 +1283,6 @@ PING my-nginx.default.svc.cluster.local (10.254.218.8): 48 data bytes
 12 packets transmitted, 0 packets received, 100% packet loss
 #可以将服务名解析成ip地址即为正常
 
+
+
+###################
