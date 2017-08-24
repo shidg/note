@@ -405,7 +405,7 @@ etcdctl \
 cd /Data/app
 wget https://github.com/coreos/flannel/releases/download/v0.7.1/flannel-v0.7.1-linux-amd64.tar.gz
 tar zxvf flannel-v0.7.1-linux-amd64.tar.gz
-cp flanneld,mk-docker-opts.sh /usr/sbin
+cp flanneld mk-docker-opts.sh /usr/sbin
 
 
 #创建 flanneld 的 systemd unit 文件
@@ -662,11 +662,6 @@ EOF
 #缺省情况下 kubernetes 对象保存在 etcd /registry 路径下，可以通过 --etcd-prefix 参数进行调整；
 
 
-#启动kube-apiserver
-systemctl daemon-reload
-systemctl enable kube-apiserver
-systemctl start kube-apiserver
-systemctl status kube-apiserver
 
 
 #配置和启动 kube-controller-manager
@@ -712,10 +707,6 @@ scheduler            Unhealthy   Get http://127.0.0.1:10251/healthz: dial tcp 12
 #--leader-elect=true 部署多台机器组成的 master 集群时选举产生一处于工作状态的 kube-controller-manager 进程；
 
 
-#启动 kube-controller-manager
-systemctl daemon-reload
-systemctl enable kube-controller-manager
-systemctl start kube-controller-manager
 
 
 
@@ -744,9 +735,12 @@ EOF
 #--leader-elect=true 部署多台机器组成的 master 集群时选举产生一处于工作状态的 kube-controller-manager 进程；
 
 
-#启动 kube-scheduler
 systemctl daemon-reload
-systemctl enable kube-scheduler
+systemctl enable kube-apiserver kube-controller-manager kube-scheduler
+
+#启动服务
+systemctl start kube-apiserver
+systemctl start kube-controller-manager
 systemctl start kube-scheduler
 
 
@@ -797,7 +791,7 @@ Documentation=http://docs.docker.io
 [Service]
 Environment="PATH=/bin:/sbin:/usr/bin:/usr/sbin"
 EnvironmentFile=-/run/flannel/docker
-ExecStart=/usr/sbin/dockerd --log-level=error $DOCKER_NETWORK_OPTIONS
+ExecStart=/usr/sbin/dockerd --log-level=error \$DOCKER_NETWORK_OPTIONS
 ExecReload=/bin/kill -s HUP \$MAINPID
 Restart=on-failure
 RestartSec=5                                                                                                                                                             
@@ -1285,4 +1279,105 @@ PING my-nginx.default.svc.cluster.local (10.254.218.8): 48 data bytes
 
 
 
-###################
+################### 部署 dashboard 插件###########
+
+mkdir /root/kubedns
+cd /root/kubedns
+ls
+dashboard-controller.yaml  dashboard-rbac.yaml  dashboard-service.yaml
+kubectl create -f .
+
+#查看执行结果
+kubectl get services kubernetes-dashboard -n kube-system
+NAME                   CLUSTER-IP       EXTERNAL-IP   PORT(S)       AGE
+kubernetes-dashboard   10.254.231.206   <nodes>       80:8888/TCP   8h
+
+#检查 controller
+kubectl get deployment kubernetes-dashboard  -n kube-system
+NAME                   DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+kubernetes-dashboard   1         1         1            1           8h
+
+kubectl get pods  -n kube-system | grep dashboard
+kubernetes-dashboard-3677875397-6cwwm   1/1       Running   1          8h
+
+#访问dashboard
+http://10.10.8.210:8080/api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard
+
+
+
+
+##########部署heapster插件##########
+cd /Data/software
+wget https://github.com/kubernetes/heapster/archive/v1.3.0.zip
+unzip v1.3.0.zip
+mv v1.3.0  heapster-1.3.0
+cd heapster-1.3.0/deploy/kube-config/influxdb
+ls
+grafana-deployment.yaml  heapster-deployment.yaml  heapster-service.yaml  influxdb-deployment.yaml
+grafana-service.yaml     heapster-rbac.yaml        influxdb-cm.yaml       influxdb-service.yaml
+
+#执行所有定义文件
+kubectl create -f .
+
+#检查执行结果
+kubectl get deployments -n kube-system | grep -E 'heapster|monitoring'
+kubectl get pods -n kube-system | grep -E 'heapster|monitoring'
+
+
+#访问grafana
+http://10.10.8.210.7:8080/api/v1/proxy/namespaces/kube-system/services/monitoring-grafana
+
+#访问influxdb admin UI
+kubectl get svc -n kube-system|grep influxdb
+monitoring-influxdb     10.254.126.38    <nodes>       8086:8992/TCP,8083:8425/TCP   <invalid>
+
+
+http://10.10.8.210:8080/api/v1/proxy/namespaces/kube-system/services/monitoring-influxdb:8083/
+#在页面的 “Connection Settings” 的 Host 中输入 node IP， Port 中输入 8086映射的 nodePort 如上面的 8992，点击 “Save” 即可
+
+
+
+
+########部署ELK插件#######
+mkdir /root/elk
+cd /root/elk
+ls
+es-controller.yaml es-rbac.yaml es-service.yaml  fluentd-es-ds.yaml  kibana-controller.yaml  kibana-service.yaml fluentd-es-rbac.yaml
+
+
+#给node设置标签
+#DaemonSet fluentd-es-v1.22 只会调度到设置了标签 beta.kubernetes.io/fluentd-ds-ready=true 的 Node，需要在期望运行 fluentd 的 Node 上设置该标签；
+kubectl get nodes
+10.10.8.211   Ready   1h        v1.6.2
+10.10.8.212   Ready   1h        v1.6.2
+
+kubectl label nodes 10.10.8.211 beta.kubernetes.io/fluentd-ds-ready=true
+kubectl label nodes 10.10.8.212 beta.kubernetes.io/fluentd-ds-ready=true
+
+
+#执行定义文件
+cd /root/elk
+kubectl create -f .
+
+#检查执行结果
+kubectl get deployment -n kube-system|grep kibana
+kibana-logging         1         1         1            1           <invalid>
+
+
+
+#kibana Pod 第一次启动时会用**较长时间(10-20分钟)**来优化和 Cache 状态页面，可以 tailf 该 Pod 的日志观察进度：
+kubectl get pods -n kube-system|grep -E 'elasticsearch|fluentd|kibana'
+elasticsearch-logging-v1-8gr1t          1/1       Running   0          <invalid>
+elasticsearch-logging-v1-grcfs          1/1       Running   0          <invalid>
+fluentd-es-v1.22-58z60                  1/1       Running   0          <invalid>
+fluentd-es-v1.22-f7txp                  1/1       Running   0          <invalid>
+kibana-logging-324921636-lpfw5          1/1       Running   0          <invalid>
+
+
+kubectl logs kibana-logging-324921636-lpfw5 -n kube-system -f
+
+
+#访问kibana
+http://10.10.8.210:8080/api/v1/proxy/namespaces/kube-system/services/kibana-logging
+
+#在 Settings -> Indices 页面创建一个 index（相当于 mysql 中的一个 database），选中 Index contains time-based events，使用默认的 logstash-* pattern，点击 Create ;
