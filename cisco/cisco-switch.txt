@@ -88,3 +88,35 @@ ip access-list extended vlan100 (vlan100是access-list的名字)
 #删除一条ACL
 no 12
 
+
+# SSH
+
+conf t
+hostname
+ip domain-name idc.com
+
+#配置CISCO路由器生成密钥，路由器提供配置密钥位数（360~2048），完成该配置后，路由器自动启动SSH服务，可以使用show ip ssh命令查看验证
+crypto key generate rsa general-keys modulus 1024
+
+#配置所使用的SSH版本：
+ip ssh version 2
+
+#配置SSH会话的超时时间：
+#ip ssh time-out 120
+
+#配置SSH认证的最大次数：
+ip ssh authentication-retries 3
+
+#启用ssh和telnet认证，若不加telnet则不开启telnet认证
+line vty 0 4
+transport input ssh telnet 
+
+
+#使用本地认证，登录时必须输入用户名和密码才可以，如果是no login，则不需要密码
+login local
+
+
+#添加帐号，帐号级别为15（最高）
+username abc privilege 15 secret abc123
+
+

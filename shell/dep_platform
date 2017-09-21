@@ -1,39 +1,34 @@
 #!/bin/bash
 # dep_platform
-# Modified by shidg,20170829
+# Modified by shidg,20170920
 
 # Define Variables
 source ~/.bashrc
+source ~/common.sh
+DEFINE_VARIABLES
 CMD=`echo $(basename $0)`
+BRANCH_NUMBER=release_$1
+BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
+
+#Begin
+START_TIME=`date "+%Y%m%d-%T"`
+
+#判断参数是否正确
 if [ -z $1 ];then
-    echo -e "Usage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
+    echo -e "缺少参数\nUsage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
+    exit
+elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+    echo -e "参数格式不正确"
     exit
 fi
-
-BRANCH_NUMBER=release_$1
-SOURCE_DIR=/Data/source/Platform/platform
-BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
-SYNC_USER=rsync_user
-TOMCAT1=10.51.84.95
-TOMCAT2=10.172.234.162
-TOMCAT3=10.47.138.177
-PORT=5122
-MODULE=platform
-#MAIL_LIST=94586572@qq.com
-#ERROR_REPORT=94586572@qq.com
-
-START_TIME=`date "+%Y%m%d-%T"`
 
 # create dirs if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
-echo -e "选择后端服务器"
-echo -e "1)TOMCAT1"
-echo -e "2)TOMCAT2"
-echo -e "3)TOMCAT3"
-echo -e "4)TOMCAT2 & TOMCAT3"
-echo -ne "Enter your choice from [1-4]:"
+#弹出菜单
+MENU
 
+#定义目标服务器
 read need
 case $need in 
     1)
@@ -53,29 +48,30 @@ case $need in
 	TYPE="TOMCAT2&3"
     ;;     
     *)
+	clear
 	echo "Error!Please give the right choice"
 	exit
     ;;
 esac
 
-
-# update WZC source code
+# update source code
 cd ${SOURCE_DIR}
-git pull
+git fetch
 git checkout ${BRANCH_NUMBER}
+git pull
 git log | head -3 > /tmp/gitinfo
 export GIT_MSG=`cat /tmp/gitinfo`
 export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
 export COMMIT_AUTHOR=`tail -1 /tmp/gitinfo | cut -d ":" -f 2`
 export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
 export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NUMBER}`
-if [ "$need" = "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" = "${LAST_DEPLOY_VERSION}" ];then
-	echo "No change!"
-	exit
-elif [ "$need" != "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" != "${LAST_DEPLOY_VERSION}" ];then
-	echo "Have new submission (${COMMIT_AUTHOR}),Please confirm!"
-	exit
-fi 
+#if [ "$need" = "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" = "${LAST_DEPLOY_VERSION}" ];then
+#	echo "No change!"
+#	exit
+#elif [ "$need" != "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" != "${LAST_DEPLOY_VERSION}" ];then
+#	echo "Have new submission (${COMMIT_AUTHOR}),Please confirm!"
+#	exit
+#fi 
 
 #build war packages
    cd ${SOURCE_DIR}/manage-common
@@ -100,25 +96,24 @@ for PROJ in ${PROJS2[*]}
         mv -f ${SOURCE_DIR}/${PROJ}/target/*war ${BUILD_DIR}
     done
 #
-
 # rsync war to remote server
 if [ "$need" = "4" ];then
-    echo "Uploading packages..."
-    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER[0]}::$MODULE &
-    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER[1]}::$MODULE &
+    echo "Uploading packages to $TYPE ..."
+    rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER[0]}::${RSYNC_MODULE} &
+    rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER[1]}::${RSYNC_MODULE} &
 wait
 
 #restart tomcat on ${REMOTE_SERVER}
-	ssh -p $PORT ${REMOTE_SERVER[0]} "/Data/scripts/restart_tomcat_${BRANCH_NUMBER}.sh ${DEPLOY_VERSION}" &  
-	ssh -p $PORT ${REMOTE_SERVER[1]} "/Data/scripts/restart_tomcat_${BRANCH_NUMBER}.sh ${DEPLOY_VERSION}" &
+	ssh -p ${SSH_PORT} ${REMOTE_SERVER[0]} "/Data/scripts/restart_tomcat_${BRANCH_NUMBER}.sh ${DEPLOY_VERSION}" &  
+	ssh -p ${SSH_PORT} ${REMOTE_SERVER[1]} "/Data/scripts/restart_tomcat_${BRANCH_NUMBER}.sh ${DEPLOY_VERSION}" &
 wait                   
 
 else    
-    echo "Uploading packages..."
-    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER}::$MODULE
+    echo "Uploading packages to $TYPE ..."
+    rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER}::${RSYNC_MODULE}
 
 #restart tomcat on $(REMOTE_SERVER)
-	ssh -p $PORT ${REMOTE_SERVER} "/Data/scripts/restart_tomcat_${BRANCH_NUMBER}.sh ${DEPLOY_VERSION}" 
+	ssh -p ${SSH_PORT} ${REMOTE_SERVER} "/Data/scripts/restart_tomcat_${BRANCH_NUMBER}.sh ${DEPLOY_VERSION}" 
 fi
 
 END_TIME=`date "+%Y%m%d-%T"`

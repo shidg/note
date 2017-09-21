@@ -4,7 +4,7 @@
 
 ##依赖perl环境，保证perl已安装#
 
-##libfastcommon#
+##libfastcommon# <所有机器>
 #https://github.com/happyfish100/libfastcommon
 #https://codeload.github.com/happyfish100/libfastcommon/zip/master
 unzip libfastcommon-master.zip
@@ -33,15 +33,9 @@ port=22122
 base_path=/Data/FastDFS
 run_by_group=fastdfs
 run_by_user=fastdfs
-use_storage_id = true
-storage_ids_filename = storage_ids.conf
-id_type_in_filename = id
+use_storage_id = false
+http.server_port=80
 
-#cp /Data/software/FastDFS/conf/storage_ids.conf /etc/fdfs
-vi /etc/fdfs/storage_ids.conf
-# <id>  <group_name>  <ip_or_hostname>
-100001   group1  10.10.67.186
-100002   group1  10.10.67.187
 
 #启动#
 #注意：make.sh默认将二进制文件安装到/usr/bin目录，但安装后的启动脚本却到/usr/local/bin下寻找相关二进制文件，所以要对启动脚本加以修改,如：
@@ -72,6 +66,7 @@ run_by_group=fastdfs
 run_by_user=fastdfs
 tracker_server=10.10.67.185:22122
 http.server_port=8888
+
 #启动#
 #注意：make.sh默认将二进制文件安装到/usr/bin目录，但安装后的启动脚本却到/usr/local/bin下寻找相关二进制文件，所以要对启动脚本加以修改,如：
 vi /etc/init.d/fdfs_storaged
@@ -85,9 +80,42 @@ service fdfs_storaged start
 #更多信息查看/Data/FastDFS/logs/storaged.log 
 
 
-#安装nginx,5.05版本已经取消了内置的HTTP，这里使用轻量级的nginx做为提供HTTP服务#
-tar jxvf pcre-8.36.tar.bz2
-tar zxvf openssl-1.01.j
+
+
+###<在tracker server上>安装nginx+ngx_cache_purge#
+tar jxvf pcre-8.41.tar.bz2
+tar zxvf openssl-1.1.0f.tar.gz
+tar zxvf ngx_cache_purge-2.3.tar.gz
+tar zxvf nginx-1.12.1.tar.gz && cd nginx-1.12.1
+./configure --prefix=/Data/app/nginx-1.12.1  --with-pcre=../pcre-8.41 --with-openssl=../openssl-1.1.0f --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../ngx_cache_purge-2.3
+make && make inistall
+
+##nginx.conf##
+proxy_cache_path /Data/FastDFS/cache/nginx/proxy_cache keys_zone=fastdfs-cache:500m max_size=1g inactive=30d;
+
+upstream fdfs_group1 {
+         server 10.30.44.13:80 weight=1 max_fails=2 fail_timeout=30s; ##storage server.ip:storage server.http_port
+         server 10.28.61.9:80 weight=1 max_fails=2 fail_timeout=30s;
+}
+
+
+listen 80; #tracker server上的nginx监听的端口与tracker.conf中http.server_port参数的值相同
+
+location /group1/M00 {
+            proxy_next_upstream http_502 http_504 error timeout invalid_header;
+            proxy_cache fastdfs-cache;
+            proxy_cache_valid  200 304 12h;
+            proxy_cache_key $uri$is_args$args;
+            proxy_pass http://fdfs_group1;
+            expires 30d;
+}
+
+
+
+
+
+##在storage server上安装nginx+fastdfs-nginx-module
+#https://sourceforge.net/projects/fastdfs/files/?source=navbar 
 tar zxvf fastdfs-nginx-module_v1.16.tar.gz 
 #fastdfs-nginx-module的config指定的路径与fastdfs和fastcommon的实际安装路径不符，需先加以修改
 vi fastdfs-nginx-module/src/config
@@ -96,9 +124,12 @@ CORE_INCS="$CORE_INCS /usr/local/include/fastdfs /usr/local/include/fastcommon/
 CORE_INCS="$CORE_INCS /usr/include/fastdfs /usr/include/fastcommon/
 
 
-tar zxvf nginx-1.62.tar.gz && cd nginx-1.62
+tar jxvf pcre-8.41.tar.bz2
+tar zxvf openssl-1.1.0f.tar.gz
+tar zxvf ngx_cache_purge-2.3.tar.gz
+tar zxvf nginx-1.12.1.tar.gz && cd nginx-1.12.1
 #configure参数可尽量简化，不必要的模块不必添加
-./configure --prefix=/Data/app/nginx  --with-pcre=/Data/software/pcre-8.36 --with-openssl=/Data/software/openssl-1.0.1j --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../fastdfs-nginx-module/src/
+./configure --prefix=/Data/app/nginx  --with-pcre=/Data/software/pcre-8.41 --with-openssl=/Data/software/openssl-1.1.0.f --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../fastdfs-nginx-module/src/
 make && make install
 
 # mod_fastdfs.conf
@@ -107,20 +138,12 @@ vi /etc/fdfs/mod_fastdfs.conf
 #设置以下值，其它保持默认
 base_path=/Data/FastDFS
 load_fdfs_parameters_from_tracker=false
-use_storage_id = true
-storage_ids_filename = storage_ids.conf
 tracker_server=10.10.67.185:22122
 group_name=group1
 url_have_group_name = true
 store_path_count=1
 store_path0=/Data/FastDFS
 
-#storage_ids.conf,与tracker保持一致
-#cp /Data/software/FastDFS/conf/storage_ids.conf /etc/fdfs
-vi /etc/fdfs/storage_ids.conf
-# <id>  <group_name>  <ip_or_hostname>
-100001   group1  10.10.67.186
-100002   group1  10.10.67.187
 
 #另外注意把/Data/software/FastDFS/conf/下的http.conf和mime.types也拷贝一份到/etc/fdfs下，nginx启动时会用到，因为在mod_fastdfs.conf中Include了http.conf,http.conf又引用了mime.types
 
@@ -132,7 +155,7 @@ events {
     worker_connections  1024;
 }
 server {
-        listen       8888;
+        listen       8888;  #storage server上的nginx监听的端口与storage.conf中http.server_port参数的值相同
         server_name  localhost;
 
         #charset koi8-r;
