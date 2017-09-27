@@ -1,0 +1,16 @@
+#! /bin/bash
+REPOS="$1"
+REV="$2"
+
+HOST=10.10.8.20
+PORT=5122
+USERNAME=shidg
+CMD=/usr/bin/ssh
+
+expect <<EOF
+spawn $CMD -l $USERNAME -p $PORT $HOST  "cd /Data/code/webtemplate/webtemplate;git pull;git checkout dev;"
+expect "shidg@10.10.8.20's password:"
+send "1qaz@WSX\r"
+
+expect eof
+EOF

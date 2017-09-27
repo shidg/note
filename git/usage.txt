@@ -132,3 +132,7 @@ git merge iss53
 git rebase --onto master server client
 git checkout master
 git merge client
+
+
+# git 记住用户名密码
+git clone https://username:passwd@feezu.cn/group/example.git

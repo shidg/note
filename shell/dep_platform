@@ -10,6 +10,9 @@ CMD=`echo $(basename $0)`
 BRANCH_NUMBER=release_$1
 BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
 
+# create dirs if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
 #Begin
 START_TIME=`date "+%Y%m%d-%T"`
 
@@ -22,37 +25,9 @@ elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
     exit
 fi
 
-# create dirs if not exist
-[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
 #弹出菜单
 MENU
-
-#定义目标服务器
-read need
-case $need in 
-    1)
-	REMOTE_SERVER=$TOMCAT1
-	TYPE="TOMCAT1"
-	;;
-    2)
-	REMOTE_SERVER=$TOMCAT2
-	TYPE="TOMCAT2"
-    ;;     
-    3)
-	REMOTE_SERVER=$TOMCAT3
-	TYPE="TOMCAT3"
-    ;;     
-    4)
-	REMOTE_SERVER=($TOMCAT2 $TOMCAT3)
-	TYPE="TOMCAT2&3"
-    ;;     
-    *)
-	clear
-	echo "Error!Please give the right choice"
-	exit
-    ;;
-esac
 
 # update source code
 cd ${SOURCE_DIR}
@@ -98,7 +73,7 @@ for PROJ in ${PROJS2[*]}
 #
 # rsync war to remote server
 if [ "$need" = "4" ];then
-    echo "Uploading packages to $TYPE ..."
+    echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to $TYPE ..."
     rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER[0]}::${RSYNC_MODULE} &
     rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER[1]}::${RSYNC_MODULE} &
 wait
@@ -109,7 +84,7 @@ wait
 wait                   
 
 else    
-    echo "Uploading packages to $TYPE ..."
+    echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to $TYPE ..."
     rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER}::${RSYNC_MODULE}
 
 #restart tomcat on $(REMOTE_SERVER)
