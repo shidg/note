@@ -2,6 +2,10 @@
 # dep_platform
 # Modified by shidg,20170920
 
+#捕获并处理"Ctrl+C"
+trap EXIT_CONFIRMATION SIGINT
+
+
 # Define Variables
 source ~/.bashrc
 source ~/common.sh
@@ -40,6 +44,8 @@ export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
 export COMMIT_AUTHOR=`tail -1 /tmp/gitinfo | cut -d ":" -f 2`
 export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
 export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NUMBER}`
+
+#保障三台服务器代码版本一致
 #if [ "$need" = "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" = "${LAST_DEPLOY_VERSION}" ];then
 #	echo "No change!"
 #	exit
@@ -60,7 +66,7 @@ export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NUMBER}`
    cd ${SOURCE_DIR}/consumer-wap
    mvn clean package -Dmaven.test.skip=true
 
-
+exit
 # delete old wars & move war to /Data/war/trunk
 PROJS2=(manage-web consumer-app manage-metadata manage-datawarehouse manage-report manage-orders manage-app wechat download manage-thirdparty report-superviser consumer-wap)
 

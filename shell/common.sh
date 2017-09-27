@@ -42,3 +42,19 @@ function DEFINE_VARIABLES() {
 	RSYNC_MODULE=platform
 	export SOURCE_DIR SYNC_USER TOMCAT1 TOMCAT2 TOMCAT3 SSH_PORT RSYNC_MODULE
 }
+
+function EXIT_CONFIRMATION() {
+	echo -ne "Confirm to exit?[Y/N]"
+	read -n 1 answer
+	case $answer in
+		Y|y)
+		echo
+		echo "The script is about to exit..."
+		sleep 2
+		exit
+		;;
+		N|n)
+		echo
+		echo "The script continues"	
+	esac
+}
