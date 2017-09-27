@@ -1,0 +1,30 @@
+#  how to integrate CentOS 7.x & RHEL 7.x with AD (Windows Server 2008 R2 & Windows Server 2012 R2)
+yum install sssd realmd oddjob oddjob-mkhomedir adcli samba-common samba-common-tools krb5-workstation openldap-clients policycoreutils-python
+
+#/etc/resolv.conf
+nameserver  域控服务器ip
+
+
+#加入AD域
+realm join --user=administrator feezu.cn
+Password for administrator:
+
+#查看已加入的域
+realm list
+
+#限制指定的组可以登录
+realm permit -g linux_server@feezu.cn;
+
+#/etc/sssd/sssd.conf
+use_fully_qualified_names = False
+fallback_homedir = /home/%u
+
+
+#重启服务
+systemctl daemon-reload
+systemctl restart sssd
+
+
+#验证
+
+id  jira (域控中的一个用户) 
