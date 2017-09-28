@@ -33,14 +33,9 @@ function MENU() {
 }
 
 function DEFINE_VARIABLES() {
-	SOURCE_DIR=/Data/source/Platform/platform
-	SYNC_USER=rsync_user
-	TOMCAT1=10.51.84.95
-	TOMCAT2=10.172.234.162
-	TOMCAT3=10.47.138.177
-	SSH_PORT=5122
-	RSYNC_MODULE=platform
-	export SOURCE_DIR SYNC_USER TOMCAT1 TOMCAT2 TOMCAT3 SSH_PORT RSYNC_MODULE
+: ${SOURCE_DIR:="/Data/source/Platform/platform"} ${SYNC_USER:="rsync_user"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.172.234.162"} ${TOMCAT3:="10.47.138.177"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"}
+
+export SOURCE_DIR SYNC_USER TOMCAT1 TOMCAT2 TOMCAT3 SSH_PORT RSYNC_MODULE
 }
 
 function EXIT_CONFIRMATION() {
@@ -50,11 +45,16 @@ function EXIT_CONFIRMATION() {
 		Y|y)
 		echo
 		echo "The script is about to exit..."
-		sleep 2
+		sleep 1
 		exit
 		;;
 		N|n)
 		echo
-		echo "The script continues"	
+		echo "The script will continue..."	
+		;;
+		*)
+		echo
+		EXIT_CONFIRMATION
+		;;
 	esac
 }

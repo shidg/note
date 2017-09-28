@@ -2,24 +2,6 @@
 # dep_platform
 # Modified by shidg,20170920
 
-#捕获并处理"Ctrl+C"
-trap EXIT_CONFIRMATION SIGINT
-
-
-# Define Variables
-source ~/.bashrc
-source ~/common.sh
-DEFINE_VARIABLES
-CMD=`echo $(basename $0)`
-BRANCH_NUMBER=release_$1
-BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
-
-# create dirs if not exist
-[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
-
-#Begin
-START_TIME=`date "+%Y%m%d-%T"`
-
 #判断参数是否正确
 if [ -z $1 ];then
     echo -e "缺少参数\nUsage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
@@ -30,18 +12,42 @@ elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
 fi
 
 
+#捕获并处理"Ctrl+C"
+trap EXIT_CONFIRMATION SIGINT
+
+source ~/.bashrc
+source ~/common.sh
+
+# Define Variables
+DEFINE_VARIABLES
+
+CMD=`echo $(basename $0)`
+BRANCH_NUMBER=release_$1
+BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
+
+# create dirs if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+#Begin
+START_TIME=`date "+%Y%m%d-%T"`
+
+
 #弹出菜单
 MENU
+
+#判断目标服务器是否已定义
+: ${REMOTE_SERVER:?"变量未定义或者值为空"}
 
 # update source code
 cd ${SOURCE_DIR}
 git fetch
 git checkout ${BRANCH_NUMBER}
 git pull
-git log | head -3 > /tmp/gitinfo
+git log | head -2> /tmp/gitinfo
+git diff HEAD HEAD~ --stat >> /tmp/gitinfo
 export GIT_MSG=`cat /tmp/gitinfo`
 export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
-export COMMIT_AUTHOR=`tail -1 /tmp/gitinfo | cut -d ":" -f 2`
+export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
 export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
 export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NUMBER}`
 
@@ -66,7 +72,6 @@ export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NUMBER}`
    cd ${SOURCE_DIR}/consumer-wap
    mvn clean package -Dmaven.test.skip=true
 
-exit
 # delete old wars & move war to /Data/war/trunk
 PROJS2=(manage-web consumer-app manage-metadata manage-datawarehouse manage-report manage-orders manage-app wechat download manage-thirdparty report-superviser consumer-wap)
 
