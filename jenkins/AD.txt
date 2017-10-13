@@ -1,0 +1,14 @@
+# install  Active Directory plugin
+
+# 系统管理 --> Configure Global Security
+
+# 安全域
+Domain Name:	feezu.cn
+Domain controller:	Domain-slave.feezu.cn:3268
+site:
+Bind DN:	CN=administrator,CN=Users,DC=feezu,DC=cn
+Bind Password:
+
+#授权策略
+#选择项目矩阵授权策略
+
