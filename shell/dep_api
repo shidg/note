@@ -1,0 +1,80 @@
+#!/bin/bash
+# dep_api
+# Modified by shidg,20160701
+
+# Define Variables
+source ~/.bashrc
+CMD=`echo $(basename $0)`
+if [ -z $1 ];then
+    echo -e "Usage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
+    exit
+fi
+BRANCH_NUMBER=release_$1
+SOURCE_DIR=/Data/source/Platform/platform
+BUILD_DIR=/Data/war/api/branch/${BRANCH_NUMBER}
+SYNC_USER=rsync_user
+API_SERVER1=10.172.135.11
+API_SERVER2=10.51.125.79
+PORT=5122
+MODULE=api
+#MAIL_LIST=94586572@qq.com
+ERROR_REPORT=94586572@qq.com
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+
+# update source code
+  cd ${SOURCE_DIR}
+  git fetch
+  git checkout ${BRANCH_NUMBER}
+  git pull
+  git log | head -3 > /tmp/gitinfo
+  export GIT_MSG=`cat /tmp/gitinfo`
+  export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
+  export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
+  if [ -f /tmp/last_version_api_${BRANCH_NUMBER} ];then
+        export LAST_DEPLOY_VERSION=`cat /tmp/last_version_api_${BRANCH_NUMBER}`
+        if [ -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" == "${LAST_DEPLOY_VERSION}" ];then
+                echo "No change!"
+                exit
+        fi
+  fi
+
+#build war packages
+   cd ${SOURCE_DIR}/manage-global-api
+   mvn clean install -Dmaven.test.skip=true
+   cd ${SOURCE_DIR}/wzc-api
+   mvn clean package
+
+# create dirs if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+# delete old wars & move new war package to &{BUILD_DIR}
+#rm -rf ${BUILD_DIR}/*
+mv -f ${SOURCE_DIR}/wzc-api/target/api.war ${BUILD_DIR}
+
+
+# rsync war to remote server
+    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${API_SERVER1}::$MODULE &
+    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${API_SERVER2}::$MODULE &
+        
+END_TIME=`date "+%Y%m%d-%T"`
+
+#log
+cat > /tmp/upinfo <<EOF
+=========================
+server:API_SERVER
+Start at:${START_TIME}
+Finish at:${END_TIME}
+$GIT_MSG
+Current version:${DEPLOY_VERSION}
+Last version:${LAST_DEPLOY_VERSION}
+EOF
+
+cat /tmp/upinfo >> /Data/logs/deplog/deploy_api_${BRANCH_NUMBER}.log
+
+         
+echo ${DEPLOY_VERSION} > /tmp/last_version_api_${BRANCH_NUMBER}
+# Done
+
+exit 0

@@ -2,6 +2,20 @@
 # dep_platform
 # Modified by shidg,20170920
 
+source ~/.bashrc
+source ~/common.sh
+
+#处理"Ctrl+C"
+trap EXIT_CONFIRMATION SIGINT
+
+
+# Define Variables
+DEFINE_VARIABLES
+
+CMD=`echo $(basename $0)`
+BRANCH_NUMBER=release_$1
+BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
+
 #判断参数是否正确
 if [ -z $1 ];then
     echo -e "缺少参数\nUsage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
@@ -10,20 +24,6 @@ elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
     echo -e "参数格式不正确"
     exit
 fi
-
-
-#捕获并处理"Ctrl+C"
-trap EXIT_CONFIRMATION SIGINT
-
-source ~/.bashrc
-source ~/common.sh
-
-# Define Variables
-DEFINE_VARIABLES
-
-CMD=`echo $(basename $0)`
-BRANCH_NUMBER=release_$1
-BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
 
 # create dirs if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
@@ -59,7 +59,7 @@ export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NUMBER}`
 #	echo "Have new submission (${COMMIT_AUTHOR}),Please confirm!"
 #	exit
 #fi 
-
+#: << BLOCK
 #build war packages
    cd ${SOURCE_DIR}/manage-common
    mvn clean install -Dmaven.test.skip=true
@@ -82,6 +82,7 @@ for PROJ in ${PROJS2[*]}
         mv -f ${SOURCE_DIR}/${PROJ}/target/*war ${BUILD_DIR}
     done
 #
+#BLOCK
 # rsync war to remote server
 if [ "$need" = "4" ];then
     echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to $TYPE ..."

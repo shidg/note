@@ -1,0 +1,48 @@
+#http 60秒内只允许新建30个连接
+#-A INPUT -p tcp --dport 80 -m recent --name webpool1 --update --seconds 60 --hitcount 30 -j LOG --log-prefix "DDos" --log-ip-options --log-tcp-options
+#-A INPUT -p tcp --dport 80 -m recent --name webpool1 --update --seconds 60 --hitcount 30 -j REJECT
+#-A INPUT -p tcp --dport 80 -m recent --name webpool1 --set -j ACCEPT
+#https 60秒内只允许新建30个连接
+#-A INPUT -p tcp --dport 443 -m recent --name webpool2 --update --seconds 60 --hitcount 30 -j LOG --log-prefix "DDos" --log-ip-options --log-tcp-options
+#-A INPUT -p tcp --dport 443 -m recent --name webpool2 --update --seconds 60 --hitcount 30 -j REJECT
+#-A INPUT -p tcp --dport 443 -m recent --name webpool2 --set -j ACCEPT
+
+#http 单ip的最大并发连接数
+#iptables  -I INPUT -p tcp –dport 80 -m connlimit  –connlimit-above 20 -j REJECT
+#https 单ip的最大并发连接数
+#iptables  -I INPUT -p tcp –dport 443 -m connlimit  –connlimit-above 20 -j REJECT
+
+#http 单ip最多20个初始连接
+#iptables -I  INPUT -p tcp –syn -m connlimit –connlimit-above 20 -j DROP
+
+
+-p协议  
+-m module_name：
+-m tcp 的意思是使用 tcp 扩展模块的功能 (tcp扩展模块提供了 –dport, –tcp-flags, –sync等功能）
+recent模块：
+–name #设定列表名称，默认DEFAULT。
+–rsource #源地址，此为默认。
+–rdest #目的地址
+–seconds #指定时间内
+–hitcount #命中次数
+–set #将地址添加进列表，并更新信息，包含地址加入的时间戳。
+–rcheck #检查地址是否在列表，以第一个匹配开始计算时间。
+–update #和rcheck类似，以最后一个匹配计算时间。
+–remove #在列表里删除相应地址，后跟列表名称及地址
+connlimit功能：
+connlimit模块允许你限制每个客户端IP的并发连接数，即每个IP同时连接到一个服务器个数。
+connlimit模块主要可以限制内网用户的网络使用，对服务器而言则可以限制每个IP发起的连接数。
+–connlimit-above n 　　　＃限制为多少个
+–connlimit-mask n 　　　 ＃这组主机的掩码,默认是connlimit-mask 32 ,即每个IP.
+
+
+# --hitcount 的数值受限于 `cat
+/sys/module/xt_recent/parameters/ip_pkt_list_tot`，默认值20
+
+修改方式: vi /etc/modprobe.d/xt_recent.conf，写入:
+options xt_recent ip_list_tot=1024 ip_pkt_list_tot=200
+
+modprobe xt_recent
+
+
+
