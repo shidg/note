@@ -395,6 +395,15 @@ $IPTABLES -F
 $IPTABLES -A INPUT -m conntrack --ctstate INVALID -j DROP
 $IPTABLES -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 $IPTABLES -A INPUT -i lo -j ACCEPT
+#单IP最大并发ssh连接限制
+$IPTABLES -A INPUT -p tcp --dport $port -m connlimit  --connlimit-above 3 -j DROP
+#
+
+#单IP每分钟限制10个新ssh连接
+$IPTABLES -A INPUT -p tcp --dport $port  -m state --state NEW -m recent --name SSHPOOL --rcheck --seconds 60 --hitcount 5 -j LOG --log-prefix "DROP_SSH" --log-ip-options --log-tcp-options
+$IPTABLES -A INPUT -p tcp --dport $port  -m state --state NEW -m recent --name SSHPOOL --rcheck --seconds 60 --hitcount 5 -j DROP
+$IPTABLES -A INPUT -p tcp --dport $port  -m state --state NEW -m recent --name SSHPOOL --set -j ACCEPT
+#
 $IPTABLES -A INPUT -p tcp -m tcp --dport $port -m state --state NEW -j ACCEPT
 $IPTABLES -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 $IPTABLES -P INPUT DROP
