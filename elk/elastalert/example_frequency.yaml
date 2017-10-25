@@ -17,7 +17,7 @@
 
 # (Required)
 # Rule name, must be unique
-name: Example frequency rule
+name: Exception frequency rule
 
 # (Required)
 # Type of alert.
@@ -44,7 +44,7 @@ timeframe:
 # For more info: http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl.html
 filter:
 - query_string:
-    query: "Exception"
+    query: 'message: *Exception* AND appName: (!"manage-apia") AND appName: (!"manage-apib") AND appName: (!"manage-apic")'
 
 # (Required)
 
@@ -56,16 +56,17 @@ from_addr: alarm@mail.yiweixing.com
 # The alert is use when a match is found
 alert:
 - "email"
+alert_text: "Ref Log http://elk.feezu.cn/app/kibana"
 #- "command"
 
 # (required, email specific)
 # a list of email addresses to send alerts to
 email:
-- "shidg@feezu.cn"
+- "yunwei@feezu.cn"
 - "wangliang@feezu.cn"
 - "maocc@feezu.cn"
 - "duwj@feezu.cn"
 - "xiedan@feezu.cn"
-- "luokui@feezu.cn"
 - "fangyi@feezu.cn"
+- "94586572@qq.com"
 #command: ["/Data/scripts/t.sh"]

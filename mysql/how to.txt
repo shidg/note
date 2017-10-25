@@ -1,0 +1,21 @@
+#清空某库中的所有数据表
+ mysql -N -s information_schema -e "SELECT CONCAT('TRUNCATE TABLE ',TABLE_NAME,';') FROM TABLES WHERE TABLE_SCHEMA='report'" | mysql -f report
+
+#备份数据表
+#复制表结构,数据表b已存在
+create table a like b;
+
+create table a select * from b limit 0
+
+
+#复制表数据
+
+create table a select * from b
+create table a select user_name,user_pass from b where id=1
+
+insert into a (field1,field2,……) select value1,value2,…… from b
+#这种方式表a须提前手动创建
+
+
+select value1,value2 into a from b
+#这种方式表a无需手动创建

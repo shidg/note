@@ -1,0 +1,10 @@
+#http://www.ex-parrot.com/~pdw/iftop/
+
+# Requirements  libpcap libcurses
+yum install libpcap libpcap-devel  ncurses ncurses-devel
+
+tar zxvf tar zxvf iftop-1.0pre4.tar.gz  && cd iftop-1.0pre4
+./configure && make && make install 
+
+
+by default,installed to /usr/local/sbin/
