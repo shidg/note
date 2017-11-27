@@ -113,13 +113,17 @@ net.ipv4.tcp_max_orphans = 3276800
 
 net.ipv4.tcp_syncookies = 1
 net.ipv4.tcp_max_syn_backlog = 8192
-net.ipv4.tcp_timestamps = 1
 net.ipv4.tcp_synack_retries = 2
 net.ipv4.tcp_syn_retries = 2
 
-# TIME-WAIT套接字重用功能，用于存在大量连接的服务器
+# TIME-WAIT快速回收,须开启tcp时间戳方能生效
 net.ipv4.tcp_tw_recycle = 1
+
+# TIME_WAIT重用,须开启tcp时间戳方能生效,服务器前端存在NAT设备的时候尽量关闭快速回收
 net.ipv4.tcp_tw_reuse = 1
+
+# tcp时间戳
+net.ipv4.tcp_timestamps = 1
 
 #系统同时保持TIME_WAIT套接字的最大数量
 net.ipv4.tcp_max_tw_buckets = 5000
@@ -140,13 +144,6 @@ net.netfilter.nf_conntrack_tcp_timeout_time_wait = 120
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120
 
-#以下是CentOS5的参数
-#net.ipv4.ip_conntrack_max = 25000000
-#net.ipv4.netfilter.ip_conntrack_max = 25000000
-#net.ipv4.netfilter.ip_conntrack_tcp_timeout_established = 180
-#net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait = 120
-#net.ipv4.netfilter.ip_conntrack_tcp_timeout_close_wait = 60
-#net.ipv4.netfilter.ip_conntrack_tcp_timeout_fin_wait = 120
 
 ##bridge 需加载bridge模块之后方可生效
 net.bridge.bridge-nf-call-ip6tables = 0
