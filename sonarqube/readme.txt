@@ -37,6 +37,8 @@ edit the file sonar.properties
 
 ##jenkins中的项目构建触发sonar进行一次扫描
 
+##########sonar-scanner会从sonar服务器拉取规则,分析sonar.sources指定的目录下的代码，然后将结果推送到sonar服务器######
+
 #jenkins 服务器安装SonarQube Scanner
 #https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
 
@@ -57,11 +59,17 @@ Pre Steps中，Add pre-build stap--->Execute SonarQube Scanner
 Task to run
 JDK
 Analysis properties:
+
+#自定义项目关键字
 sonar.projectKey=ci
+
+#项目的显示名称
 sonar.projectName=ci
 sonar.projectVersion=1.0
 sonar.sourceEncoding=UTF-8
 sonar.language=java
-sonar.sources=/Data/jenkins/jobs/unit_test_trunk/workspace
+
+#指定要分析的代码位置，是相对于jenkins的workspace($WORKSPACE)目录
+sonar.sources=$WORKSPACE
 
 
