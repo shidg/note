@@ -45,6 +45,9 @@ timeframe:
 filter:
 - query_string:
     query: 'message: *Exception* AND appName: (!"manage-apia") AND appName: (!"manage-apib") AND appName: (!"manage-apic")'
+    #query: 'message: *Exception* AND appName: (!manage-api*)'
+    #query: 'message: *Exception* AND host: (!MINA*)'
+    #取反时,感叹号与表达式之间不得有空格，否则取反不生效(! MINA*)==>(!MINA*) ,括号与表达式之间有无空格无影响
 
 # (Required)
 
