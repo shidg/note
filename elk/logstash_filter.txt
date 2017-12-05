@@ -1,0 +1,69 @@
+input {
+    beats {
+        port => 5044
+        codec => json
+    }
+}
+
+filter {
+    if "device" in [tags] {
+      date {
+        # 匹配message中的日期，赋值给logTime字段  
+        match => [ "logTime", "yyyy-MM-dd HH:mm:ss"]
+        # 用上边匹配到的值替换lotdate字段的值,如不指定字段，target默认会替换@timestamp的值    
+        target => "logdate"
+      }
+
+#        grok {
+#           patterns_dir => "/etc/logstash/patterns"
+            # 对于非格式化的内容，使用正则正则表达式进行描述，赋值给message字段
+#           match => { "message" => "%{NGINX_ACCESS}" }
+#           overwrite => [ "message" ]
+#        }      
+#        mutate {
+            # copy适用于logstash 6.0
+#            copy => { "logTime" => "@timestamp" }
+#        }
+
+         mutate {
+            add_field => {"appName" => "wzc1.0-nginx"}
+            update => { "host" => "nginx1" }
+#           rename => { "path" => "source" }
+        }
+    }
+    if ![appName] {
+        mutate {
+            add_field => { "appName" => "unspecified" }
+        }
+    }
+
+#    if [logdate] {
+#        date {
+#            match => ["logdate", "yyyy-MM-dd HH:mm:ss.SSS", "ISO8601"]
+#        }
+#    }
+  #Only matched data are send to output.
+     geoip {
+#           paths:
+#           - "/usr/share/GeoIP/GeoLiteCity.dat"
+#           - "/usr/local/var/GeoIP/GeoLiteCity.dat"
+            source => "clientip"
+            target => "geoip"
+            fields => [ "city_name","country_name" ]
+        }
+
+}
+output {
+    elasticsearch {
+    action => "index"          #The operation on ES
+    hosts  => ["10.26.121.19:9200","10.31.24.1:9200","10.31.24.9:9200"]   #ElasticSearch host, can be array.
+    index  => "project-%{appName}-%{+YYYY.MM}"         #The index to write data to.
+    #user   => admin
+    #password => admin
+  }
+
+#   stdout {
+#     codec => rubydebug {
+#     }
+#   }
+}

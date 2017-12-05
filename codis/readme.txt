@@ -82,3 +82,12 @@ EOF
 
 #启动的codis-proxy默认为offline状态，通过以下命令使其online
 ./bin/codis-config proxy online proxy_1
+
+
+JAVA_HOME=/Data/app/jdk1.8.0_144
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+JRE_HOME=$JAVA_HOME/jre
+GOROOT=/usr/local/go
+GOPATH=/usr/local/codis
+PATH=$PATH:$JAVA_HOME/bin:$GOROOT/bin:$GOPATH/bin
+export JAVA_HOME CLASSPATH JRE_HOME GOROOT GOPATH PATH
