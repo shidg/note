@@ -175,7 +175,7 @@ http://localhost/awstats/awstats.pl?config=xxx
 
 7 安装插件
 awstats自带GeoIP插件，只需要下载Geo的IP数据库并为服务器上的perl安装Geo::IP::PurePerl模块
-
+##https://dev.maxmind.com/geoip/legacy/geolite/
 修改awstats.xxx.conf
 
 LoadPlugin="tooltips"

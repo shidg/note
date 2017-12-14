@@ -410,6 +410,8 @@ $IPTABLES -A OUTPUT -o lo -j ACCEPT
 $IPTABLES -A OUTPUT -p tcp -m tcp --dport 25 -m conntrack --ctstate NEW -j ACCEPT
 $IPTABLES -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
 $IPTABLES -A OUTPUT -p udp -m udp --dport 123 -m conntrack --ctstate NEW -j ACCEPT
+# traceroute
+$IPTABLES -A OUTPUT -p udp --dport 33434:33524 -m state --state NEW -j ACCEPT
 $IPTABLES -A OUTPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 $IPTABLES -P OUTPUT DROP
 $IPTABLES -P FORWARD DROP
