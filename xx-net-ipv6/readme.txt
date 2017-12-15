@@ -23,4 +23,4 @@
 http://test-ipv6.com测试ipv6可用性
 
 
-XX-Net开启ipv6支持
+XX-Net开启ipv6支持（配置---->高级选项）
