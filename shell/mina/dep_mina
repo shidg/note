@@ -1,0 +1,94 @@
+#!/bin/sh
+## dep_mina
+## 主要新增:切换源代码分支时根据各分支下的.template文件重新生成配置文件。
+## 各分支下的配置文件配置项可能出现差异，如此分支下有此参数而彼分支下没有
+## 使用固定的配置文件就会出现问题
+#  Modified by shidg,20171227
+
+#处理"Ctrl+C"
+trap EXIT_CONFIRMATION SIGINT
+source ~/.bashrc
+source ~/common.sh
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+CMD=`echo $(basename $0)`
+if [ -z $1 ];then
+    echo -e "缺少参数\nUsage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
+    exit
+elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+    echo -e "参数格式不正确"
+    exit
+fi
+
+VERSION_NUMBER=$1
+BRANCH_NAME=release_$1
+BUILD_DIR=/Data/war/mina/${BRANCH_NAME}
+
+# create dirs if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+# Define Variables
+DEFINE_VARIABLES
+
+
+#生成配置文件
+cd ${MINA_SOURCE_DIR}/config
+git pull
+git checkout ${BRANCH_NAME}
+unalias cp
+for f in "log4j.xml" "config.properties" "msgConfig.properties"
+    do 
+        cp -f ${f}.template $f
+        dos2unix $f
+    done
+
+#构建准备工作
+GET_READY_FOR_MINA
+
+#开始构建
+cd ${MANAGE_SOURCE_DIR}/manage-common
+#if [ "$need" = "2" ];then
+#    git checkout dev
+ #   git pull
+#else
+    git pull
+    git checkout ${BRANCH_NAME}
+#fi
+mvn clean install -Dmaven.test.skip=true
+
+cd ${MINA_SOURCE_DIR}
+#if [ "$need" = "2" ];then
+#    git checkout dev
+#    git pull
+#else
+git checkout ${BRANCH_NAME}
+#fi
+mvn clean package -Dmaven.test.skip=true
+
+
+if [ -f "${BUILD_DIR}/mina.jar" ];then
+	rm -f ${BUILD_DIR}/mina.jar
+fi
+
+if [ -d "${BUILD_DIR}/lib" ];then
+	rm -rf ${BUILD_DIR}/lib
+fi
+
+
+cp ${MINA_SOURCE_DIR}/target/*.jar ${BUILD_DIR}
+cp -a ${MINA_SOURCE_DIR}/target/lib ${BUILD_DIR}
+
+#dos2unix ${MINA_SOURCE}/config/msgConfig.properties
+#dos2unix ${MINA_SOURCE}/config/config.properties
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/depmina.log <<EOF
+=========================
+rebuild mina for [${REMOTE_ENV}] success.
+TIME:${START_TIME}
+Mina Version: ${VERSION_NUMBER}
+EOF
+
+exit 0

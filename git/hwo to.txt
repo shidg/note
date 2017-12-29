@@ -1,0 +1,18 @@
+#暂时忽略对已经纳入版本管理的本地文件的修改
+git update-index --assume-unchanged  [filename]
+
+#恢复对该文件的跟踪
+git update-index --no--assume-unchanged [filename]
+
+#查看当前被忽略的、已经纳入版本库管理的文件：
+git ls-files -v | grep -e "^[hsmrck]"
+
+#以上是客户端的操作，临时忽略本地文件的修改
+
+
+
+#以下是从服务端忽略某文件，客户端无需做操作
+
+git rm --cached filename
+更新 .gitignore 忽略掉目标文件
+git commit -m "We really don't want Git to track this anymore!"

@@ -105,13 +105,15 @@ net.core.rmem_max = 16777216
 #网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目
 net.core.netdev_max_backlog = 3000
 
-# 系统中每一个端口最大的监听队列的长度
-net.core.somaxconn = 2048
+# tcp全连接队列最大长度[系统级]
+net.core.somaxconn = 8192
 
 #系统所能处理的不属于任何进程的TCP sockets最大数量，不能过分依靠它或者人为地减小这个值，更应该增加这个值(如果增加了内存之后) 每个孤儿套接字最多能够吃掉64K不可交换的内存
 net.ipv4.tcp_max_orphans = 3276800
 
 net.ipv4.tcp_syncookies = 1
+
+# tcp半连接队列最大长度(当syncookies=1时该参数无效) 
 net.ipv4.tcp_max_syn_backlog = 8192
 net.ipv4.tcp_synack_retries = 2
 net.ipv4.tcp_syn_retries = 2
@@ -267,8 +269,20 @@ endif
 "if has('mouse')
 "  set mouse=a
 "endif
+" vundel
 
-filetype plugin on
+filetype off 
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'scrooloose/nerdtree'
+Plugin 'Valloric/YouCompleteMe'
+Plugin 'Lokaltog/vim-powerline'
+Plugin 'Yggdroot/indentLine'
+Plugin 'w0rp/ale'
+call vundle#end()
+filetype plugin indent on
+
 
 " Don't wake up system with blinking cursor:
 " http://www.linuxpowertop.org/known.php

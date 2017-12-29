@@ -1,0 +1,44 @@
+#统计各状态的tcp连接数量
+ss -n | awk '/^tcp/ {++S[$2]} END {for(a in S) print a,S[a]}'
+
+#显示sockets简要信息
+ss -s
+
+#使用ip筛选
+
+ss src ADDRESS_PATTERN
+src：表示来源
+ADDRESS_PATTERN：表示地址规则
+ 
+如下：
+ss src 120.33.31.1 # 列出来自20.33.31.1的连接
+ 
+＃　列出来自120.33.31.1,80端口的连接
+ss src 120.33.31.1:http
+ss src 120.33.31.1:80
+
+#使用端口筛选
+ss dport OP PORT
+
+OP:是运算符
+PORT：表示端口
+dport：表示过滤目标端口、相反的有sport
+
+运算符如下：
+<= or le : 小于等于 
+>= or ge : 大于等于
+== or eq : 等于
+!= or ne : 不等于端口
+< or lt : 小于这个端口 
+> or gt : 大于端口
+
+ss sport = :http 也可以是 ss sport = :80
+ss dport = :http
+ss dport \> :1024
+ss sport \> :1024
+ss sport \< :32000
+ss sport eq :22
+ss dport != :22
+ss state connected sport = :http
+ss \( sport = :http or sport = :https \)
+ss -o state fin-wait-1 \( sport = :http or sport = :https \) dst 192.168.1/24

@@ -1,12 +1,20 @@
 #vim 版本大于7.3.584
 
+# 先安装python3,安装vim时开启对python3的支持
+wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz
+tar zxvf Python-3.6.4.tgz && cd Python-3.6.4
+./configure --prefix=/usr/local/python3 --enable-shared --enable-optimizations && make && make install
+
+# add python3 to $PATH
+PATH=$PATH:$JAVA_HOME/bin:$MAVEN_HOME/bin:$SUBVERSION_HOME/bin:$PYTHON3_HOME/bin
+export PATH
+
 #升级vim
 yum install ncurses-devel perl-ExtUtils-Embed python-devel
 
-wget ftp://ftp.vim.org/pub/vim/unix/vim-7.4.tar.bz2
+git clone https://github.com/vim/vim.git && cd vim/src
 
-tar jxvf vim-7.4.tar.bz2 && cd vim74
-./configure --with-features=huge  --enable-pythoninterp=yes --with-python-config-dir=/usr/lib64/python2.6/config/ --enable-perlinterp=yes  --enable-cscope --enable-luainterp --enable-perlinterp --enable-multibyte --prefix=/usr
+./configure --with-features=huge  --enable-pythoninterp=yes --enable-python3interp=yes --with-python-config-dir=/usr/lib64/python2.7/config/ --with-python-config-dir=/usr/local/python3/lib/python3.6/config-3.6m-x86_64-linux-gnu/ --enable-perlinterp=yes --enable-rubyinterp=yes --enable-rubyinterp=yes --enable-multibyte --enable-cscope --enable-luainterp --prefix=/usr
 
 make -j4 && make install
 
@@ -42,61 +50,9 @@ make install
 
 #===================================================================================================
 
-#llvm-clang
-
-#Checkout LLVM:
-#Change directory to where you want the llvm directory placed.
-mkdir /Data/software/llvm-clang && cd  /Data/software/llvm-clang
-svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
-
-# Checkout Clang:
-cd llvm/tools
-svn co http://llvm.org/svn/llvm-project/cfe/trunk clang
-
-# Checkout extra Clang Tools: (optional)
-cd llvm/tools/clang/tools
-svn co http://llvm.org/svn/llvm-project/clang-tools-extra/trunk extra
-
-# Checkout Compiler-RT:
-cd llvm/projects
-svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
-cd ../../
-
-#Build LLVM and Clang:
-mkdir build
-cd build
-../llvm/config --enable-optimized  #会提示gcc版本过低，升级gcc方法见gcc/install.sh
-make -j4
-make install
-
-#clang加入系统变量
-export PATH=/usr/local/bin:$PATH 
-echo "/usr/local/lib" >> /etc/ld.so.conf
-ldconfig
-
-#安装clang标准库
-cd /Data/software/llvm-clang/llvm
-svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx
-cd libcxx/lib
-./buildit
-cp -r ../include/ /usr/include/c++/v1/
-ln -s libc++.so.1.0 libc++.so.1
-ln -s libc++.so.1.0 libc++.so
-cp libc++.so* /usr/lib/
-
-cd /Data/software/llvm
-svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi
-cd libcxxabi/lib
-./buildit
-cp -r ../include/ /usr/include/c++/v1/
-ln -s libc++abi.so.1.0 libc++abi.so.1
-ln -s libc++abi.so.1.0 libc++abi.so
-cp libc++abi.so* /usr/lib/
-
-#================================================================================================
 
 # 安装vundel，vim插件管理器
-git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 
 # 使用vundel安装YouCompleteMe
 
@@ -105,33 +61,22 @@ git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
 """"""""""""""""""""""""""""""  
 " Vunble  
 """"""""""""""""""""""""""""""  
-filetype off " required!  
-set rtp+=~/.vim/bundle/vundle/  
-call vundle#rc()  
+filetype off  "required!
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+Plugin 'VundleVim/Vundle.vim' "required!
+Plugin 'Valloric/YouCompleteMe'
+Plugin 'scrooloose/nerdtree'
+Plugin 'Lokaltog/vim-powerline'
+Plugin 'Yggdroot/indentLine'
+Plugin 'w0rp/ale'
+call vundle#end()
+filetype plugin indent on "required
   
-" let Vundle manage Vundle  
-Bundle 'gmarik/vundle'  
-  
-" YouCompleteMe repos  
-Bundle 'Valloric/YouCompleteMe'  
-  
-filetype plugin indent on " required!
-
 # 执行命令 vim +BundleInstall +qall来安装YouCompleteMe
-
-# 编译YouCompleteMe
-
-cd ~
-mkdir ycm_build
-cd ycm_build
-cmake -G "Unix Makefiles" . ~/.vim/bundle/YouCompleteMe/cpp
-cmake -G "Unix Makefiles" -DPATH_TO_LLVM_ROOT=/usr/ . ~/.vim/bundle/YouCompleteMe/cpp
-make ycm_core 
-make ycm_support_libs
-#make 结果是在~/.vim/bundel/YouCompletMe/python目录下生成libclang.so、ycm_core.so、ycm_client_support.so
 
 #安装 YouCompleteMe
 cd ~/.vim/bundle/YouCompleteMe 
-
-./install.sh --clang-completer --system-libclang 
-
+git submodule update --init --recursive
+yum install cmake -y
+./install.py --clang-completer
