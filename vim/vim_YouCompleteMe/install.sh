@@ -14,7 +14,7 @@ yum install ncurses-devel perl-ExtUtils-Embed python-devel
 
 git clone https://github.com/vim/vim.git && cd vim/src
 
-./configure --with-features=huge  --enable-pythoninterp=yes --enable-python3interp=yes --with-python-config-dir=/usr/lib64/python2.7/config/ --with-python-config-dir=/usr/local/python3/lib/python3.6/config-3.6m-x86_64-linux-gnu/ --enable-perlinterp=yes --enable-rubyinterp=yes --enable-rubyinterp=yes --enable-multibyte --enable-cscope --enable-luainterp --prefix=/usr
+./configure --with-features=huge  --enable-pythoninterp=yes --enable-python3interp=yes --with-python-config-dir=/usr/lib64/python2.7/config/ --with-python3-config-dir=/usr/local/python3/lib/python3.6/config-3.6m-x86_64-linux-gnu/ --enable-perlinterp=yes --enable-rubyinterp=yes --enable-rubyinterp=yes --enable-multibyte --enable-cscope --enable-luainterp --prefix=/usr
 
 make -j4 && make install
 

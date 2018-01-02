@@ -298,67 +298,47 @@ syntax on
 execute pathogen#infect()
 "set background=dark
 "colorscheme solarized
- 
-"显示行数标示
-set number
- 
-"打开状态栏的坐标信息
-set ruler
- 
-"取消底部状态栏显示。1为关闭，2为开启。
-set laststatus=2
- 
-"将输入的命令显示出来，便于查看当前输入的信息
-set showcmd
- 
-"设置魔术匹配控制，可以通过:h magic查看更详细的帮助信息
-set magic
- 
-"设置vim存储的历史命令记录的条数
-set history=100
- 
-"下划线高亮显示光标所在行
-set cursorline
- 
-"插入右括号时会短暂地跳转到匹配的左括号
-"set showmatch
- 
-"搜索时忽略大小写
-set ignorecase
- 
-"在执行宏命令时，不进行显示重绘；在宏命令执行完成后，一次性重绘，以便提高性能。
-set lazyredraw
- 
-"设置一个tab对应4个空格
-set tabstop=4
- 
-"在按退格键时，如果前面有4个空格，则会统一清除
-set softtabstop=4
- 
- 
-"最基本的自动缩进
-"set autoindent shiftwidth=4
- 
-"比autoindent稍智能的自动缩进
-"set smartindent shiftwidth=4
 
-"字符编码
-set encoding=utf-8
-set fileencodings=utf-8,ucs-bom,cp936,gb18030,big5,euc-jp,euc-kr,latin1
-set fileencoding=utf-8
-set termencoding=utf-8
-
-"将新增的tab转换为空格。不会对已有的tab进行转换
+"一个tab键对应4个空格
+set ts=4
+"自动缩进时缩进4个空格
+set sw=4
 set expandtab
- 
-"高亮显示搜索匹配到的字符串
-set hlsearch
+"一次退格键删除4个空格
+set softtabstop=4
+" 继承前一行的缩进方式，特别适用于多行注释
+" set autoindent
+"显示行号
+set number
+"打开状态栏标尺
+set ruler
+"底部状态栏显示。1为关闭，2为开启
+set laststatus=2
+"状态栏显示目前所执行的指令
+set showcmd
+set history=100
+set lazyredraw
+"vim内部编码
+set encoding=utf-8
+"设置编码的自动识别
+set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+"打开已有文件，如果文件编码与vim内部编码不同，vim会将文件转码为fileencoding.新建文件也会保存为fileencoding指定的编码
+set fileencoding=utf-8
+"防止特殊符号无法正常显示
+set ambiwidth=double
+"超过80列时换行
+set tw=80
+"不在单词中间换行
+set lbr
+"高亮光标所在行
+set cursorline
 
-"高亮显示匹配字符串时的颜色
-highlight Search term=standout ctermfg=10 ctermbg=7
- 
-"在搜索模式下，随着搜索字符的逐个输入，实时进行字符串匹配，并对首个匹配到的字符串高亮显示
+set hlsearch
 set incsearch
+set ignorecase
+highlight Search term=standout ctermfg=10 ctermbg=7
+highlight TabLine term=reverse cterm=reverse ctermfg=12 ctermbg=0
+highlight TabLineSel term=reverse,bold cterm=reverse,bold ctermbg=7 ctermfg=4
 
 "tab标签配色
 highlight TabLine term=reverse cterm=reverse ctermfg=12 ctermbg=0
@@ -388,6 +368,65 @@ map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
 "如果所选行行首有//，则将所选行行首的//都去掉（/d：/ delete）
 map /d :s/^\/\/\(\s*\)/\1/<CR>
 
+" YCM
+let g:ycm_seed_identifiers_with_syntax=1
+let g:ycm_complete_in_comments=1
+let g:ycm_collect_identifiers_from_comments_and_strings = 0 
+let g:ycm_complete_in_strings = 1 
+autocmd InsertLeave * if pumvisible() == 0|pclose|endif
+
+
+"NERDTree
+"autocmd vimenter * NERDTree
+map w :NERDTreeToggle<CR>
+autocmd VimEnter * wincmd w
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+let NERDTreeShowBookmarks=1 
+let NERDTreeChDirMode=1
+let NERDTreeShowHidden=1
+let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
+
+"indentLine
+let g:indentLine_char = '¦'
+let g:indentLine_enabled = 1
+let g:autopep8_disable_show_diff=1
+
+"ale
+let g:ale_sign_error = '>>'
+let g:ale_sign_warning = '--'
+
+" Auto add head info
+" .py file into add header
+function HeaderPython()
+    call setline(1, "#!/usr/bin/python")
+    call append(1, "# -*- coding: utf-8 -*-#")
+    normal G
+    normal o
+endf
+autocmd BufNewFile *.py call HeaderPython()
+
+autocmd BufNewFile,BufRead *.py
+\set tabstop=4
+\set softtabstop=4
+\set shiftwidth=4
+\set textwidth=79
+\set expandtab
+\set autoindent
+\set fileformat=unix
+
+
+" Auto add head info
+" .sh file into add header
+function Headershell()
+    call setline(1, "#! /bin/bash")
+    call append(1, "# -*- coding: utf-8 -*-#")
+    normal G
+    normal o
+endf
+autocmd BufNewFile *.sh call Headershell()
 EOF
 
 echo "~/.vimrc has been created"
