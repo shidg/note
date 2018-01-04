@@ -326,12 +326,16 @@ set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 set fileencoding=utf-8
 "防止特殊符号无法正常显示
 set ambiwidth=double
-"超过80列时换行
-set tw=80
+"超过79列时换行
+set tw=79
 "不在单词中间换行
 set lbr
 "高亮光标所在行
 set cursorline
+"快捷键F12打开或关闭paste模式，防止粘贴文件时因为自动缩进出现格式混乱
+set pastetoggle=<F12>
+"自动折行
+set wrap
 
 set hlsearch
 set incsearch
