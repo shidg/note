@@ -77,8 +77,16 @@ set nobackup
 syntax on
 
 "文件类型探测 
-filetype plugin on
+filetype off
 
+set rtp+=C:\Users\shidegang\.vim\bundle\Vundle.vim
+call vundle#begin()
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'scrooloose/nerdtree'
+Plugin 'kien/ctrlp.vim'
+Plugin 'Lokaltog/vim-powerline'
+Plugin 'Yggdroot/indentLine'
+call vundle#end() 
 "根据文件类型缩进
 filetype indent on
 
@@ -115,17 +123,27 @@ set tabstop=4
  
 "在按退格键时，如果前面有4个空格，则会统一清除
 set softtabstop=4
+
+"将新增的tab转换为空格。不会对已有的tab进行转换
+set expandtab
+" 自动缩进时缩进4个空格
+set shiftwidth=4
  
-"cindent对c语法的缩进更加智能灵活，
-"而shiftwidth则是在使用&lt;和&gt;进行缩进调整时用来控制缩进量。
-"换行自动缩进，是按照shiftwidth值来缩进的
-set cindent shiftwidth=4
- 
-"最基本的自动缩进
-set autoindent shiftwidth=4
- 
-"比autoindent稍智能的自动缩进
-set smartindent shiftwidth=4
+"继承前一行的缩进方式
+set autoindent
+
+"防止特殊符号无法正常显示
+set ambiwidth=double
+"超过79列时换行
+set textwidth=79
+"不在单词中间换行
+set lbr
+"自动折行
+"set wrap
+"高亮光标所在行
+set cursorline
+"快捷键F12打开或关闭paste模式，防止粘贴文件时因为自动缩进出现格式混乱
+set pastetoggle=<F12>
 
 "字符编码
 set encoding=utf-8
@@ -140,8 +158,6 @@ source $VIMRUNTIME/menu.vim
 "提示信息乱码
 language messages zh_CN.utf-8
  
-"将新增的tab转换为空格。不会对已有的tab进行转换
-set expandtab
  
 "高亮显示搜索匹配到的字符串
 set hlsearch
@@ -213,3 +229,16 @@ setlocal foldlevel=1
 
 " 用空格键来开关折叠
 nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
+
+"NERDTree
+"autocmd vimenter * NERDTree
+map w :NERDTreeToggle<CR>
+autocmd VimEnter * wincmd w
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+let NERDTreeShowBookmarks=1 
+let NERDTreeChDirMode=1
+let NERDTreeShowHidden=1
+let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
