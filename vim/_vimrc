@@ -82,10 +82,14 @@ filetype off
 set rtp+=C:\Users\shidegang\.vim\bundle\Vundle.vim
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
+Plugin 'flazz/vim-colorschemes' "配色方案
 Plugin 'scrooloose/nerdtree'
 Plugin 'kien/ctrlp.vim'
-Plugin 'Lokaltog/vim-powerline'
+Plugin 'bling/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
 Plugin 'Yggdroot/indentLine'
+Plugin 'Valloric/YouCompleteMe'
+Plugin 'majutsushi/tagbar'
 call vundle#end() 
 "根据文件类型缩进
 filetype indent on
@@ -149,7 +153,8 @@ set pastetoggle=<F12>
 set encoding=utf-8
 set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
 set fileencoding=utf-8
-set termencoding=utf-8
+"set termencoding=utf-8
+set ambiwidth=double
 
 "菜单乱码
 source $VIMRUNTIME/delmenu.vim
@@ -169,11 +174,11 @@ set hlsearch
 set incsearch
 
 "字体
-set guifont=Courier_New:h14:cANSI
+set guifont=Ubuntu_Mono_derivative_Powerlin:h15:cANSI:qDRAFT
 
 "配色方案
-set background=dark
-colorscheme solarized
+"set background=dark
+colorscheme molokai
 
 " 插入匹配括号
 inoremap ( ()<LEFT>
@@ -242,3 +247,24 @@ let NERDTreeShowBookmarks=1
 let NERDTreeChDirMode=1
 let NERDTreeShowHidden=1
 let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
+
+"Ctrlp
+let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|pyc)$'
+
+"tagbar
+nmap <F8> :TagbarToggle<CR>
+
+"airline
+let g:airline_powerline_fonts = 1
+let g:airline_theme="molokai" 
+"let g:airline_theme="solarized" 
+let g:airline_powerline_fonts = 1
+if !exists('g:airline_symbols')
+    let g:airline_symbols = {}
+endif
+let g:airline#extensions#whitespace#enabled = 0
+let g:airline#extensions#whitespace#symbol = '!'
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#buffer_nr_show = 1
+let g:airline#extensions#tabline#left_sep = ' '
+let g:airline#extensions#tabline#left_alt_sep = '|'

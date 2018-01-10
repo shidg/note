@@ -1,0 +1,13 @@
+#列出所有索引
+curl -XGET 'http://59.110.115.131:9200/_cat/indices?v&pretty' 
+
+#删除指定索引
+curl -XDELETE 'http://59.110.115.131:9200/project-wzc1.0-mina-2018.01'
+
+#手动创建索引
+curl -XPUT 'localhost:9200/project-wzc1.0-mina-2018.01?pretty'
+#使用PUT方法创建名为"project-wzc1.0-mina-2018.01"的索引。参数pretty告诉Elasticsearch简单的打印JSON响应
+
+#
+#查看集群状态
+curl -XGET 'http://59.110.115.131:9200/_cluster/health?pretty'

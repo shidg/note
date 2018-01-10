@@ -49,8 +49,11 @@ call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'scrooloose/nerdtree'
 Plugin 'Valloric/YouCompleteMe'
-Plugin 'Lokaltog/vim-powerline'
 Plugin 'Yggdroot/indentLine'
+Plugin 'kien/ctrlp.vim'
+Plugin 'bling/vim-airline' "crt onwindowns,要安装powerline字体,并设置为crt的默认字体,https://github.com/powerline/fonts
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'majutsushi/tagbar' "yum install ctags https://sourceforge.net/projects/ctags/?source=typ_redirect
 "Plugin 'w0rp/ale'
 Plugin 'vim-scripts/indentpython.vim'
 call vundle#end()
@@ -96,15 +99,21 @@ set fileencoding=utf-8
 "防止特殊符号无法正常显示
 set ambiwidth=double
 "超过79列时换行
-set textwidth=79
+set tw=79
 "不在单词中间换行
 set lbr
-"自动折行
-"set wrap
 "高亮光标所在行
 set cursorline
+"set cursorcolumn
+"高亮光标所在列
+"set cursorline
+"highlight CursorLine   cterm=NONE ctermbg=yellow ctermfg=red guibg=NONE guifg=NONE
+"highlight CursorColumn cterm=NONE ctermbg=yellow ctermfg=red guibg=NONE guifg=NONE
+
 "快捷键F12打开或关闭paste模式，防止粘贴文件时因为自动缩进出现格式混乱
 set pastetoggle=<F12>
+"自动折行
+set wrap
 
 set hlsearch
 set incsearch
@@ -116,8 +125,8 @@ highlight TabLineSel term=reverse,bold cterm=reverse,bold ctermbg=7 ctermfg=4
 "Mapping jj to Esc
 imap jj <Esc><Right>
 let mapleader=","
-map es :/.*\s\+$<CR>
-map ed :s#\s\+0#<CR>
+"map es :/.*\s\+$<CR>
+"map ed :s#\s\+0#<CR>
 map #a :s/^\([^#]\s*\)/#\1/<CR>
 map #d :s/^#\+\(\s*\)/\1/<CR>
 map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
@@ -153,6 +162,26 @@ let g:autopep8_disable_show_diff=1
 let g:ale_sign_error = '>>'
 let g:ale_sign_warning = '--'
 
+"Ctrlp
+let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|pyc)$'
+
+"tagbar
+nmap <F8> :TagbarToggle<CR>
+
+"airline
+let g:airline_theme="molokai" 
+"let g:airline_theme="solarized" 
+let g:airline_powerline_fonts = 1
+if !exists('g:airline_symbols')
+    let g:airline_symbols = {}
+endif
+let g:airline#extensions#whitespace#enabled = 0
+let g:airline#extensions#whitespace#symbol = '!'
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#buffer_nr_show = 1
+let g:airline#extensions#tabline#left_sep = ' '
+let g:airline#extensions#tabline#left_alt_sep = '|'
+
 " Auto add head info
 " .py file into add header
 function HeaderPython()
@@ -169,7 +198,6 @@ autocmd BufNewFile,BufRead *.py
 \set shiftwidth=4
 \set textwidth=79
 \set expandtab
-\set autoindent
 \set fileformat=unix
 
 
