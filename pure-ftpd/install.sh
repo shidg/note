@@ -10,7 +10,12 @@ ln -s /usr/local/ssl/include/openssl /usr/include/openssl
 
 #安装pure-ftpd
 cd ..
-tar jxvf pure-ftpd-1.0.42.tar.bz2 && cd pure-ftpd-1.0.42 && ./configure --prefix=/Data/app/pure-ftpd --with-puredb --with-ftpwho --with-welcomemsg --with-virtualhosts --with-virtualchroot --with-diraliases --with-language=english --with-rfc2640 --with-tls  --with-certfile=/etc/ssl/private/pure-ftpd.pem
+tar jxvf pure-ftpd-1.0.42.tar.bz2 && cd pure-ftpd-1.0.42 
+./configure --prefix=/Data/app/pure-ftpd --with-puredb --with-ftpwho
+--with-welcomemsg --with-virtualhosts --with-virtualchroot --with-quotas
+--with-peruserlimits  --with-diraliases --with-language=english --with-rfc2640
+--with-tls  --with-certfile=/etc/ssl/private/pure-ftpd.pem
+
 make && make install
 
 mkdir /Data/app/pure-ftpd/etc && touch /Data/app/pure-ftpd/etc/pureftpd.passwd
