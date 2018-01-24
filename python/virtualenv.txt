@@ -1,0 +1,29 @@
+# python虚拟环境
+# 将一个目录建立为一个虚拟的python环境， 这样的话， 用户可以建立多个虚拟环境， 每个环境里面的python版本可以是不同的， 也可以是相同的， 而且环境之间相互独立
+# 在虚拟环境中可以随意安装模块，不影响系统python环境和其他虚拟环境
+
+# 不同的条件下使用虚拟环境
+
+# 1. 如果使用了pyenv
+
+# 创建虚拟环境
+pyenv virtualenv 2.7.5 env275 #2.7.5指定要使用的python版本，env275指定虚拟环境的名字
+
+# 激活(进入到)虚拟环境
+pyenv activate env275
+
+# 退出虚拟环境
+pyenv deactivate
+
+# 2. 没有使用pyenv
+
+# 创建虚拟环境
+python3 -m venv 3.6.4 env36
+
+# 激活(进入到)虚拟环境
+source env36/bin/activate
+
+# 退出虚拟环境
+deactivate
+
+
