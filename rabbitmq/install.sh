@@ -2,7 +2,7 @@
 
 ## install erlang
 tar zxvf otp_src_19.3.tar.gz && cd otp_src_19.3
-./configure --prefix=/Data/app/erlang && make && make install
+./configure --prefix=/Data/app/erlang --with-ssl && make && make install
 ln -s /Data/app/erlang/bin/erl /usr/bin/erl
 
 erl -v

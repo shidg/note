@@ -1,11 +1,11 @@
 #修改tomcat运行模式为apr
-tar jxvf apr-1.5.2.tar.bz2 && cd apr-1.5.2/
+tar jxvf apr-1.6.2.tar.bz2 && cd apr-1.6.2/
 ./configure --prefix=/Data/app/apr && make && make install
 
 tar jxvf apr-iconv-1.2.1.tar.bz2  && cd apr-iconv-1.2.1/
 ./configure --prefix=/Data/app/apr-iconv --with-apr=/Data/app/apr && make && make install
 
-tar jxvf apr-util-1.5.4.tar.bz2 && cd apr-util-1.5.4/
+tar jxvf apr-util-1.6.0.tar.gz && cd apr-util-1.6.0/
 ./configure --prefix=/Data/app/apr-util --with-apr=/Data/app/apr --with-apr-iconv=/Data/app/apr-iconv/bin/apriconv
 Make && make install
 
@@ -30,7 +30,7 @@ useradd -M -s /sbin/nologin tomcat
 cd /Data/app/tomcat/bin
 tar zxvf commons-daemon-native.tar.gz && cd commons-daemon-1.0.15-native-src/unix
 sh support/buildconf.sh
-./configure --with-java=/Data/app/jdk1.7.0_80
+./configure --with-java=/Data/app/jdk1.8.0_162
 make
 cp -a jsvc /Data/app/tomcat/bin/
 rm -rf /Data/app/tomcat/bin/commons-daemon-1.0.15-native-src/
@@ -42,7 +42,7 @@ cp /Data/app/tomcat/bin/daemon.sh /etc/init.d/tomcat
 vi /etc/init.d/tomcat
 
 
-export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JAVA_HOME=/Data/app/jdk1.8.0_162
 export TOMCAT_HOME=/Data/app/tomcat
 export CATALINA_HOME=/Data/app/tomcat
 export CATALINA_BASE=/Data/app/tomcat

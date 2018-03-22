@@ -1,4 +1,4 @@
-# CentOS 7 + hadoop-2.6.0 + hbase-1.0.1.0
+# CentOS 7 + hadoop-2.7.5 + hbase-1.2.6
 # 服务器数量4，主机名分别为K-master K-slave1 K-slave2 K-slave3
 
 # on all servers
@@ -9,11 +9,11 @@ useradd hadoop
 
 
 ############# INSTALL HADOOP ON K-master ##################
-tar zxvf hadoop-2.6.0.tar.gz -C /Data/app && cd /Data/app && mkdir hadoop/tmp && mkdir -p hadoop/hdfs/{name,data} && chown -R hadoop:hadoop hadoop-2.6.0 && ln -s hadoop-2.6.0 ./hadoop
+tar zxvf hadoop-2.7.5.tar.gz -C /Data/app && cd /Data/app && mkdir hadoop/tmp && mkdir -p hadoop/hdfs/{name,data} && chown -R hadoop:hadoop hadoop-2.7.5 && ln -s hadoop-2.7.5 ./hadoop
 
 echo >> /etc/profile <<EOF
 #JAVA
-export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JAVA_HOME=/Data/app/jdk1.8.0_162
 export JRE_HOME=$JAVA_HOME/jre
 export CLASSPATH=.:$CLASSPATH:$JAVA_HOME/lib:$JRE_HOME/lib
 export PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin
@@ -26,11 +26,12 @@ export  PATH=$PATH:/Data/app/hbase/bin
 EOF
 
 
+# As hadoop users #
 
 cd /Data/app/hadoop/etc/hadoop
 
 ## hadoop-env.sh ##
-export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JAVA_HOME=/Data/app/jdk1.8.0_162
 export HADOOP_IDENT_STRING=$USER
 export HADOOP_PREFIX=/Data/app/hadoop
 export HADOOP_SSH_OPTS="-p 5122"
@@ -67,7 +68,7 @@ export HADOOP_SSH_OPTS="-p 5122"
 
 
 ## mapred-env.sh ##
-export JAVA_HOME=/Data/app/jdk1.7.0_80
+export JAVA_HOME=/Data/app/jdk1.8.0_162
 
 
 ## mapred-site.xml ##
@@ -142,12 +143,12 @@ K-master上为NameNode、SecondaryNameNode、ResourceManager，其他三台为Da
 
 #################################### INSTALL HBASE ON K-master ################
 
-tar zxvf hbase-1.0.1.1-bin.tar.gz -C /Data/app && cd /Data/app && chown -R hadoop:hadoop hbase-1.0.1.1 && ln -s hbase-1.0.1.1 ./hbase
+tar zxvf hbase-1.2.6-bin.tar.gz -C /Data/app && cd /Data/app && chown -R hadoop:hadoop hbase-1.2.6 && ln -s hbase-1.2.6 ./hbase
 
 cd hbase/conf
 
 ## hbase-env.sh ##
-
+export JAVA_HOME=/Data/app/jdk1.8.0_162
 export HBASE_CLASSPATH=/Data/app/hadoop/etc/hadoop
 export HBASE_MANAGES_ZK=false
 export HBASE_HOME=/Data/app/hbase
@@ -179,6 +180,10 @@ export HBASE_SSH_OPTS="-p 5122
    </property>
 </configuration>
 
+## cat regionservers ##
+K-slave-1
+K-slave-2
+K-slave-3
 
 ## cat backup-masters ##
 K-slave1
@@ -198,9 +203,9 @@ K-slave1
 
 echo >> /etc/profile << EOF
 # for zookeeper
-JAVA_HOME=/Data/app/jdk1.7.0_80
+JAVA_HOME=/Data/app/jdk1.8.0_162
 CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/jre/lib
-ZOOKEEPER_HOME=/Data/app/zookeeper-3.4.6
+ZOOKEEPER_HOME=/Data/app/zookeeper-3.4.11
 PATH=$PATH:$JAVA_HOME/bin:$ZOOKEEPER_HOME/bin
 export JAVA_HOME CLASSPATH ZOOKEEPER_HOME PATH
 EOF
@@ -211,8 +216,8 @@ echo >> /etc/hosts <<EOF
 10.X.X.X K-slave3
 EOF
 
-tar zxvf zookeeper-3.4.6.tar.gz -C /Data/app
-cd /Data/app/zookeeper-3.4.6/conf
+tar zxvf zookeeper-3.4.11.tar.gz -C /Data/app
+cd /Data/app/zookeeper-3.4.11/conf
 cp zoo_sample.cfg zoo.cfg
 
 echo > zoo.cfg <<EOF
@@ -234,7 +239,7 @@ echo 1 > /Data/zookeeper/myid
 #每个服务器上的myid文件中的值不得相同，用来标识不同的zookeeper节点
 
 
-chown -R hadoop:hadoop /Data/app/zookeeper-3.4.6
+chown -R hadoop:hadoop /Data/app/zookeeper-3.4.11
 
 
 

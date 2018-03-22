@@ -1,0 +1,21 @@
+# flume将sink写入hbasse
+
+# 安装hadoop+hbase (hadoop2.7.5+hbase1.2.6)
+
+# 安装apache-flume
+
+tar zxvf apache-flume-1.8.0-bin.tar.gz -C /Data/app/ && cd /Data/app && ln -s apache-flume-1.8.0 ./flume && cd flume/conf
+
+# 生成配置文件
+cp flume-conf.properties.template flume-conf.properties
+
+# 编辑配置文件，分别定义agent  source  channel sink
+
+# 拷贝必要的jar包
+
+cp /Data/app/hadoop/share/hadoop/common/*jar /Data/app/flume/lib/
+cp /Data/app/hadoop/share/hadoop/hdfs/hadoop-hdfs-2.7.5.jar /Data/app/flume/lib/
+
+
+# 启动
+nohup flume-ng agent --conf conf --conf-file ./conf/flume-conf.properties --name agent1 -Dflume.root.logger=INFO,console -Dflume.monitoring.type=http -Dflume.monitoring.port=34545 &

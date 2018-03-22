@@ -13,14 +13,15 @@ spymemcached-2.12.0.jar
 #TOMCAT_HOME/conf/context.xml 
 
 <Context>
+    <Context>
     <Manager className="de.javakaffee.web.msm.MemcachedBackupSessionManager"
-    memcachedNodes="n1:10.51.61.186:11211"
+    memcachedNodes="n1:172.16.32.74:11211,n2:172.16.143.237:11211"
+    lockingMode="auto"
     sticky="false"
     sessionBackupAsync="false"
-    lockingMode="uriPattern:/path1|/path2"
+    sessionBackupTimeout="100"
     requestUriIgnorePattern=".*\.(ico|png|gif|jpg|css|js)$"
     transcoderFactoryClass="de.javakaffee.web.msm.serializer.kryo.KryoTranscoderFactory"/>
-
     <!-- Default set of monitored resources -->
     <WatchedResource>WEB-INF/web.xml</WatchedResource>
 
