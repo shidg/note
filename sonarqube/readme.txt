@@ -22,7 +22,7 @@ edit the file sonar.properties
 
 # start service
 
-/Data/app/sonarqube/bin/sonar.sh start
+/Data/app/sonarqube/bin/linux-x86-64/sonar.sh start
 
 #http://ip:9000
 

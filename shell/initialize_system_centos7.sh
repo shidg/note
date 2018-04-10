@@ -19,6 +19,9 @@ yum install iptables-services -y
 #install killall
 yum install psmisc -y
 
+# install atd
+yum install at -y
+
 #修改ssh端口为
 port=5122
 sed  -i "/^#Port/ {s/^#//;s/22/$port/}" /etc/ssh/sshd_config
@@ -31,7 +34,7 @@ chmod 600 /etc/gshadow
 service=($(ls /usr/lib/systemd/system))
 for i in ${service[@]} ;do
 case $i in
-sshd.service|rsyslog.service|iptables.service|crond.service)
+sshd.service|rsyslog.service|iptables.service|crond.service|atd.service)
 systemctl enable $i;;
 *)
 systemctl disable $i;;
@@ -190,7 +193,7 @@ echo "*/180 * * * * ( /usr/sbin/ntpdate tick.ucla.edu tock.gpsclock.com ntp.nasa
 yum install vim git -y
 
 cd
-git clone git://github.com/seebi/dircolors-solarized.git
+git clone https://github.com/seebi/dircolors-solarized.git
 cd dircolors-solarized
 cp dircolors.256dark ~/.dircolors
 sed -i '$a\eval `dircolors ~/.dircolors`\
@@ -199,7 +202,7 @@ sed -i "/mv/ a\alias vi='vim'" ~/.bashrc
 source ~/.bashrc
 
 cd
-git clone git://github.com/sigurdga/gnome-terminal-colors-solarized.git
+git clone https://github.com/sigurdga/gnome-terminal-colors-solarized.git
 cd gnome-terminal-colors-solarized/
 #./set_dark.sh
 
@@ -210,7 +213,7 @@ if [ ! $(rpm -qa | grep wget) ];then
 fi
 wget https://raw.github.com/tpope/vim-pathogen/master/autoload/pathogen.vim
 cd ~/.vim/bundle
-git clone git://github.com/altercation/vim-colors-solarized.git
+git clone https://github.com/altercation/vim-colors-solarized.git
 
 if [ $? != 0 ];then
     echo "solarized not succeed!"

@@ -2,7 +2,7 @@
 
 # 先安装python3,安装vim时开启对python3的支持
 # python依赖库，安装matplotlib所需
-yum install freetype tk-d.evel
+yum install freetype tk-devel
 wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tgz
 tar zxvf Python-3.6.4.tgz && cd Python-3.6.4
 ./configure --prefix=/usr/local/python3 --enable-shared --enable-optimizations && make && make install
@@ -12,7 +12,7 @@ PATH=$PATH:$JAVA_HOME/bin:$MAVEN_HOME/bin:$SUBVERSION_HOME/bin:$PYTHON3_HOME/bin
 export PATH
 
 #升级vim
-yum install ncurses-devel perl-ExtUtils-Embed python-devel
+yum install ncurses-devel perl-ExtUtils-Embed python-devel -y
 
 git clone https://github.com/vim/vim.git && cd vim/src
 
