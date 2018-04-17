@@ -1,6 +1,6 @@
 #! /bin/bash
 
-## dep_setup
+## dep_extgateway
 
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT
@@ -27,39 +27,51 @@ DEFINE_SYSTEM_PATH
 
 START_TIME=`date "+%Y%m%d-%T"`
 BRANCH_NAME=$1
-DEPEND_BRANCH_NAME=release_$2
-BUILD_DIR=/Data/war/setup/${BRANCH_NAME}
+#DEPEND_BRANCH_NAME=release_$2
+BUILD_DIR=/Data/war/extgateway/${BRANCH_NAME}
 
 #Create dir if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
 
 # 更新代码
-cd ${SETUP_SOURCE_DIR}
+cd ${EXTGATEWAY_SOURCE_DIR}
 
 git checkout ${BRANCH_NAME} && git pull
 
 # 初始化配置文件
 # 该项目配置文件独立在jar包外，故打包时不必考虑环境差异
 
+#构建依赖
+echo "构建依赖: 分支 ${BRANCH_NAME} 下的ca-api ..."
+sleep 1
+
+cd continentalAutomotive/ca-api
+mvn clean install -Dmaven.test.skip=true
+
+echo "构建依赖: 分支 ${BRANCH_NAME} 下的ca-commons ..."
+sleep 1
+cd ../ca-commons
+mvn clean install -Dmaven.test.skip=true
+
 
 # 开始构建
-cd ${SETUP_SOURCE_DIR}
+cd ../ca-application
 mvn clean package -Dmaven.test.skip=true
 
-if alias cp > /dev/null 2>&1 ;then
+if alias cp >/dev/null 2>&1;then
     unalias cp
 fi
-cp -f ${SETUP_SOURCE_DIR}/web/target/web.jar ${BUILD_DIR}
+cp -f ${EXTGATEWAY_SOURCE_DIR}/continentalAutomotive/ca-application/target/extgateway.jar ${BUILD_DIR}
 
 END_TIME=`date "+%Y%m%d-%T"`
 
-cat >> /Data/logs/deplog/dep_setup.log <<EOF
+cat >> /Data/logs/deplog/dep_extgateway.log <<EOF
 ========================================
-Rebuild setup for [${REMOTE_ENV}] success.
+Rebuild extgateway  success.
 
 TIME: ${START_TIME}
-setup Version: ${BRANCH_NAME}
+extgateway Version: ${BRANCH_NAME}
 EOF
 
 exit 0

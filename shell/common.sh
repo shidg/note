@@ -1,6 +1,5 @@
 #! /bin/bash
 
-set -u 
 
 function ERRTRAP(){ 
     echo "[LINE :$1 ] Error: Command or functions exited with status $?"
@@ -139,7 +138,9 @@ function GET_READY_FOR_GATEWAY() {
 
 function GET_READY_FOR_DM() {
     trap 'ERRTRAP $LINENO' ERR
-	unalias cp
+	if alias cp >/dev/null 2>&1;then
+        unalias cp
+    fi
     cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources
 	if [ -f "dubbo.properties" ];then
     	rm -f dubbo.properties
@@ -185,7 +186,9 @@ function GET_READY_FOR_DM() {
 
 function GET_READY_FOR_DL() {
     trap 'ERRTRAP $LINENO' ERR
-	unalias cp
+	if alias cp >/dev/null 2>&1;then 
+        unalias cp
+    fi
     cd ${GATEWAY_SOURCE_DIR}/devicelb/src/main/resources
 	if [ -f "application.properties" ];then
     	rm -f application.properties
@@ -245,11 +248,15 @@ function GET_READY_FOR_DL() {
 	done
 }
 
-function DEFINE_VARIABLES() {
-    trap 'ERRTRAP $LINENO' ERR
-    : ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.172.234.162"} ${TOMCAT3:="10.47.138.177"}  
+function DEFINE_SYSTEM_PATH() {
+   : ${JAVA_HOME:="/Data/app/jdk1.8.0_162"} ${CLASS_PATH:="${JAVA_HOME}/lib/dt.jar:${JAVA_HOME}/lib/tools.jar"} ${MVN_HOME:="/Data/app/apache-maven-3.3.3"} ${GROOVY_HOME:="/Data/app/groovy-2.4.11"} ${PATH:="$PATH:$JAVA_HOME/bin:$MAVEN_HOME/bin:$GROOVY_HOME/bin"}
+   export JAVA_HOME CLASS_PATH MAVEN_HOME GROOVY_HOME PATH
+}
 
-    export MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR NETTY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE GATEWAY_SOURCE_DIR DM_SOURCE_DIR SETUP_SOURCE_DIR TOMCAT1 TOMCAT2 TOMCAT3
+function DEFINE_VARIABLES() {
+    : ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.172.234.162"} ${TOMCAT3:="10.47.138.177"}  
+
+    export SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 TOMCAT3
 }
 
 function EXIT_CONFIRMATION() {

@@ -2,19 +2,13 @@
 # dep_platform
 # Modified by shidg,20170920
 
-source ~/.bashrc
 source ~/common.sh
 
 #处理"Ctrl+C"
 trap EXIT_CONFIRMATION SIGINT
-
-
-# Define Variables
-DEFINE_VARIABLES
+trap 'ERRTRAP $LINENO' ERR
 
 CMD=`echo $(basename $0)`
-BRANCH_NUMBER=release_$1
-BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
 
 #判断参数是否正确
 if [ -z $1 ];then
@@ -25,12 +19,21 @@ elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
     exit
 fi
 
+set -u
+
+# Define Variables
+DEFINE_VARIABLES
+
+# Define_SYSTEM_PATH
+DEFINE_SYSTEM_PATH
+
 # create dirs if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
 #Begin
 START_TIME=`date "+%Y%m%d-%T"`
-
+BRANCH_NUMBER=release_$1
+BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NUMBER}
 
 #弹出菜单
 MENU

@@ -1,15 +1,12 @@
 #! /bin/bash
 
-set -u
 
 ## dep_device_manage
 
-source ~/.bashrc
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT
 trap 'ERRTRAP $LINENO' ERR
 
-START_TIME=`date "+%Y%m%d-%T"`
 
 CMD=`echo $(basename $0)`
 
@@ -21,6 +18,15 @@ if [ -z $1 ];then
 #	exit
 fi
 
+set -u
+
+#Define Variables
+DEFINE_VARIABLES
+
+#Define system path
+DEFINE_SYSTEM_PATH
+
+START_TIME=`date "+%Y%m%d-%T"`
 BRANCH_NAME=$1
 DEPEND_BRANCH_NAME=release_$2
 BUILD_DIR=/Data/war/device-manage/${BRANCH_NAME}
@@ -28,8 +34,6 @@ BUILD_DIR=/Data/war/device-manage/${BRANCH_NAME}
 #Create dir if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
-#Define Variables
-DEFINE_VARIABLES
 
 # 更新代码
 cd ${DM_SOURCE_DIR}

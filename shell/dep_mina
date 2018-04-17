@@ -1,13 +1,11 @@
 #! /bin/bash
 
 ## dep_mina
-set -u
 
 trap EXIT_CONFIRMATION SIGINT
 source ~/.bashrc
 source ~/common.sh
 
-START_TIME=`date "+%Y%m%d-%T"`
 
 CMD=`echo $(basename $0)`
 
@@ -19,6 +17,14 @@ elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
 	exit
 fi
 
+set -u
+
+#Define Variables
+DEFINE_VARIABLES
+# Define_SYSTEM_PATH
+DEFINE_SYSTEM_PATH
+
+START_TIME=`date "+%Y%m%d-%T"`
 VERSION_NUMBER=$1
 BRANCH_NAME=release_$1
 BUILD_DIR=/Data/war/mina/${BRANCH_NAME}
@@ -26,14 +32,14 @@ BUILD_DIR=/Data/war/mina/${BRANCH_NAME}
 #Create dir if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
-#Define Variables
-DEFINE_VARIABLES
 
 # 初始化配置文件
 cd ${MINA_SOURCE_DIR}/config
 git pull && git checkout ${BRANCH_NAME} || exit 5
 
-unalias cp
+if alias cp >/dev/null 2>&1;then
+    unalias cp
+fi
 
 for f in "config.properties" "msgConfig.properties"
 	do

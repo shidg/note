@@ -2,14 +2,10 @@
 
 ## dep_gateway
 
-set -u
-
-source ~/.bashrc
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT
 trap 'ERRTRAP $LINENO' ERR
 
-START_TIME=`date "+%Y%m%d-%T"`
 
 CMD=`echo $(basename $0)`
 
@@ -21,8 +17,17 @@ if [ -z $1 ];then
 #	exit
 fi
 
+set -u
+
+#Define Variables
+DEFINE_VARIABLES
+
+#Define system path
+DEFINE_SYSTEM_PATH
+
+START_TIME=`date "+%Y%m%d-%T"`
 BRANCH_NAME=$1
-DEPEND_BRANCH_NUMBER=release_$2
+DEPEND_BRANCH_NAME=release_$2
 BUILD_DIR1=/Data/war/gateway/device1.0/${BRANCH_NAME}
 BUILD_DIR2=/Data/war/gateway/device2.0/${BRANCH_NAME}
 
@@ -30,8 +35,6 @@ BUILD_DIR2=/Data/war/gateway/device2.0/${BRANCH_NAME}
 [ ! -d ${BUILD_DIR1} ] && mkdir -p ${BUILD_DIR1}
 [ ! -d ${BUILD_DIR2} ] && mkdir -p ${BUILD_DIR2}
 
-#Define Variables
-DEFINE_VARIABLES
 
 #选择设备版本
 GET_READY_FOR_GATEWAY
@@ -48,7 +51,9 @@ mvn clean install -Dmaven.test.skip=true
 cd ${GATEWAY_SOURCE_DIR}
 git checkout ${BRANCH_NAME} && git pull && mvn clean package -Dmaven.test.skip=true
 
-unalias cp
+if alias cp >/dev/null 2>&1;then
+    unalias cp
+fi
 
 if [ "${DEVICE_ENV}" == "1.0" ];then
     cp -f ${GATEWAY_SOURCE_DIR}/wzc1.0/target/*.jar ${BUILD_DIR1}
@@ -63,7 +68,7 @@ cat >> /Data/logs/deplog/dep_gateway.log <<EOF
 Rebuild gateway for [${DEVICE_ENV}] success.
 
 TIME: ${START_TIME}
-Netty Version: ${VERSION_NUMBER}
+GATEWAY Version: ${BRANCH_NAME}
 EOF
 
 exit 0
