@@ -1,0 +1,77 @@
+#! /bin/bash
+
+set -u
+
+## dep_device_manage
+
+source ~/.bashrc
+source ~/common.sh
+trap EXIT_CONFIRMATION SIGINT
+trap 'ERRTRAP $LINENO' ERR
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+CMD=`echo $(basename $0)`
+
+if [ -z $1 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 3.0.1 1.0.22"
+	exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#	echo -e "参数格式错误!"
+#	exit
+fi
+
+BRANCH_NAME=$1
+DEPEND_BRANCH_NAME=release_$2
+BUILD_DIR=/Data/war/device-manage/${BRANCH_NAME}
+
+#Create dir if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+#Define Variables
+DEFINE_VARIABLES
+
+# 更新代码
+cd ${DM_SOURCE_DIR}
+if [ -f "device-manage-web/src/main/resources/dubbo.properties" ];then
+    rm -f device-manage-web/src/main/resources/dubbo.properties
+fi
+if [ -f "device-manage-web/src/main/resources/gateway-deliver-config.properties" ];then
+    rm -f device-manage-web/src/main/resources/gateway-deliver-config.properties
+fi
+
+git checkout ${BRANCH_NAME} && git pull
+
+# 初始化配置文件
+GET_READY_FOR_DM
+
+# 解决依赖
+echo -e "构建依赖：分支${DEPEND_BRANCH_NAME}下的manage-metadata-api ..."
+sleep 2
+cd ${MANAGE_SOURCE_DIR}/manage-metadata-api
+git checkout ${DEPEND_BRANCH_NAME} && git pull
+mvn clean install -Dmaven.test.skip=true
+
+echo -e "构建依赖：分支${BRANCH_NAME}下的device-deliver-api ..."
+sleep 2
+cd ${DM_SOURCE_DIR}/device-deliver-api
+mvn clean install -Dmaven.test.skip=true
+
+# 开始构建
+cd ${DM_SOURCE_DIR}
+mvn clean package -Dmaven.test.skip=true
+
+cp -f ${DM_SOURCE_DIR}/device-manage-web/target/device-manage-web.war ${BUILD_DIR}
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/dep_dm.log <<EOF
+========================================
+Rebuild device-manage-web for [${REMOTE_ENV}] success.
+
+TIME: ${START_TIME}
+DM Version: ${BRANCH_NAME}
+EOF
+
+exit 0
+

@@ -1,0 +1,60 @@
+#! /bin/bash
+
+## dep_setup
+set -u
+
+source ~/.bashrc
+source ~/common.sh
+trap EXIT_CONFIRMATION SIGINT
+trap 'ERRTRAP $LINENO' ERR
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+CMD=`echo $(basename $0)`
+
+if [ -z $1 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 3.0.1 1.0.22"
+	exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#	echo -e "参数格式错误!"
+#	exit
+fi
+
+BRANCH_NAME=$1
+DEPEND_BRANCH_NAME=release_$2
+BUILD_DIR=/Data/war/setup/${BRANCH_NAME}
+
+#Create dir if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+#Define Variables
+DEFINE_VARIABLES
+
+# 更新代码
+cd ${SETUP_SOURCE_DIR}
+
+git checkout ${BRANCH_NAME} && git pull
+
+# 初始化配置文件
+# 该项目配置文件独立在jar包外，故打包时不必考虑环境差异
+
+
+# 开始构建
+cd ${SETUP_SOURCE_DIR}
+mvn clean package -Dmaven.test.skip=true
+
+unalias cp
+cp -f ${SETUP_SOURCE_DIR}/web/target/web.jar ${BUILD_DIR}
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/dep_setup.log <<EOF
+========================================
+Rebuild setup for [${REMOTE_ENV}] success.
+
+TIME: ${START_TIME}
+setup Version: ${BRANCH_NAME}
+EOF
+
+exit 0
+

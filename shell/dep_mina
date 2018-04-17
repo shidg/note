@@ -1,0 +1,78 @@
+#! /bin/bash
+
+## dep_mina
+set -u
+
+trap EXIT_CONFIRMATION SIGINT
+source ~/.bashrc
+source ~/common.sh
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+CMD=`echo $(basename $0)`
+
+if [ -z $1 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 1.0.11"
+	exit
+elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+	echo -e "参数格式错误!"
+	exit
+fi
+
+VERSION_NUMBER=$1
+BRANCH_NAME=release_$1
+BUILD_DIR=/Data/war/mina/${BRANCH_NAME}
+
+#Create dir if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+#Define Variables
+DEFINE_VARIABLES
+
+# 初始化配置文件
+cd ${MINA_SOURCE_DIR}/config
+git pull && git checkout ${BRANCH_NAME} || exit 5
+
+unalias cp
+
+for f in "config.properties" "msgConfig.properties"
+	do
+		cp -f ${f}.template $f
+		dos2unix $f
+	done
+
+# 构建准备工作
+GET_READY_FOR_MINA
+
+# 开始构建
+cd ${MANAGE_SOURCE_DIR}/manage-common
+git pull && git checkout ${BRANCH_NAME} || exit 5
+
+mvn clean install -Dmaven.test.skip=true
+
+cd ${MINA_SOURCE_DIR}
+git checkout ${BRANCH_NAME} && mvn clean package -Dmaven.test.skip=true || exit 5
+
+if [ -f "${BUILD_DIR}/mina.jar" ];then
+	rm -f ${BUILD_DIR}/mina.jar
+fi
+
+if [ -d "${BUILD_DIR}/lib" ];then
+	rm -rf ${BUILD_DIR}/lib
+fi
+
+cp ${MINA_SOURCE_DIR}/target/*.jar ${BUILD_DIR}
+cp -a ${MINA_SOURCE_DIR}/target/lib ${BUILD_DIR}
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/dep_mina.log <<EOF
+========================================
+Rebuild mina for [${REMOTE_ENV}] success.
+
+TIME: ${START_TIME}
+mina Version: ${VERSION_NUMBER}
+EOF
+
+exit 0
+

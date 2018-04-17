@@ -1,0 +1,62 @@
+#! /bin/bash
+
+## dep_devicelb
+
+set -u
+
+source ~/.bashrc
+source ~/common.sh
+trap EXIT_CONFIRMATION SIGINT
+trap 'ERRTRAP $LINENO' ERR
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+CMD=`echo $(basename $0)`
+
+if [ -z $1 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 3.0.1 1.0.22"
+	exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#	echo -e "参数格式错误!"
+#	exit
+fi
+
+BRANCH_NAME=$1
+DEPEND_BRANCH_NAME=release_$2
+BUILD_DIR=/Data/war/devicelb/${BRANCH_NAME}
+
+#Create dir if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+#Define Variables
+DEFINE_VARIABLES
+
+# 更新代码
+cd ${GATEWAY_SOURCE_DIR}
+if [ -f "devicelb/src/main/resources/application.properties" ];then
+    rm -f devicelb/src/main/resources/application.properties
+fi
+
+git checkout ${BRANCH_NAME} && git pull
+
+# 初始化配置文件
+GET_READY_FOR_DL
+
+# 开始构建
+cd ${GATEWAY_SOURCE_DIR}
+mvn clean package -Dmaven.test.skip=true
+
+cp -f ${GATEWAY_SOURCE_DIR}/devicelb/target/devicelb-*.jar ${BUILD_DIR}
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/dep_dl.log <<EOF
+========================================
+Rebuild devicelb for [${REMOTE_ENV}] success.
+
+TIME: ${START_TIME}
+DL Version: ${BRANCH_NAME}
+EOF
+
+exit 0
+

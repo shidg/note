@@ -1,0 +1,70 @@
+#! /bin/bash
+
+## dep_gateway
+
+set -u
+
+source ~/.bashrc
+source ~/common.sh
+trap EXIT_CONFIRMATION SIGINT
+trap 'ERRTRAP $LINENO' ERR
+
+START_TIME=`date "+%Y%m%d-%T"`
+
+CMD=`echo $(basename $0)`
+
+if [ -z $1 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 1.0.11"
+	exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#	echo -e "参数格式错误!"
+#	exit
+fi
+
+BRANCH_NAME=$1
+DEPEND_BRANCH_NUMBER=release_$2
+BUILD_DIR1=/Data/war/gateway/device1.0/${BRANCH_NAME}
+BUILD_DIR2=/Data/war/gateway/device2.0/${BRANCH_NAME}
+
+#Create dir if not exist
+[ ! -d ${BUILD_DIR1} ] && mkdir -p ${BUILD_DIR1}
+[ ! -d ${BUILD_DIR2} ] && mkdir -p ${BUILD_DIR2}
+
+#Define Variables
+DEFINE_VARIABLES
+
+#选择设备版本
+GET_READY_FOR_GATEWAY
+
+# 解决依赖
+echo -e "构建依赖：分支${DEPEND_BRANCH_NAME}下的manage-common ..."
+sleep 2
+cd ${MANAGE_SOURCE_DIR}/manage-common
+git checkout ${DEPEND_BRANCH_NAME} && git pull
+
+mvn clean install -Dmaven.test.skip=true
+
+# 开始构建
+cd ${GATEWAY_SOURCE_DIR}
+git checkout ${BRANCH_NAME} && git pull && mvn clean package -Dmaven.test.skip=true
+
+unalias cp
+
+if [ "${DEVICE_ENV}" == "1.0" ];then
+    cp -f ${GATEWAY_SOURCE_DIR}/wzc1.0/target/*.jar ${BUILD_DIR1}
+elif [ "${DEVICE_ENV}" == "2.0" ];then
+    cp ${GATEWAY_SOURCE_DIR}/wzc2.0/target/*.jar ${BUILD_DIR2}
+fi
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/dep_gateway.log <<EOF
+========================================
+Rebuild gateway for [${DEVICE_ENV}] success.
+
+TIME: ${START_TIME}
+Netty Version: ${VERSION_NUMBER}
+EOF
+
+exit 0
+
