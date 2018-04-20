@@ -1,9 +1,33 @@
 #! /bin/bash
 
+# common.sh
+# Defining variables and functions. Referenced by /usr/bin/dep_*
+# Modify by shidg 20180420 16:00
 
 function ERRTRAP(){ 
     echo "[LINE :$1 ] Error: Command or functions exited with status $?"
     exit
+}
+
+function EXIT_CONFIRMATION() {
+    echo -ne "Confirm to exit?[Y/N]"
+	read -n 1 answer
+	case $answer in
+	    Y|y)
+		echo
+		echo "The script is about to exit..."
+		sleep 1
+		exit
+		;;
+		N|n)
+		echo
+		echo "The script will continue..."	
+		;;
+		*)
+		echo
+		EXIT_CONFIRMATION
+		;;
+	esac
 }
 
 function DELETE_PROFILES() {
@@ -882,23 +906,5 @@ function DEFINE_VARIABLES() {
     export SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 TOMCAT3
 }
 
-function EXIT_CONFIRMATION() {
-    echo -ne "Confirm to exit?[Y/N]"
-	read -n 1 answer
-	case $answer in
-	    Y|y)
-		echo
-		echo "The script is about to exit..."
-		sleep 1
-		exit
-		;;
-		N|n)
-		echo
-		echo "The script will continue..."	
-		;;
-		*)
-		echo
-		EXIT_CONFIRMATION
-		;;
-	esac
-}
+
+# End
