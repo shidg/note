@@ -393,7 +393,7 @@ function MODIFY_PROFILES() {
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/orders\/services/" manage-orders/src/main/resources/config.properties
-    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=shidg@feezu.cn/" manage-orders/src/main/resources/config.properties
+    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@feezu.cn/" manage-orders/src/main/resources/config.properties
     sed -i "/^EXCLUDE_COM_CODE/ s/=.*/=BJCX001,BJCXQC001,GZWL001,YGMM001,BQXNY00001,HY00001/" manage-orders/src/main/resources/config.properties
     sed -i "/^TLD_URL/ s/=.*/=http:\/\/hlht.teld.cn:9201\/evcs\/v20161110\//" manage-orders/src/main/resources/config.properties
 
@@ -467,15 +467,24 @@ function MODIFY_PROFILES() {
     sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/orders\/services/" manage-web/src/main/resources/config.properties
     sed -i "/^CAR_TYPE_REPORT_HREF/ s/=.*/=\/report\/storeCarTypeReport/" manage-web/src/main/resources/config.properties
     sed -i "/^IS_PRODUCT_ENVIRONMENT_VALID_CODE/ s/=.*/=true/" manage-web/src/main/resources/config.properties
-    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_100038r57lqc,cur_2000376m6dg9,cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_20003h8jg5h9,cur_10003731hj1d,cur_200038mqlkrj,cur_10004pvcfzxh/" manage-web/src/main/resources/config.properties
-    sed -i "/^bill_police_to_mail/ s/=.*/=fangyi@feezu.cn/" manage-web/src/main/resources/config.properties
+    # 模拟登录
+    # cur_100038r57lqc 席榕鸿
+    # cur_2000376m6dg9 刘彦
+    # cur_2000399vw66t 付建
+    # cur_100038r57lpr 毛冲冲
+    # cur_2000376m6dgk 方意
+    # cur_10003731hj1d 邓彬峰
+    # cur_200038mqlkrj 杨志强
+    # cur_10004pvcfzxh 李佳航
+    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_100038r57lqc,cur_2000376m6dg9,cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_10003731hj1d,cur_200038mqlkrj,cur_10004pvcfzxh/" manage-web/src/main/resources/config.properties
+    sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties
     sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^WZC_LOGIN_IPS/ s/=.*/=123.127.240.42,123.127.240.43/" manage-web/src/main/resources/config.properties
 
     # fastdfs-client.properties
-    sed -i "/^fastdfs.tracker_servers/ s/= .*/= 10.44.183.203:22122/" manage-web/src/main/resources/fastdfs-client.properties
+    sed -i "/^fastdfs.tracker_servers/ s/=.*/= 10.44.183.203:22122/" manage-web/src/main/resources/fastdfs-client.properties
 
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-web/src/main/resources/ftpconfig.properties
@@ -596,7 +605,7 @@ function MODIFY_PROFILES() {
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/analysis\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^bill_police_to_mail/ s/=.*/=chanpin@feezu.cn/" manage-report/src/main/resources/config.properties
-    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=fangyi@feezu.cn/" manage-report/src/main/resources/config.properties
+    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@feezu.cn/" manage-report/src/main/resources/config.properties
 
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-report/src/main/resources/ftpconfig.properties
