@@ -29,6 +29,102 @@ function EXIT_CONFIRMATION() {
 		;;
 	esac
 }
+function GET_READY_FOR_API(){
+    cd ${MANAGE_SOURCE_DIR}
+	for i in config jedis msgConfig serverconfig 
+	do
+    	rm -f wzc-api/src/main/resources/$i.properties
+	done
+
+	for i in log4j
+	do
+    	rm -f wzc-api/src/main/resources/$i.xml
+	done
+
+    git checkout ${BRANCH_NAME} && git pull
+    git log | head -3 > /tmp/gitinfo
+    export GIT_MSG=`cat /tmp/gitinfo`
+    export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
+    export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
+    export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
+
+    if [ ! -f "/tmp/last_version_platform_${BRANCH_NAME}" ];then
+    	export LAST_DEPLOY_VERSION=${DEPLOY_VERSION}
+	else 
+    	export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NAME}`
+	fi
+
+    if alias cp > /dev/null 2>&1;then
+        unalias cp
+    fi
+
+	for i in config jedis msgConfig serverconfig 
+	do
+    	cp -f wzc-api/src/main/resources/$i.properties.template wzc-api/src/main/resources/$i.properties
+        dos2unix wzc-api/src/main/resources/$i.properties
+	done
+
+	for i in log4j
+	do
+    	cp -f wzc-api/src/main/resources/$i.xml.template wzc-api/src/main/resources/$i.xml
+        dos2unix wzc-api/src/main/resources/$i.xml
+	done
+
+    # config.properties
+    sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/platform.feezu.cn\/metadata\/services/" wzc-api/src/main/resources/config.properties
+    sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/platform.feezu.cn\/report\/services/" wzc-api/src/main/resources/config.properties
+    sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/platform.feezu.cn\/orders\/services/" wzc-api/src/main/resources/config.properties
+    sed -i "/^RUN_ENVIRONMENT/ s/=.*/=prod/" wzc-api/src/main/resources/config.properties
+
+    # jedis.properties
+    sed -i "/^redis.host/ s/=.*/=redis_01/" wzc-api/src/main/resources/jedis.properties
+    sed -i "/^redis.port/ s/=.*/=9000/" wzc-api/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" wzc-api/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" wzc-api/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" wzc-api/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" wzc-api/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" wzc-api/src/main/resources/jedis.properties
+
+    # msgConfig.properties
+    sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" wzc-api/src/main/resources/msgConfig.properties
+
+    # 按不同的后端服务器修改serverconfig.properties
+	PS3="目标服务器: "
+	select option in "TOMCATA" "TOMCATB" "TOMCATC";do
+	case $option in
+    	TOMCATA)
+			REMOTE_ENV=TOMCATA
+			REMOTE_SERVER=10.172.135.11
+            sed -i "/^serverId/ s/=.*/=api_demo_1/" wzc-api/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=1/" wzc-api/src/main/resources/serverconfig.properties
+    		sed -i "s/\/Data\/logs\/elk\/api/\/Data\/logs\/elk\/apiA/" wzc-api/src/main/resources/log4j.xml
+			break
+		;;
+    	TOMCATB)
+			REMOTE_ENV=TOMCATB
+			REMOTE_SERVER=10.172.135.11
+            sed -i "/^serverId/ s/=.*/=api_demo_2/" wzc-api/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=2/" wzc-api/src/main/resources/serverconfig.properties
+    		sed -i "s/\/Data\/logs\/elk\/api/\/Data\/logs\/elk\/apiB/" wzc-api/src/main/resources/log4j.xml
+			break
+		;;
+    	TOMCATC)
+			REMOTE_ENV=TOMCATC
+			REMOTE_SERVER=10.51.125.79
+            sed -i "/^serverId/ s/=.*/=api_demo_3/" wzc-api/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=3/" wzc-api/src/main/resources/serverconfig.properties
+			break
+		;;
+        *)
+       		clear
+        	echo "Error! Wrong choice!"
+        	exit
+    	;;
+	esac
+	done
+}
+    # log4j.xml
+    # no change
 
 function DELETE_PROFILES() {
     cd ${MANAGE_SOURCE_DIR}
@@ -78,7 +174,7 @@ function DELETE_PROFILES() {
 	done
 
 	# manage-metadata
-	for i in apollo-env dubbo ftpconfig jdbc jedis msgConfig securityConfig serverconfig sms spy
+	for i in apollo-env dubbo ftpconfig jdbc jedis msgConfig securityConfig serverconfig sms
 	do
     	rm -f manage-metadata/src/main/resources/$i.properties
 	done
@@ -229,7 +325,7 @@ function GENERATE_PROFILES() {
 	done
 
 	# manage-metadata
-	for i in apollo-env dubbo ftpconfig jdbc jedis msgConfig securityConfig serverconfig sms spy
+	for i in apollo-env dubbo ftpconfig jdbc jedis msgConfig securityConfig serverconfig sms
 	do
     	cp -f manage-metadata/src/main/resources/$i.properties.template manage-metadata/src/main/resources/$i.properties
         dos2unix manage-metadata/src/main/resources/$i.properties
@@ -362,6 +458,8 @@ function MODIFY_PROFILES() {
     
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" consumer-app/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" consumer-app/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxActive/ s/=.*/=50/" consumer-app/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" consumer-app/src/main/resources/ftpconfig.properties
 
     # log4j.xml
@@ -392,7 +490,7 @@ function MODIFY_PROFILES() {
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-orders/src/main/resources/config.properties
-    sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/orders\/services/" manage-orders/src/main/resources/config.properties
+    sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/analysis\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@feezu.cn/" manage-orders/src/main/resources/config.properties
     sed -i "/^EXCLUDE_COM_CODE/ s/=.*/=BJCX001,BJCXQC001,GZWL001,YGMM001,BQXNY00001,HY00001/" manage-orders/src/main/resources/config.properties
     sed -i "/^TLD_URL/ s/=.*/=http:\/\/hlht.teld.cn:9201\/evcs\/v20161110\//" manage-orders/src/main/resources/config.properties
@@ -403,16 +501,25 @@ function MODIFY_PROFILES() {
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-orders/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-orders/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-orders/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-orders/src/main/resources/ftpconfig.properties
 
     # jdbc.properties 
     sed -i "/^masterdb.url/ s/=.*/=jdbc:mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306\/orders?useUnicode=true\&amp;characterEncoding=utf-8/" manage-orders/src/main/resources/jdbc.properties
     sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2zev3gzmso46nikib.mysql.rds.aliyuncs.com:3306\/orders?useUnicode=true\&amp;characterEncoding=utf-8/" manage-orders/src/main/resources/jdbc.properties
     sed -i "/db.user/ s/=.*/=mainuser/g" manage-orders/src/main/resources/jdbc.properties
     sed -i "/db.password/ s/=.*/=NbcbKCSTQpa/g" manage-orders/src/main/resources/jdbc.properties
+    sed -i "/maxActive/ s/=.*/=500/g" manage-orders/src/main/resources/jdbc.properties
+    sed -i "/initialSize/ s/=.*/=5/g" manage-orders/src/main/resources/jdbc.properties
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" manage-orders/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" manage-orders/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-orders/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-orders/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-orders/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-orders/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-orders/src/main/resources/jedis.properties
 
     # msgConfig.properties
     sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" manage-orders/src/main/resources/msgConfig.properties
@@ -464,7 +571,7 @@ function MODIFY_PROFILES() {
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-web/src/main/resources/config.properties
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-web/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-web/src/main/resources/config.properties
-    sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/orders\/services/" manage-web/src/main/resources/config.properties
+    sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/analysis\/services/" manage-web/src/main/resources/config.properties
     sed -i "/^CAR_TYPE_REPORT_HREF/ s/=.*/=\/report\/storeCarTypeReport/" manage-web/src/main/resources/config.properties
     sed -i "/^IS_PRODUCT_ENVIRONMENT_VALID_CODE/ s/=.*/=true/" manage-web/src/main/resources/config.properties
     # 模拟登录
@@ -490,10 +597,17 @@ function MODIFY_PROFILES() {
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-web/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-web/src/main/resources/ftpconfig.properties
     sed -i "/^img.device.host/ s/=.*/=10.27.81.198/" manage-web/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-web/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-web/src/main/resources/ftpconfig.properties
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" manage-web/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" manage-web/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-web/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-web/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-web/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-web/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-web/src/main/resources/jedis.properties
 
     # applicationContext-dubbo-consumer.xml
     sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' manage-web/src/main/resources/applicationContext-dubbo-consumer.xml
@@ -508,6 +622,8 @@ function MODIFY_PROFILES() {
 
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.device.host/ s/=.*/=10.27.81.198/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
@@ -517,10 +633,17 @@ function MODIFY_PROFILES() {
     sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2zev3gzmso46nikib.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-metadata/src/main/resources/jdbc.properties
     sed -i "/db.user/ s/=.*/=mainuser/g" manage-metadata/src/main/resources/jdbc.properties
     sed -i "/db.password/ s/=.*/=NbcbKCSTQpa/g" manage-metadata/src/main/resources/jdbc.properties
+    sed -i "/maxActive/ s/=.*/=500/g" manage-metadata/src/main/resources/jdbc.properties
+    sed -i "/initialSize/ s/=.*/=5/g" manage-metadata/src/main/resources/jdbc.properties
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" manage-metadata/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" manage-metadata/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-metadata/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-metadata/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-metadata/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-metadata/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-metadata/src/main/resources/jedis.properties
 
     # msgConfig.properties
     sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" manage-metadata/src/main/resources/msgConfig.properties
@@ -530,9 +653,6 @@ function MODIFY_PROFILES() {
     # securityConfig.properties
     sed -i "/SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-metadata/src/main/resources/securityConfig.properties
     # sms.properties
-    # no change
-
-    # spy.properties
     # no change
 
     # serverconfig.properties
@@ -545,6 +665,11 @@ function MODIFY_PROFILES() {
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" manage-datawarehouse/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" manage-datawarehouse/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-datawarehouse/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-datawarehouse/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-datawarehouse/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
 
     # msgConfig.properties
     sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" manage-datawarehouse/src/main/resources/msgConfig.properties
@@ -575,6 +700,11 @@ function MODIFY_PROFILES() {
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" wechat/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" wechat/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" wechat/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" wechat/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" wechat/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" wechat/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" wechat/src/main/resources/jedis.properties
 
     # log4j.xml
     # no change
@@ -582,7 +712,7 @@ function MODIFY_PROFILES() {
 	### manage-app ###
 	# config.properties 
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-app/src/main/resources/config.properties
-    sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/orders\/services/" manage-app/src/main/resources/config.properties
+    sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-app/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-app/src/main/resources/config.properties
 
     # log4j.xml
@@ -601,14 +731,17 @@ function MODIFY_PROFILES() {
 
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-report/src/main/resources/config.properties
-    sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/orders\/services/" manage-report/src/main/resources/config.properties
+    sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/analysis\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^bill_police_to_mail/ s/=.*/=chanpin@feezu.cn/" manage-report/src/main/resources/config.properties
     sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@feezu.cn/" manage-report/src/main/resources/config.properties
+    sed -i "/^ALERT_MAIL_CAIWU/ s/=.*/=ruanjian@feezu.cn/" manage-report/src/main/resources/config.properties
 
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-report/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-report/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-report/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-report/src/main/resources/ftpconfig.properties
 
     # jdbc.properties
@@ -618,9 +751,16 @@ function MODIFY_PROFILES() {
     sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2zev3gzmso46nikib.mysql.rds.aliyuncs.com:3306\/report?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
     sed -i "/db.user/ s/=.*/=mainuser/g" manage-report/src/main/resources/jdbc.properties
     sed -i "/db.password/ s/=.*/=NbcbKCSTQpa/g" manage-report/src/main/resources/jdbc.properties
+    sed -i "/maxActive/ s/=.*/=500/g" manage-report/src/main/resources/jdbc.properties
+    sed -i "/initialSize/ s/=.*/=5/g" manage-report/src/main/resources/jdbc.properties
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" manage-report/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" manage-report/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-report/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-report/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-report/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-report/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-report/src/main/resources/jedis.properties
     # msgConfig.properties
     sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" manage-report/src/main/resources/msgConfig.properties
     sed -i "/^amqp.addresses/ s/=.*/=10.27.74.214:5673,10.30.47.36:5673,10.30.57.7:5673/" manage-report/src/main/resources/msgConfig.properties
@@ -645,11 +785,15 @@ function MODIFY_PROFILES() {
     sed -i "/^dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" manage-thirdparty/src/main/resources/dubbo.properties
     # ftpconfig.properties
     sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-thirdparty/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-thirdparty/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-thirdparty/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-thirdparty/src/main/resources/ftpconfig.properties
     # jdbc.properties
     sed -i "/^db.url/ s/=.*/=jdbc:mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306\/thirdparty?useUnicode=true\&amp;characterEncoding=utf-8/" manage-thirdparty/src/main/resources/jdbc.properties
     sed -i "/^db.user/ s/=.*/=mainuser/g" manage-thirdparty/src/main/resources/jdbc.properties
     sed -i "/^db.password/ s/=.*/=NbcbKCSTQpa/g" manage-thirdparty/src/main/resources/jdbc.properties
+    sed -i "/maxActive/ s/=.*/=500/g" manage-thirdparty/src/main/resources/jdbc.properties
+    sed -i "/initialSize/ s/=.*/=5/g" manage-thirdparty/src/main/resources/jdbc.properties
     # securityConfig.properties
     sed -i "/^SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-thirdparty/src/main/resources/securityConfig.properties
 
@@ -673,6 +817,11 @@ function MODIFY_PROFILES() {
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" consumer-wap/src/main/resources/jedis.properties
     sed -i "/^redis.port/ s/=.*/=9000/" consumer-wap/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" consumer-wap/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" consumer-wap/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" consumer-wap/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" consumer-wap/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" consumer-wap/src/main/resources/jedis.properties
     # log4j.xml
     # no change
 
