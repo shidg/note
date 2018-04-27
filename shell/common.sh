@@ -625,7 +625,7 @@ function MODIFY_PROFILES() {
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
-    sed -i "/^img.device.host/ s/=.*/=10.27.81.198/" manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i "/^img.device.host/ s/=.*/=59.110.40.80/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
 
     # jdbc.properties 
@@ -837,7 +837,7 @@ function MODIFY_PROFILES() {
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_1/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-metadata/src/main/resources/serverconfig.properties
-    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/$/com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
+    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
@@ -864,7 +864,7 @@ function MODIFY_PROFILES() {
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_2/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-metadata/src/main/resources/serverconfig.properties
-    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/$/com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
+    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
@@ -891,7 +891,7 @@ function MODIFY_PROFILES() {
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_3/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=3/" manage-metadata/src/main/resources/serverconfig.properties
-    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/$/com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
+    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
