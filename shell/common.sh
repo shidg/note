@@ -531,6 +531,7 @@ function MODIFY_PROFILES() {
 
     # securityConfig.properties
     sed -i "/^SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-orders/src/main/resources/securityConfig.properties
+    sed -i "/SECURITY_KEY_VERSION=/ s/=.*/=160093/" manage-orders/src/main/resources/securityConfig.properties
 
     # spy.properties
     # no change
@@ -652,6 +653,7 @@ function MODIFY_PROFILES() {
 
     # securityConfig.properties
     sed -i "/SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-metadata/src/main/resources/securityConfig.properties
+    sed -i "/SECURITY_KEY_VERSION=/ s/=.*/=160093/" manage-metadata/src/main/resources/securityConfig.properties
     # sms.properties
     # no change
 
@@ -767,6 +769,7 @@ function MODIFY_PROFILES() {
     sed -i "/^amqp.password/ s/=.*/=DFDeoDh9P4Y4HprN/" manage-report/src/main/resources/msgConfig.properties
     # securityConfig.properties
     sed -i "/^SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-report/src/main/resources/securityConfig.properties
+    sed -i "/SECURITY_KEY_VERSION=/ s/=.*/=160093/" manage-report/src/main/resources/securityConfig.properties
     # spy.properties
     # no change
 
@@ -796,6 +799,7 @@ function MODIFY_PROFILES() {
     sed -i "/initialSize/ s/=.*/=5/g" manage-thirdparty/src/main/resources/jdbc.properties
     # securityConfig.properties
     sed -i "/^SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-thirdparty/src/main/resources/securityConfig.properties
+    sed -i "/SECURITY_KEY_VERSION=/ s/=.*/=160093/" manage-thirdparty/src/main/resources/securityConfig.properties
 
     # serverconfig.properties
     #log4j.xml
