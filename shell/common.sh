@@ -383,7 +383,7 @@ function GENERATE_PROFILES() {
         dos2unix manage-report/src/main/resources/$i.properties
 	done
 
-	for i in log4j #applicationContext-dubbo-consumer
+	for i in log4j applicationContext-dubbo-consumer
 	do
     	cp -f manage-report/src/main/resources/$i.xml.template manage-report/src/main/resources/$i.xml
         dos2unix manage-report/src/main/resources/$i.xml
@@ -576,15 +576,13 @@ function MODIFY_PROFILES() {
     sed -i "/^CAR_TYPE_REPORT_HREF/ s/=.*/=\/report\/storeCarTypeReport/" manage-web/src/main/resources/config.properties
     sed -i "/^IS_PRODUCT_ENVIRONMENT_VALID_CODE/ s/=.*/=true/" manage-web/src/main/resources/config.properties
     # 模拟登录
-    # cur_100038r57lqc 席榕鸿
     # cur_2000376m6dg9 刘彦
     # cur_2000399vw66t 付建
     # cur_100038r57lpr 毛冲冲
     # cur_2000376m6dgk 方意
-    # cur_10003731hj1d 邓彬峰
     # cur_200038mqlkrj 杨志强
     # cur_10004pvcfzxh 李佳航
-    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_100038r57lqc,cur_2000376m6dg9,cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_10003731hj1d,cur_200038mqlkrj,cur_10004pvcfzxh/" manage-web/src/main/resources/config.properties
+    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000376m6dg9,cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_200038mqlkrj,cur_10004pvcfzxh/" manage-web/src/main/resources/config.properties
     sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties
@@ -776,7 +774,7 @@ function MODIFY_PROFILES() {
     # serverconfig.properties
 
     # applicationContext-dubbo-consumer.xml
-    # sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' manage-report/src/main/resources/applicationContext-dubbo-consumer.xml
+    sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' manage-report/src/main/resources/applicationContext-dubbo-consumer.xml
 
     # log4j.xml
     # no change

@@ -19,3 +19,12 @@ insert into a (field1,field2,……) select value1,value2,…… from b
 
 select value1,value2 into a from b
 #这种方式表a无需手动创建
+
+
+#table_open_cache
+
+SHOW  VARIABLES like '%table_open_cache%'
+
+show global status like 'Open%tables'
+# 如果open_tables等于table_open_cache，并且opened_tables在不断增长，那么你就需要增加table_open_cache的值了
+

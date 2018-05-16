@@ -109,6 +109,19 @@ server-id = 1
 #relay-log-info-file = /data/mysql/relaylog/relaylog
 #relay-log = /data/mysql/relaylog/relaylog
 
+#并行复制
+# worker线程个数
+slave_parallel_workers
+
+# 隔多少个事物做一次checkpoint
+slave-checkpoint-group
+
+# 隔多长时间做一次checkpoint
+slave-checkpoint-period
+
+# 分发给worker的，处于等待状态的event的大小上限
+slave-pending-jobs-size-max
+
 [mysqldump]
 quick
 max_allowed_packet = 16M
