@@ -696,6 +696,7 @@ function MODIFY_PROFILES() {
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" wechat/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" wechat/src/main/resources/config.properties
     sed -i "/^Request.ConsumerApp.Url/ s/=.*/=https:\/\/app.feezu.cn/" wechat/src/main/resources/config.properties
+    sed -i "/^YwxWeiXin.Url/ s/=.*/=https:\/\/wx.feezu.cn/" wechat/src/main/resources/config.properties
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" wechat/src/main/resources/jedis.properties
@@ -705,6 +706,9 @@ function MODIFY_PROFILES() {
     sed -i "/^redis.pool.minIdle/ s/=.*/=30/" wechat/src/main/resources/jedis.properties
     sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" wechat/src/main/resources/jedis.properties
     sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" wechat/src/main/resources/jedis.properties
+
+    # base.js
+    sed -i "/apiUrl/ s/\/\/.*/\/\/app.feezu.cn',/" wechat/WebContent/resources/js/base.js
 
     # log4j.xml
     # no change
