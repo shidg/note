@@ -2,6 +2,12 @@
 
 ## dep_setup
 
+## sourcecode ##
+# git@git.feezu.cn:wzc/setup.git 
+
+## Dependencies ##
+# git@git.feezu.cn:soft/platform.git
+
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT
 trap 'ERRTRAP $LINENO' ERR
@@ -9,8 +15,8 @@ trap 'ERRTRAP $LINENO' ERR
 
 CMD=`echo $(basename $0)`
 
-if [ -z $1 ];then
-	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 3.0.1 1.0.22"
+if [ $# -lt 2 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch name] [depend_branch_name]\nE.g: dep_setup 2018-07-12  1.0.24"
 	exit
 #elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
 #	echo -e "参数格式错误!"
@@ -37,7 +43,10 @@ BUILD_DIR=/Data/war/setup/${BRANCH_NAME}
 # 更新代码
 cd ${SETUP_SOURCE_DIR}
 
-git checkout ${BRANCH_NAME} && git pull
+git pull && git checkout ${BRANCH_NAME}
+if NEW_COMMIT ${BRANCH_NAME};then
+    git pull
+fi
 
 # 初始化配置文件
 # 该项目配置文件独立在jar包外，故打包时不必考虑环境差异
@@ -47,16 +56,14 @@ git checkout ${BRANCH_NAME} && git pull
 cd ${SETUP_SOURCE_DIR}
 mvn clean package -Dmaven.test.skip=true
 
-if alias cp > /dev/null 2>&1 ;then
-    unalias cp
-fi
+UNALIAS_CP
 cp -f ${SETUP_SOURCE_DIR}/web/target/web.jar ${BUILD_DIR}
 
 END_TIME=`date "+%Y%m%d-%T"`
 
 cat >> /Data/logs/deplog/dep_setup.log <<EOF
 ========================================
-Rebuild setup for [${REMOTE_ENV}] success.
+Rebuild setup success.
 
 TIME: ${START_TIME}
 setup Version: ${BRANCH_NAME}

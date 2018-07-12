@@ -1,0 +1,26 @@
+#! /bin/bash
+cd /Data/source/GoPlus/common
+
+git checkout dev
+
+git pull 
+
+mvn clean install
+
+cd /Data/source/GoPlus/netty
+
+git checkout dev
+
+git pull
+
+mvn clean package
+
+cd target
+
+if [ -f netty.tgz ];then
+	rm -f netty.tgz
+fi
+
+tar zcvf netty.tgz netty.jar lib
+
+rsync -azu --progress --delete netty.tgz -e "ssh -p 5122" 10.10.8.33:/Data/app/Netty

@@ -1,76 +1,99 @@
-#!/bin/bash
+#! /bin/bash
 # dep_api
-# Modified by shidg,20160701
 
+## sourcecode ##
+# git@git.feezu.cn:devicecloud/device-api.git
 
-# Define Variables
+## Dependencies ##
+# git@git.feezu.cn:wzc3.0/common.git
+# git@git.feezu.cn:devicecloud/device-manage.git
+
 source ~/common.sh
-
-# 遇到错误即退出脚本
-trap 'ERRTRAP $LINENO' ERR
-#处理"Ctrl+C"
 trap EXIT_CONFIRMATION SIGINT
+trap 'ERRTRAP $LINENO' ERR
 
-# Define Variables
-DEFINE_VARIABLES 
+
+CMD=`echo $(basename $0)`
+
+if [ $# -lt 3 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number] [branch_name_common] [branch_name_dm]\nE.g: dep_api 3.0.2.1 3.0.1 3.0.2"
+	exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#	echo -e "参数格式错误!"
+#	exit
+fi
+
+set -u
+
+#Define Variables
+DEFINE_VARIABLES
+
 #Define system path
 DEFINE_SYSTEM_PATH
 
-# 有未定义的变量则退出脚本，防止误删根目录
-set -u
-
 START_TIME=`date "+%Y%m%d-%T"`
+BRANCH_NAME=$1
+DEPEND_BRANCH_COMMON=$2
+DEPEND_BRANCH_DM=$3
+BUILD_DIR=/Data/war/api/${BRANCH_NAME}
 
-CMD=`echo $(basename $0)`
-if [ -z $1 ];then
-    echo -e "Usage: $CMD [branch number]\nE.g:   dep_platform 1.0.11"
-    exit
-fi
-set -u
-
-BRANCH_NAME=release_$1
-BUILD_DIR=/Data/war/api/branch/${BRANCH_NAME}
-MODULE=api
-
-
-
-# update source code
-GET_READY_FOR_API
-
-#build war packages
-   cd ${MANAGE_SOURCE_DIR}/manage-global-api
-   mvn clean install -Dmaven.test.skip=true
-   cd ${MANAGE_SOURCE_DIR}/wzc-api
-   mvn clean package
-
-# create dirs if not exist
+#Create dir if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
 
-# delete old wars & move new war package to &{BUILD_DIR}
-#rm -rf ${BUILD_DIR}/*
-mv -f ${MANAGE_SOURCE_DIR}/wzc-api/target/api.war ${BUILD_DIR}
+# 解决依赖
+echo -e "构建依赖: wzc3.0/common [branch: ${DEPEND_BRANCH_COMMON}] ..."
+sleep 1
+cd ${WZC3_SOURCE_DIR}/common
+git pull && git checkout ${DEPEND_BRANCH_COMMON}
+if NEW_COMMIT ${DEPEND_BRANCH_COMMON};then
+    git pull
+fi
+mvn clean install -Dmaven.test.skip=true
 
+echo -e "构建依赖：deviceclound/device-manage [branch: ${DEPEND_BRANCH_DM}] ..."
+sleep 1
 
-# rsync war to remote server
-    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER}::$MODULE &
-#    rsync -az --delete --password-file=/etc/rsync.pass ${BUILD_DIR}/ ${SYNC_USER}@${API_SERVER2}::$MODULE &
-        
+cd ${DM_SOURCE_DIR}
+git pull && git checkout ${DEPEND_BRANCH_DM}
+if NEW_COMMIT ${DEPEND_BRANCH_DM};then
+    git pull
+fi
+mvn clean install -Dmaven.test.skip=true
+
+# 更新代码
+cd ${API_SOURCE_DIR}
+
+git pull && git checkout ${BRANCH_NAME}
+
+if NEW_COMMIT ${BRANCH_NAME};then
+    git pull
+fi
+
+# 解决依赖
+echo -e "构建依赖：deviceclound/device-api下的device-control-service ..."
+sleep 1
+cd ${API_SOURCE_DIR}/device-control-service
+mvn clean install -Dmaven.test.skip=true
+
+# 开始构建
+echo -e "开始构建api包..."
+sleep 1
+cd ${API_SOURCE_DIR}/wzc-api
+mvn clean package -Dmaven.test.skip=true
+
+UNALIAS_CP
+
+cp -f ${API_SOURCE_DIR}/wzc-api/api/target/api-*.jar ${BUILD_DIR}
+
 END_TIME=`date "+%Y%m%d-%T"`
 
-#log
-cat > /tmp/upinfo <<EOF
-=========================
-server:${REMOTE_SERVER}(${REMOTE_ENV})
-Start at:${START_TIME}
-Finish at:${END_TIME}
-$GIT_MSG
-Current version:${DEPLOY_VERSION}
+cat >> /Data/logs/deplog/dep_api.log <<EOF
+========================================
+Rebuild api for success.
+
+TIME: ${START_TIME}
+DM Version: ${BRANCH_NAME}
 EOF
 
-cat /tmp/upinfo >> /Data/logs/deplog/deploy_api_${BRANCH_NAME}.log
-
-         
-echo ${DEPLOY_VERSION} > /tmp/last_version_api_${BRANCH_NAME}
-# Done
-
 exit 0
+

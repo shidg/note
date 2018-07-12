@@ -1,13 +1,12 @@
 #!/bin/bash
 # dep_platform
-# Modified by shidg,20170920
+# Modified by shidg,20180514
 
-## sourcecode ##
+## sourcecode ##                                                                                                                                           
 # git@git.feezu.cn:soft/platform.git
 
 ## Dependencies ##
 # git@git.feezu.cn:wzc3.0/common.git
-
 
 source ~/common.sh
 
@@ -46,7 +45,7 @@ fi
 #Begin
 START_TIME=`date "+%Y%m%d-%T"`
 
-# 切换到源代码目录
+# 切换分支,更新代码
 cd ${MANAGE_SOURCE_DIR}
 
 # 删除上次部署残留的配置文件
@@ -76,6 +75,10 @@ GENERATE_PROFILES
 # 修改配置文件
 MODIFY_PROFILES
 
+
+#弹出菜单
+#MENU
+
 #判断目标服务器是否已定义
 : ${REMOTE_SERVER:?"变量未定义或者值为空"}
 
@@ -88,8 +91,6 @@ MODIFY_PROFILES
 #	exit
 #fi 
 
-#: << BLOCK
-
 # 解决依赖
 echo -e "构建依赖: wzc3.0/common [branch: ${DEPEND_NAME_COMMON}]..."
 cd ${WZC3_SOURCE_DIR}/common
@@ -100,19 +101,22 @@ fi
 mvn clean install
 
 #build war packages
-#   cd ${MANAGE_SOURCE_DIR}/manage-common
-#   mvn clean install -Dmaven.test.skip=true
+#cd ${MANAGE_SOURCE_DIR}/manage-common
+#mvn clean install -Dmaven.test.skip=true
    cd ${MANAGE_SOURCE_DIR}/manage-global-api                                                  
    mvn clean install -Dmaven.test.skip=true
 
    cd ${MANAGE_SOURCE_DIR}/wzc
    mvn clean package -Dmaven.test.skip=true
 
+#   cd ${MANAGE_SOURCE_DIR}/wzc-api
+#   mvn clean package -Dmaven.test.skip=true
+
    cd ${MANAGE_SOURCE_DIR}/consumer-wap
    mvn clean package -Dmaven.test.skip=true
 
 # delete old wars & move war to /Data/war/trunk
-PROJS2=(manage-web consumer-app manage-metadata manage-datawarehouse manage-report manage-orders manage-app wechat download manage-thirdparty consumer-wap)
+PROJS2=(manage-web consumer-app manage-metadata manage-datawarehouse manage-report manage-orders manage-app wechat download manage-thirdparty report-superviser consumer-wap)
 
 rm -rf ${BUILD_DIR}/*
 
@@ -121,7 +125,6 @@ for PROJ in ${PROJS2[*]}
         mv -f ${MANAGE_SOURCE_DIR}/${PROJ}/target/*war ${BUILD_DIR}
     done
 
-# BLOCK
 # rsync war to remote server
 echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to ${REMOTE_ENV}(${REMOTE_SERVER}) ..."
 sleep 2
@@ -139,8 +142,8 @@ server:${REMOTE_ENV}
 Start at:${START_TIME}
 Finish at:${END_TIME}
 $GIT_MSG
-Current version:${DEPLOY_VERSION}
-Last version:${LAST_DEPLOY_VERSION}
+Current version:${DEPLOY_VERSION}(${BRANCH_NAME})
+Last version:${LAST_DEPLOY_VERSION}(${BRANCH_NAME})
 EOF
 
 #log

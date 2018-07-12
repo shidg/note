@@ -27,7 +27,7 @@ DEFINE_SYSTEM_PATH
 
 START_TIME=`date "+%Y%m%d-%T"`
 BRANCH_NAME=$1
-DEPEND_BRANCH_NAME=release_$2
+#DEPEND_BRANCH_NAME=release_$2
 BUILD_DIR=/Data/war/devicelb/${BRANCH_NAME}
 
 #Create dir if not exist
@@ -39,7 +39,11 @@ if [ -f "devicelb/src/main/resources/application.properties" ];then
     rm -f devicelb/src/main/resources/application.properties
 fi
 
-git checkout ${BRANCH_NAME} && git pull
+if git branch | grep "${BRANCH_NAME}";then
+    git checkout ${BRANCH_NAME} && git pull
+else
+    git pull && git checkout ${BRANCH_NAME}
+fi
 
 # 初始化配置文件
 GET_READY_FOR_DL

@@ -1,0 +1,81 @@
+#! /bin/bash
+
+## dep_yunwei
+
+source ~/common.sh
+trap EXIT_CONFIRMATION SIGINT
+trap 'ERRTRAP $LINENO' ERR
+
+
+CMD=`echo $(basename $0)`
+
+if [ -z $1 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 1.0.11"
+	exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#	echo -e "参数格式错误!"
+#	exit
+fi
+
+set -u
+
+#Define Variables
+DEFINE_VARIABLES
+
+#Define system path
+DEFINE_SYSTEM_PATH
+
+START_TIME=`date "+%Y%m%d-%T"`
+BRANCH_NAME=$1
+BUILD_DIR=/Data/war/yunwei/${BRANCH_NAME}
+
+#Create dir if not exist
+[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
+
+
+# 更新代码
+cd ${YUNWEI_SOURCE_DIR}
+
+if git branch | grep "${BRANCH_NAME}";then
+    git checkout ${BRANCH_NAME} && git pull
+else
+    git pull && git checkout ${BRANCH_NAME}
+fi
+
+
+if alias cp >/dev/null 2>&1;then
+    unalias cp
+fi
+
+# 选择构建目标
+PS3="构建目标: "
+select option in "前端静态文件" "后端服务jar包";do
+    case $option in
+        前端静态文件)
+            cd client-app
+            npm run build
+            tar zcvf yunwei.tgz build/*
+            cp yunwei.tgz ${BUILD_DIR}
+            break
+        ;;
+        后端服务jar包)
+            mvn clean package -DskipTests install
+            cp maint-web/target/maint-web*.jar ${BUILD_DIR}
+            cp maint-app/target/maint-app*.jar ${BUILD_DIR}
+            break
+        ;;
+    esac
+done
+
+END_TIME=`date "+%Y%m%d-%T"`
+
+cat >> /Data/logs/deplog/dep_yunwei.log <<EOF
+========================================
+Rebuild gateway success.
+
+TIME: ${START_TIME}
+GATEWAY Version: ${BRANCH_NAME}
+EOF
+
+exit 0
+

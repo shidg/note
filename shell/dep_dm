@@ -1,7 +1,14 @@
 #! /bin/bash
 
+# dep_device_manage
 
-## dep_device_manage
+## sourcecode ##
+# git@git.feezu.cn:devicecloud/device-manage.git
+
+## Dependencies ##
+# git@git.feezu.cn:soft/platform.git [manage-metadata-api]
+# git@git.feezu.cn:wzc3.0/company.git
+
 
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT
@@ -10,8 +17,8 @@ trap 'ERRTRAP $LINENO' ERR
 
 CMD=`echo $(basename $0)`
 
-if [ -z $1 ];then
-	echo -e "缺少参数!\nUsage: $CMD [branch number]\nE.g: dep_mina 3.0.1 1.0.22"
+if [ $# -lt 3 ];then
+	echo -e "缺少参数!\nUsage: $CMD [branch name] [depend_branch_metadata] [depend_branch_company]\nE.g: dep_dm 3.0.2 1.0.24 3.0.1"
 	exit
 #elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
 #	echo -e "参数格式错误!"
@@ -28,7 +35,8 @@ DEFINE_SYSTEM_PATH
 
 START_TIME=`date "+%Y%m%d-%T"`
 BRANCH_NAME=$1
-DEPEND_BRANCH_NAME=release_$2
+DEPEND_BRANCH_METADATA=release_$2
+DEPEND_BRANCH_COMPANY=$3
 BUILD_DIR=/Data/war/device-manage/${BRANCH_NAME}
 
 #Create dir if not exist
@@ -44,27 +52,47 @@ if [ -f "device-manage-web/src/main/resources/gateway-deliver-config.properties"
     rm -f device-manage-web/src/main/resources/gateway-deliver-config.properties
 fi
 
-git checkout ${BRANCH_NAME} && git pull
+git pull && git checkout ${BRANCH_NAME}
+if NEW_COMMIT ${BRANCH_NAME};then
+    git pull
+fi
 
 # 初始化配置文件
 GET_READY_FOR_DM
 
 # 解决依赖
-echo -e "构建依赖：分支${DEPEND_BRANCH_NAME}下的manage-metadata-api ..."
-sleep 2
+echo -e "构建依赖：platform/manage-metadata-api [branch: ${DEPEND_BRANCH_METADATA}] ..."
+sleep 1
 cd ${MANAGE_SOURCE_DIR}/manage-metadata-api
-git checkout ${DEPEND_BRANCH_NAME} && git pull
+git pull && git checkout ${DEPEND_BRANCH_METADATA}
+if NEW_COMMIT ${DEPEND_BRANCH_METADATA};then
+    git pull
+fi
 mvn clean install -Dmaven.test.skip=true
 
-echo -e "构建依赖：分支${BRANCH_NAME}下的device-deliver-api ..."
-sleep 2
+echo -e "构建依赖: wzc3.0/company [branch: ${DEPEND_BRANCH_COMPANY}] ..."
+sleep 1
+cd ${WZC3_SOURCE_DIR}/company
+git pull && git checkout ${DEPEND_BRANCH_COMPANY}
+if NEW_COMMIT ${DEPEND_BRANCH_COMPANY};then
+    git pull
+fi
+mvn clean install -Dmaven.test.skip=true
+
+echo -e "构建依赖: deviceclound/device-manage/device-deliver-api [branch: ${BRANCH_NAME}]..."
+sleep 1
 cd ${DM_SOURCE_DIR}/device-deliver-api
 mvn clean install -Dmaven.test.skip=true
 
+
 # 开始构建
+echo -e "开始构建dm包..."
+sleep 1
+
 cd ${DM_SOURCE_DIR}
 mvn clean package -Dmaven.test.skip=true
 
+UNALIAS_CP
 cp -f ${DM_SOURCE_DIR}/device-manage-web/target/device-manage-web.war ${BUILD_DIR}
 
 END_TIME=`date "+%Y%m%d-%T"`
