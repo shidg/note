@@ -114,3 +114,6 @@ Notify all involved
 
 # 添加用户，为用户配置媒介类型、接收邮箱等信息
 # 邮件报警配置完成
+
+# 连续5分钟持续大于80%
+{Template OS Linux:system.cpu.util[,user].min(5m)}>80

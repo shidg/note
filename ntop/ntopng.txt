@@ -1,0 +1,41 @@
+# 交换机设置端口映射
+conf t
+monitor session 1 source interface gigabitEthernet 1/0/1   
+monitor session 1 destination interface gigabitEthernet 1/0/12
+exit
+show monitor session 1
+
+# deps
+#yum install gcc gcc-c++ autoconf automake libtooli glib2-devel kernel-devel kernel-headers  bison flex libpcap-devel libcap-devel libcurl-devel libmaxminddb-devel libsqlite3x-devel libxml2-devel wget 
+
+#install redis
+
+
+# install RF_PING
+git clone https://github.com/ntop/PF_RING.git
+cd PF_RING/kernel
+make
+sudo insmod ./pf_ring.ko
+cd ../userland
+make
+
+
+# install nDPI
+git clone https://github.com/ntop/nDPI.git
+cd nDPI
+./configure --with-pic
+make
+
+# install ntopng
+git clone https://github.com/ntop/ntopng.git
+cd ntopng
+./autogen.sh
+./configure
+/usr/bin/gmake geoip
+make
+make install
+
+# 启动服务
+ntopng -d /home/ntopng/data/ --daemon
+
+
