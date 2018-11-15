@@ -1,4 +1,4 @@
-# 交换机设置端口映射
+# 交换机设置端口复制
 conf t
 monitor session 1 source interface gigabitEthernet 1/0/1   
 monitor session 1 destination interface gigabitEthernet 1/0/12
