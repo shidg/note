@@ -1,5 +1,5 @@
 #安装
-yum install portmap # 从centos6开始 portmap 变成rpcbind
+# yum install portmap # 从centos6开始 portmap 变成rpcbind
 yum install nfs-utils
 
 #centos6 安装

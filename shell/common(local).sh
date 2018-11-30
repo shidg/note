@@ -25,18 +25,19 @@ function ERRTRAP(){
 }
 
 function EXIT_CONFIRMATION() {
-    echo -ne "Confirm to exit?[Y/N]"
+    echo -ne "No code update, continue?[Y/N]"
 	read -n 1 answer
 	case $answer in
 	    Y|y)
 		echo
-		echo "The script is about to exit..."
-		sleep 1
-		exit
+		echo "The script will continue..."
+        sleep 1
 		;;
 		N|n)
 		echo
-		echo "The script will continue..."	
+		echo "The script is about to exit..."
+        sleep 1
+        exit
 		;;
 		*)
 		echo
@@ -50,7 +51,7 @@ function DELETE_PROFILES() {
     cd ${MANAGE_SOURCE_DIR}
 
 	# consumer-app
-	for i in apollo-env config fastdfs-client ftpconfig 
+	for i in apollo-env config fastdfs-client ftpconfig jedis
 	do
     	rm -f consumer-app/src/main/resources/$i.properties
 	done
@@ -127,7 +128,7 @@ function DELETE_PROFILES() {
 	done
 
 	# manage-app
-	for i in config 
+	for i in config jedis
 	do
     	rm -f manage-app/src/main/resources/$i.properties
 	done
@@ -190,7 +191,7 @@ function GENERATE_PROFILES() {
 	# 生成配置文件
 	cd ${MANAGE_SOURCE_DIR}
     # consumer-app
-	for i in apollo-env config fastdfs-client ftpconfig 
+	for i in apollo-env config fastdfs-client ftpconfig jedis
 	do
     	cp -f consumer-app/src/main/resources/$i.properties.template consumer-app/src/main/resources/$i.properties
         dos2unix consumer-app/src/main/resources/$i.properties
@@ -281,7 +282,7 @@ function GENERATE_PROFILES() {
 	done
 
 	# manage-app
-	for i in config 
+	for i in config jedis
 	do
     	cp -f manage-app/src/main/resources/$i.properties.template manage-app/src/main/resources/$i.properties
         dos2unix manage-app/src/main/resources/$i.properties
@@ -380,6 +381,15 @@ function MODIFY_PROFILES() {
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" consumer-app/src/main/resources/ftpconfig.properties
     sed -i "/^img.http.host/ s/=.*/=imgprep.feezu.cn/" consumer-app/src/main/resources/ftpconfig.properties
 
+    # jedis.properties
+    sed -i "/^redis.host/ s/=.*/=redis_01/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.port/ s/=.*/=6379/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" consumer-app/src/main/resources/jedis.properties
+
     # log4j.xml
     # sed -i "" consumer-app/src/main/resources/log4j.xml
     # applicationContext-dubbo-consumer.xml
@@ -388,7 +398,7 @@ function MODIFY_PROFILES() {
 	### manage-orders ###
     # acp_sdk.properties
     sed -i "/^create_backURL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/unionpay\/callback/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^finish_backURL/ s/=.*/=https:\/\/123.127.240.42\/manage\/orderpayment\/notify4finishOrder/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^finish_backURL/ s/=.*/=https:\/\/111.200.241.178\/manage\/orderpayment\/notify4finishOrder/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/unionpay\/callbackRenew/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^refund_backURL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/unionpay\/refundCallback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^EPPS_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/epps\/notify/" manage-orders/src/main/resources/acp_sdk.properties
@@ -396,7 +406,7 @@ function MODIFY_PROFILES() {
     sed -i "/^EPPS_REFUND_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/epps\/refundNotify/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^ALI_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/ali\/notifyByAlipay/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^ALI_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/ali\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^ALI_RETURN_URL/ s/=.*/=https:\/\/m.feezu.cn\/pay\/completed/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^ALI_RETURN_URL/ s/=.*/=https:\/\/mprep.feezu.cn\/paycallback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^WECHAT_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/wechat\/payCallback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^WECHAT_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/wechat\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
 
@@ -425,7 +435,7 @@ function MODIFY_PROFILES() {
 
     # jdbc.properties 
     sed -i "/^masterdb.url/ s/=.*/=jdbc:mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306\/orders?useUnicode=true\&amp;characterEncoding=utf-8/" manage-orders/src/main/resources/jdbc.properties
-    sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2ze1k895cz6846v9n.mysql.rds.aliyuncs.com:3306\/orders?useUnicode=true\&amp;characterEncoding=utf-8/" manage-orders/src/main/resources/jdbc.properties
+    sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2zea0j789ci31t3fy.mysql.rds.aliyuncs.com:3306\/orders?useUnicode=true\&amp;characterEncoding=utf-8/" manage-orders/src/main/resources/jdbc.properties
     sed -i "/db.user/ s/=.*/=mainuser/g" manage-orders/src/main/resources/jdbc.properties
     sed -i "/db.password/ s/=.*/=OgVT2DokWhzm/g" manage-orders/src/main/resources/jdbc.properties
     sed -i "/maxActive/ s/=.*/=500/g" manage-orders/src/main/resources/jdbc.properties
@@ -507,7 +517,7 @@ function MODIFY_PROFILES() {
     sed -i "/^qrcode_url/ s/=.*/=https:\/\/appprep.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties
     sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-web/src/main/resources/config.properties
-    sed -i "/^WZC_LOGIN_IPS/ s/=.*/=123.127.240.42,123.127.240.43/" manage-web/src/main/resources/config.properties
+    sed -i "/^WZC_LOGIN_IPS/ s/=.*/=111.200.241.178,111.200.241.179/" manage-web/src/main/resources/config.properties
 
     # fastdfs-client.properties
     sed -i "/^fastdfs.tracker_servers/ s/=.*/= 10.44.183.203:22122/" manage-web/src/main/resources/fastdfs-client.properties
@@ -550,7 +560,7 @@ function MODIFY_PROFILES() {
 
     # jdbc.properties 
     sed -i "/^masterdb.url/ s/=.*/=jdbc:mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-metadata/src/main/resources/jdbc.properties
-    sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2ze1k895cz6846v9n.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-metadata/src/main/resources/jdbc.properties
+    sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2zea0j789ci31t3fy.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-metadata/src/main/resources/jdbc.properties
     sed -i "/db.user/ s/=.*/=mainuser/g" manage-metadata/src/main/resources/jdbc.properties
     sed -i "/db.password/ s/=.*/=OgVT2DokWhzm/g" manage-metadata/src/main/resources/jdbc.properties
     sed -i "/maxActive/ s/=.*/=500/g" manage-metadata/src/main/resources/jdbc.properties
@@ -640,13 +650,22 @@ function MODIFY_PROFILES() {
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-app/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-app/src/main/resources/config.properties
 
+    # jedis.properties
+    sed -i "/^redis.host/ s/=.*/=redis_01/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.port/ s/=.*/=6379/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-app/src/main/resources/jedis.properties
+
     # log4j.xml
     # no change
 
 	### manage-report ###
     # acp_sdk.properties
     sed -i "/^create_backURL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/unionpay\/callback/" manage-report/src/main/resources/acp_sdk.properties
-    sed -i "/^finish_backURL/ s/=.*/=https:\/\/123.127.240.42\/manage\/orderpayment\/notify4finishOrder/" manage-report/src/main/resources/acp_sdk.properties
+    sed -i "/^finish_backURL/ s/=.*/=https:\/\/111.200.241.178\/manage\/orderpayment\/notify4finishOrder/" manage-report/src/main/resources/acp_sdk.properties
     sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/unionpay\/callbackRenew/" manage-report/src/main/resources/acp_sdk.properties
     sed -i "/^refund_backURL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/unionpay\/refundCallback/" manage-report/src/main/resources/acp_sdk.properties
 
@@ -674,7 +693,7 @@ function MODIFY_PROFILES() {
     sed -i "/^wzc.db.url/ s/=.*/=jdbc:mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
     sed -i "/^order.db.url/ s/=.*/=jdbc:mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306\/orders?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
     sed -i "/^masterdb.url/ s/=.*/=jdbc:mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306\/report?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
-    sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2ze1k895cz6846v9n.mysql.rds.aliyuncs.com:3306\/report?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
+    sed -i "/^slavedb.url/ s/=.*/=jdbc:mysql:\/\/rr-2zea0j789ci31t3fy.mysql.rds.aliyuncs.com:3306\/report?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
     sed -i "/db.user/ s/=.*/=mainuser/g" manage-report/src/main/resources/jdbc.properties
     sed -i "/db.password/ s/=.*/=OgVT2DokWhzm/g" manage-report/src/main/resources/jdbc.properties
     sed -i "/maxActive/ s/=.*/=500/g" manage-report/src/main/resources/jdbc.properties
@@ -759,7 +778,7 @@ function MODIFY_PROFILES() {
 	case $option in
     	TOMCAT1)
 			REMOTE_ENV=TOMCAT1
-			REMOTE_SERVER=123.56.239.95
+			REMOTE_SERVER=123.57.66.230
             sed -i "/^serverId/ s/=.*/=analysis_prep_1/" manage-datawarehouse/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
@@ -787,7 +806,7 @@ function MODIFY_PROFILES() {
 		;;
     	TOMCAT2)
 			REMOTE_ENV=TOMCAT2
-			REMOTE_SERVER=123.57.66.230
+			REMOTE_SERVER=123.56.239.95
             sed -i "/^serverId/ s/=.*/=analysis_prep_2/" manage-datawarehouse/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
@@ -855,31 +874,99 @@ function GET_READY_FOR_DM() {
 	if [ -f "gateway-deliver-config.properties" ];then
     	rm -f gateway-deliver-config.properties
 	fi
+
+	if [ -f "serverconfig.config.properties" ];then
+    	rm -f serverconfig.properties
+	fi
 	cp -f dubbo.properties.template dubbo.properties
 	cp -f gateway-deliver-config.properties.template gateway-deliver-config.properties
+	cp -f serverconfig.properties.template serverconfig.properties
+
+    cd ${DM_SOURCE_DIR}/device-manage-service/src/main/resources
+	if [ -f "hbase-site.xml" ];then
+    	rm -f hbase-site.xml
+	fi
+    cp -f hbase-site.xml.template hbase-site.xml
 
 	PS3="目标环境: "
 	select option in "prep" "product";do
 	case $option in
     	prep)
         	REMOTE_ENV=prep
+            cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources
+            # dobbo.properties
 			sed -i "/dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.172.164.152:2181?client=zkclient/" dubbo.properties
 			sed -i "/dubbo.protocol.port/ s/20018/20019/" dubbo.properties
-			sed -i "/jdbc.url/ s/mysql:\/\/.*:3306/mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306/" gateway-deliver-config.properties
-			sed -i "/jdbc.username/ s/=.*/=mainuser/" gateway-deliver-config.properties
-			sed -i "/jdbc.password/ s/=.*/=OgVT2DokWhzm/" gateway-deliver-config.properties
+            # gateway-deliver-config.properties
+			sed -i "/jdbc.url/ s/mysql:\/\/.*:3306/mysql:\/\/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com:3306/g" gateway-deliver-config.properties
+			sed -i "/jdbc.username/ s/=.*/=mainuser/g" gateway-deliver-config.properties
+			sed -i "/jdbc.password/ s/=.*/=OgVT2DokWhzm/g" gateway-deliver-config.properties
 			sed -i "/redis.host/ s/=.*/=redis_01/" gateway-deliver-config.properties
+			sed -i "/^file.ftp.host/ s/=.*/=10.44.154.154/" gateway-deliver-config.properties
+			sed -i "/^file.http.host/ s/=.*/=imgprep.feezu.cn/" gateway-deliver-config.properties
+			sed -i "/^file.device.host/ s/=.*/=101.200.175.64/" gateway-deliver-config.properties
+            sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.164.152:61616,tcp:\/\/10.44.54.183:61616,tcp:\/\/10.162.198.246:61616\)/" gateway-deliver-config.properties
+
+            cd ${DM_SOURCE_DIR}/device-manage-service/src/main/resources
+            # hbase-site.xml
+    		sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/10.162.198.246/" hbase-site.xml
+    		#sed -i "s/>1</>3</" hbase-site.xml 
+    		sed -i "s/>hbase.feezu.cn:60000</>10.162.198.246:16000</" hbase-site.xml
+    		sed -i "s/>hbase.feezu.cn</>10.162.198.246</" hbase-site.xml
+    		sed -i "s/>false</>true</" hbase-site.xml
         	break
         ;;
     	product)
         	REMOTE_ENV=product
+			# hbase-site.xml
+            cd ${DM_SOURCE_DIR}/device-manage-service/src/main/resources
+    		sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/K-master/" hbase-site.xml
+    		sed -i "s/>1</>3</" hbase-site.xml
+    		sed -i "s/>hbase.feezu.cn:60000</>K-master:16000</" hbase-site.xml
+    		sed -i "s/>hbase.feezu.cn</>K-slave1,K-slave2,K-slave3</" hbase-site.xml
+    		sed -i "s/>false</>true</" hbase-site.xml
+
+            # dubbo.properties
+            cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources
 			sed -i "/dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" dubbo.properties
 			sed -i "/dubbo.protocol.port/ s/20018/20019/" dubbo.properties
-			sed -i "/jdbc.url/ s/mysql:\/\/.*:3306/mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306/" gateway-deliver-config.properties
-			sed -i "/jdbc.username/ s/=.*/=device_clound/" gateway-deliver-config.properties
-			sed -i "/jdbc.password/ s/=.*/=uAVUgmAdbW5Vw6N/" gateway-deliver-config.properties
-			sed -i "/redis.host/ s/=.*/=10.165.119.188/" gateway-deliver-config.properties
-        	break
+
+            # serverconfig.properties
+            sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" serverconfig.properties
+            sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" serverconfig.properties
+
+            # gateway-deliver-config.properties
+			sed -i "/jdbc.url/ s/mysql:\/\/.*:3306/mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306/g" gateway-deliver-config.properties
+			sed -i "/devicecloud.jdbc.username/ s/=.*/=device_clound/" gateway-deliver-config.properties
+			sed -i "/devicecloud.jdbc.password/ s/=.*/=uAVUgmAdbW5Vw6N/" gateway-deliver-config.properties
+			sed -i "/wzc.jdbc.username/ s/=.*/=mainuser/" gateway-deliver-config.properties
+			sed -i "/wzc.jdbc.password/ s/=.*/=NbcbKCSTQpa/" gateway-deliver-config.properties
+			sed -i "/redis.host/ s/=.*/=redis_01/" gateway-deliver-config.properties
+			sed -i "/redis.port/ s/=.*/=9000/" gateway-deliver-config.properties
+			sed -i "/^file.ftp.host/ s/=.*/=10.27.81.198/" gateway-deliver-config.properties
+			sed -i "/^file.http.host/ s/=.*/=img.feezu.cn/" gateway-deliver-config.properties
+			sed -i "/^file.device.host/ s/=.*/=59.110.40.80/" gateway-deliver-config.properties
+            sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" gateway-deliver-config.properties
+            # 按不同的后端服务器修改serverID
+    		PS3="目标服务器: "
+    		select option in "SERVER1" "SERVER2";do
+    		case $option in
+        		SERVER1)
+					sed -i "/^serverId/ s/=.*/=device-manage-pro-1/" gateway-deliver-config.properties
+        			break
+				;;
+				SERVER2)
+					sed -i "/^serverId/ s/=.*/=device-manage-pro-2/" gateway-deliver-config.properties
+        			break
+				;;
+				*)
+        			clear
+        			echo "Error! Wrong choice!"
+        			exit
+    			;;
+			esac
+			done
+            break
     	;;
     	*)
         	clear
@@ -925,7 +1012,6 @@ function GET_READY_FOR_DL() {
 			        sed -i "/spring.dubbo.protocol.port/ s/=.*/=20880/" application.properties
         	        break
     	        ;;
-
                 server2)
 			        sed -i "/tcp-server.port/ s/=.*/=9981/" application.properties
 			        sed -i "/tcp-server.id/ s/=.*/=devicelb_pro_s2/" application.properties
@@ -959,9 +1045,9 @@ function DEFINE_SYSTEM_PATH() {
 }
 
 function DEFINE_VARIABLES() {
-    : ${WZC3_SOURCE_DIR:="/Data/source/wzc3.0"} ${YUNWEI_SOURCE_DIR:="/Data/source/backoffice"} ${API_SOURCE_DIR:="/Data/source/device-api"} ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.172.234.162"} ${TOMCAT3:="10.47.138.177"}  
+    : ${WZC3_SOURCE_DIR:="/Data/source/wzc3.0"} ${YUNWEI_SOURCE_DIR:="/Data/source/backoffice"} ${API_SOURCE_DIR:="/Data/source/device-api"} ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.47.138.177"} ${EXTERNAL_SOURCE_DIR:="/Data/source/external"}
 
-    export YUNWEI_SOURCE_DIR API_SOURCE_DIR SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 TOMCAT3
+    export YUNWEI_SOURCE_DIR API_SOURCE_DIR SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 TOMCAT3 EXTERNAL_SOURCE_DIR
 }
 
 

@@ -4,24 +4,41 @@
 # Defining variables and functions. Referenced by /usr/bin/dep_*
 # Modify by shidg 20180420 16:00
 
+function UNALIAS_CP {
+    if alias cp >/dev/null 2>&1;then
+        unalias cp
+    fi  
+}
+
+function NEW_COMMIT() {
+    git fetch
+    git log HEAD...origin/$1 --oneline > /tmp/commit.info
+    if [ -s /tmp/commit.info ];then
+        return 0
+    else
+        return 1
+    fi  
+}
+
 function ERRTRAP(){ 
     echo "[LINE :$1 ] Error: Command or functions exited with status $?"
     exit
 }
 
 function EXIT_CONFIRMATION() {
-    echo -ne "Confirm to exit?[Y/N]"
+    echo -ne "No code update, continue?[Y/N]"
 	read -n 1 answer
 	case $answer in
 	    Y|y)
 		echo
-		echo "The script is about to exit..."
+		echo "The script will continue..."	
 		sleep 1
-		exit
 		;;
 		N|n)
 		echo
-		echo "The script will continue..."	
+		echo "The script is about to exit..."
+        sleep 1
+        exit
 		;;
 		*)
 		echo
@@ -29,108 +46,12 @@ function EXIT_CONFIRMATION() {
 		;;
 	esac
 }
-function GET_READY_FOR_API(){
-    cd ${MANAGE_SOURCE_DIR}
-	for i in config jedis msgConfig serverconfig 
-	do
-    	rm -f wzc-api/src/main/resources/$i.properties
-	done
-
-	for i in log4j
-	do
-    	rm -f wzc-api/src/main/resources/$i.xml
-	done
-
-    git checkout ${BRANCH_NAME} && git pull
-    git log | head -3 > /tmp/gitinfo
-    export GIT_MSG=`cat /tmp/gitinfo`
-    export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
-    export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
-    export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
-
-    if [ ! -f "/tmp/last_version_platform_${BRANCH_NAME}" ];then
-    	export LAST_DEPLOY_VERSION=${DEPLOY_VERSION}
-	else 
-    	export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NAME}`
-	fi
-
-    if alias cp > /dev/null 2>&1;then
-        unalias cp
-    fi
-
-	for i in config jedis msgConfig serverconfig 
-	do
-    	cp -f wzc-api/src/main/resources/$i.properties.template wzc-api/src/main/resources/$i.properties
-        dos2unix wzc-api/src/main/resources/$i.properties
-	done
-
-	for i in log4j
-	do
-    	cp -f wzc-api/src/main/resources/$i.xml.template wzc-api/src/main/resources/$i.xml
-        dos2unix wzc-api/src/main/resources/$i.xml
-	done
-
-    # config.properties
-    sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/platform.feezu.cn\/metadata\/services/" wzc-api/src/main/resources/config.properties
-    sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/platform.feezu.cn\/report\/services/" wzc-api/src/main/resources/config.properties
-    sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/platform.feezu.cn\/orders\/services/" wzc-api/src/main/resources/config.properties
-    sed -i "/^RUN_ENVIRONMENT/ s/=.*/=prod/" wzc-api/src/main/resources/config.properties
-
-    # jedis.properties
-    sed -i "/^redis.host/ s/=.*/=redis_01/" wzc-api/src/main/resources/jedis.properties
-    sed -i "/^redis.port/ s/=.*/=9000/" wzc-api/src/main/resources/jedis.properties
-    sed -i "/^redis.timeout/ s/=.*/=8000/" wzc-api/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" wzc-api/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" wzc-api/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" wzc-api/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" wzc-api/src/main/resources/jedis.properties
-
-    # msgConfig.properties
-    sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" wzc-api/src/main/resources/msgConfig.properties
-
-    # 按不同的后端服务器修改serverconfig.properties
-	PS3="目标服务器: "
-	select option in "TOMCATA" "TOMCATB" "TOMCATC";do
-	case $option in
-    	TOMCATA)
-			REMOTE_ENV=TOMCATA
-			REMOTE_SERVER=10.172.135.11
-            sed -i "/^serverId/ s/=.*/=api_demo_1/" wzc-api/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=1/" wzc-api/src/main/resources/serverconfig.properties
-    		sed -i "s/\/Data\/logs\/elk\/api/\/Data\/logs\/elk\/apiA/" wzc-api/src/main/resources/log4j.xml
-			break
-		;;
-    	TOMCATB)
-			REMOTE_ENV=TOMCATB
-			REMOTE_SERVER=10.172.135.11
-            sed -i "/^serverId/ s/=.*/=api_demo_2/" wzc-api/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=2/" wzc-api/src/main/resources/serverconfig.properties
-    		sed -i "s/\/Data\/logs\/elk\/api/\/Data\/logs\/elk\/apiB/" wzc-api/src/main/resources/log4j.xml
-			break
-		;;
-    	TOMCATC)
-			REMOTE_ENV=TOMCATC
-			REMOTE_SERVER=10.51.125.79
-            sed -i "/^serverId/ s/=.*/=api_demo_3/" wzc-api/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" wzc-api/src/main/resources/serverconfig.properties
-			break
-		;;
-        *)
-       		clear
-        	echo "Error! Wrong choice!"
-        	exit
-    	;;
-	esac
-	done
-}
-    # log4j.xml
-    # no change
 
 function DELETE_PROFILES() {
     cd ${MANAGE_SOURCE_DIR}
 
 	# consumer-app
-	for i in apollo-env config fastdfs-client ftpconfig 
+	for i in apollo-env config fastdfs-client ftpconfig jedis
 	do
     	rm -f consumer-app/src/main/resources/$i.properties
 	done
@@ -185,15 +106,15 @@ function DELETE_PROFILES() {
 	done
 
 	# manage-datawarehouse
-	for i in jedis msgConfig serverconfig
-	do
-    	rm -f manage-datawarehouse/src/main/resources/$i.properties
-	done
+	#for i in jedis msgConfig serverconfig
+	#do
+    #	rm -f manage-datawarehouse/src/main/resources/$i.properties
+	#done
 
-	for i in log4j hbase-site
-	do
-    	rm -f manage-datawarehouse/src/main/resources/$i.xml
-	done
+	#for i in log4j hbase-site
+	#do
+    #	rm -f manage-datawarehouse/src/main/resources/$i.xml
+	#done
 
 	# wechat
 	for i in acp_sdk config jedis
@@ -207,7 +128,7 @@ function DELETE_PROFILES() {
 	done
 
 	# manage-app
-	for i in config 
+	for i in config jedis
 	do
     	rm -f manage-app/src/main/resources/$i.properties
 	done
@@ -265,15 +186,11 @@ function DELETE_PROFILES() {
 
 function GENERATE_PROFILES() {
     trap 'ERRTRAP $LINENO' ERR
-
-	if alias cp >/dev/null 2>&1;then
-		unalias cp
-	fi
-
+    UNALIAS_CP
 	# 生成配置文件
 	cd ${MANAGE_SOURCE_DIR}
     # consumer-app
-	for i in apollo-env config fastdfs-client ftpconfig 
+	for i in apollo-env config fastdfs-client ftpconfig jedis
 	do
     	cp -f consumer-app/src/main/resources/$i.properties.template consumer-app/src/main/resources/$i.properties
         dos2unix consumer-app/src/main/resources/$i.properties
@@ -338,17 +255,17 @@ function GENERATE_PROFILES() {
 	done
 
 	# manage-datawarehouse
-	for i in jedis msgConfig serverconfig
-	do
-    	cp -f manage-datawarehouse/src/main/resources/$i.properties.template manage-datawarehouse/src/main/resources/$i.properties
-        dos2unix manage-datawarehouse/src/main/resources/$i.properties
-	done
+	#for i in jedis msgConfig serverconfig
+	#do
+    #	cp -f manage-datawarehouse/src/main/resources/$i.properties.template manage-datawarehouse/src/main/resources/$i.properties
+    #    dos2unix manage-datawarehouse/src/main/resources/$i.properties
+	#done
 
-	for i in log4j hbase-site
-	do
-    	cp -f manage-datawarehouse/src/main/resources/$i.xml.template manage-datawarehouse/src/main/resources/$i.xml
-        dos2unix manage-datawarehouse/src/main/resources/$i.xml
-	done
+	#for i in log4j hbase-site
+	#do
+    #	cp -f manage-datawarehouse/src/main/resources/$i.xml.template manage-datawarehouse/src/main/resources/$i.xml
+    #    dos2unix manage-datawarehouse/src/main/resources/$i.xml
+	#done
 
 	# wechat
 	for i in acp_sdk config jedis
@@ -364,7 +281,7 @@ function GENERATE_PROFILES() {
 	done
 
 	# manage-app
-	for i in config 
+	for i in config jedis
 	do
     	cp -f manage-app/src/main/resources/$i.properties.template manage-app/src/main/resources/$i.properties
         dos2unix manage-app/src/main/resources/$i.properties
@@ -464,13 +381,23 @@ function MODIFY_PROFILES() {
 
     # log4j.xml
     # sed -i "" consumer-app/src/main/resources/log4j.xml
+
     # applicationContext-dubbo-consumer.xml
     sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' consumer-app/src/main/resources/applicationContext-dubbo-consumer.xml
+
+    # jedis.properties
+    sed -i "/^redis.host/ s/=.*/=redis_01/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.port/ s/=.*/=9000/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.timeout/ s/=.*/=8000/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" consumer-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" consumer-app/src/main/resources/jedis.properties
 
 	### manage-orders ###
     # acp_sdk.properties
     sed -i "/^create_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callback/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^finish_backURL/ s/=.*/=https:\/\/123.127.240.42\/manage\/orderpayment\/notify4finishOrder/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^finish_backURL/ s/=.*/=https:\/\/111.200.241.178\/manage\/orderpayment\/notify4finishOrder/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callbackRenew/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^refund_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/refundCallback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^EPPS_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/epps\/notify/" manage-orders/src/main/resources/acp_sdk.properties
@@ -576,18 +503,18 @@ function MODIFY_PROFILES() {
     sed -i "/^CAR_TYPE_REPORT_HREF/ s/=.*/=\/report\/storeCarTypeReport/" manage-web/src/main/resources/config.properties
     sed -i "/^IS_PRODUCT_ENVIRONMENT_VALID_CODE/ s/=.*/=true/" manage-web/src/main/resources/config.properties
     # 模拟登录
-    # cur_2000376m6dg9 刘彦
     # cur_2000399vw66t 付建
     # cur_100038r57lpr 毛冲冲
     # cur_2000376m6dgk 方意
     # cur_200038mqlkrj 杨志强
-    # cur_10004pvcfzxh 李佳航
-    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000376m6dg9,cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_200038mqlkrj,cur_10004pvcfzxh/" manage-web/src/main/resources/config.properties
+    # cur_2000376m6dg4 钟政
+    # cur_10003731hj14 朱建刚
+    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_200038mqlkrj,cur_2000376m6dg4,cur_10003731hj14/" manage-web/src/main/resources/config.properties
     sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties
     sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-web/src/main/resources/config.properties
-    sed -i "/^WZC_LOGIN_IPS/ s/=.*/=123.127.240.42,123.127.240.43/" manage-web/src/main/resources/config.properties
+    sed -i "/^WZC_LOGIN_IPS/ s/=.*/=111.200.241.178,111.200.241.179/" manage-web/src/main/resources/config.properties
 
     # fastdfs-client.properties
     sed -i "/^fastdfs.tracker_servers/ s/=.*/= 10.44.183.203:22122/" manage-web/src/main/resources/fastdfs-client.properties
@@ -663,18 +590,18 @@ function MODIFY_PROFILES() {
 
 	### manage-datawarehouse ###
     # jedis.properties
-    sed -i "/^redis.host/ s/=.*/=redis_01/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.port/ s/=.*/=9000/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.host/ s/=.*/=redis_01/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.port/ s/=.*/=9000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.timeout/ s/=.*/=8000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
 
     # msgConfig.properties
-    sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" manage-datawarehouse/src/main/resources/msgConfig.properties
-    sed -i "/^amqp.addresses/ s/=.*/=10.27.74.214:5673,10.30.47.36:5673,10.30.57.7:5673/" manage-datawarehouse/src/main/resources/msgConfig.properties
-    sed -i "/^amqp.password/ s/=.*/=DFDeoDh9P4Y4HprN/" manage-datawarehouse/src/main/resources/msgConfig.properties
+    #sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" manage-datawarehouse/src/main/resources/msgConfig.properties
+    #sed -i "/^amqp.addresses/ s/=.*/=10.27.74.214:5673,10.30.47.36:5673,10.30.57.7:5673/" manage-datawarehouse/src/main/resources/msgConfig.properties
+    #sed -i "/^amqp.password/ s/=.*/=DFDeoDh9P4Y4HprN/" manage-datawarehouse/src/main/resources/msgConfig.properties
 
     # serverconfig.properties
 
@@ -682,11 +609,11 @@ function MODIFY_PROFILES() {
     # no change
 
     # hbase-site.xml
-    sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/K-master/" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>1</>3</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>hbase.feezu.cn:60000</>K-master:16000</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>hbase.feezu.cn</>K-slave1,K-slave2,K-slave3</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>false</>true</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/K-master/" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>1</>3</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>hbase.feezu.cn:60000</>K-master:16000</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>hbase.feezu.cn</>K-slave1,K-slave2,K-slave3</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>false</>true</" manage-datawarehouse/src/main/resources/hbase-site.xml
 
 	### wechat ###
     # acp_sdk.properties
@@ -719,13 +646,22 @@ function MODIFY_PROFILES() {
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-app/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-app/src/main/resources/config.properties
 
+    # jedis.properties
+    sed -i "/^redis.host/ s/=.*/=redis_01/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.port/ s/=.*/=9000/" manage-app/src/main/resources/jedis.properties 
+    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-app/src/main/resources/jedis.properties
+    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-app/src/main/resources/jedis.properties
+
     # log4j.xml
     # no change
 
 	### manage-report ###
     # acp_sdk.properties
     sed -i "/^create_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callback/" manage-report/src/main/resources/acp_sdk.properties
-    sed -i "/^finish_backURL/ s/=.*/=https:\/\/123.127.240.42\/manage\/orderpayment\/notify4finishOrder/" manage-report/src/main/resources/acp_sdk.properties
+    sed -i "/^finish_backURL/ s/=.*/=https:\/\/111.200.241.178\/manage\/orderpayment\/notify4finishOrder/" manage-report/src/main/resources/acp_sdk.properties
     sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callbackRenew/" manage-report/src/main/resources/acp_sdk.properties
     sed -i "/^refund_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/refundCallback/" manage-report/src/main/resources/acp_sdk.properties
 
@@ -833,13 +769,13 @@ function MODIFY_PROFILES() {
 
     # 按不同的后端服务器修改serverconfig.properties
 	PS3="目标服务器: "
-	select option in "TOMCAT1" "TOMCAT2" "TOMCAT3";do
+	select option in "TOMCAT1" "TOMCAT2";do
 	case $option in
     	TOMCAT1)
 			REMOTE_ENV=TOMCAT1
 			REMOTE_SERVER=10.51.84.95
-            sed -i "/^serverId/ s/=.*/=analysis_demo_1/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=1/" manage-datawarehouse/src/main/resources/serverconfig.properties
+            #sed -i "/^serverId/ s/=.*/=analysis_demo_1/" manage-datawarehouse/src/main/resources/serverconfig.properties
+    		#sed -i "/^groupServerId/ s/=.*/=1/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_1/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-metadata/src/main/resources/serverconfig.properties
@@ -847,7 +783,7 @@ function MODIFY_PROFILES() {
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-            #sed -i "/^MAINT_ADDRESS/ s/=.*//" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=orders_demo_1/" manage-orders/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-orders/src/main/resources/serverconfig.properties
@@ -864,9 +800,9 @@ function MODIFY_PROFILES() {
 		;;
     	TOMCAT2)
 			REMOTE_ENV=TOMCAT2
-			REMOTE_SERVER=10.172.234.162
-            sed -i "/^serverId/ s/=.*/=analysis_demo_2/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=2/" manage-datawarehouse/src/main/resources/serverconfig.properties
+			REMOTE_SERVER=10.47.138.177
+            #sed -i "/^serverId/ s/=.*/=analysis_demo_2/" manage-datawarehouse/src/main/resources/serverconfig.properties
+    		#sed -i "/^groupServerId/ s/=.*/=2/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_2/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-metadata/src/main/resources/serverconfig.properties
@@ -874,7 +810,7 @@ function MODIFY_PROFILES() {
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-            #sed -i "/^MAINT_ADDRESS/ s/=.*//" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=orders_demo_2/" manage-orders/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-orders/src/main/resources/serverconfig.properties
@@ -889,33 +825,33 @@ function MODIFY_PROFILES() {
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-thirdparty/src/main/resources/serverconfig.properties
 			break
 		;;
-    	TOMCAT3)
-			REMOTE_ENV=TOMCAT3
-			REMOTE_SERVER=10.47.138.177
-            sed -i "/^serverId/ s/=.*/=analysis_demo_3/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" manage-datawarehouse/src/main/resources/serverconfig.properties
+#    	TOMCAT3)
+#			REMOTE_ENV=TOMCAT3
+#			REMOTE_SERVER=
+#            sed -i "/^serverId/ s/=.*/=analysis_demo_3/" manage-datawarehouse/src/main/resources/serverconfig.properties
+#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
-            sed -i "/^serverId/ s/=.*/=metadata_demo_3/" manage-metadata/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" manage-metadata/src/main/resources/serverconfig.properties
-    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
-            sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
-            sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
-            sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-            #sed -i "/^MAINT_ADDRESS/ s/=.*//" manage-metadata/src/main/resources/serverconfig.properties
+#           sed -i "/^serverId/ s/=.*/=metadata_demo_3/" manage-metadata/src/main/resources/serverconfig.properties
+ #   		sed -i "/^groupServerId/ s/=.*/=3/" manage-metadata/src/main/resources/serverconfig.properties
+ #   		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
+#            sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
+#            sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
+#            sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
+#            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
 
-            sed -i "/^serverId/ s/=.*/=orders_demo_3/" manage-orders/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" manage-orders/src/main/resources/serverconfig.properties
+#            sed -i "/^serverId/ s/=.*/=orders_demo_3/" manage-orders/src/main/resources/serverconfig.properties
+#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-orders/src/main/resources/serverconfig.properties
 
-            sed -i "/^serverId/ s/=.*/=superviser_demo_3/" report-superviser/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" report-superviser/src/main/resources/serverconfig.properties
+#            sed -i "/^serverId/ s/=.*/=superviser_demo_3/" report-superviser/src/main/resources/serverconfig.properties
+#    		sed -i "/^groupServerId/ s/=.*/=3/" report-superviser/src/main/resources/serverconfig.properties
 
-            sed -i "/^serverId/ s/=.*/=report_demo_3/" manage-report/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" manage-report/src/main/resources/serverconfig.properties
+#            sed -i "/^serverId/ s/=.*/=report_demo_3/" manage-report/src/main/resources/serverconfig.properties
+#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-report/src/main/resources/serverconfig.properties
 
-            sed -i "/^serverId/ s/=.*/=thirdparty_demo_3/" manage-thirdparty/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=3/" manage-thirdparty/src/main/resources/serverconfig.properties
-			break
-		;;
+#            sed -i "/^serverId/ s/=.*/=thirdparty_demo_3/" manage-thirdparty/src/main/resources/serverconfig.properties
+#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-thirdparty/src/main/resources/serverconfig.properties
+#			break
+#		;;
         *)
        		clear
         	echo "Error! Wrong choice!"
@@ -949,9 +885,7 @@ function GET_READY_FOR_GATEWAY() {
 
 function GET_READY_FOR_DM() {
     trap 'ERRTRAP $LINENO' ERR
-	if alias cp >/dev/null 2>&1;then
-        unalias cp
-    fi
+    UNALIAS_CP
     cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources
 	if [ -f "dubbo.properties" ];then
     	rm -f dubbo.properties
@@ -997,9 +931,7 @@ function GET_READY_FOR_DM() {
 
 function GET_READY_FOR_DL() {
     trap 'ERRTRAP $LINENO' ERR
-	if alias cp >/dev/null 2>&1;then 
-        unalias cp
-    fi
+    UNALIAS_CP
     cd ${GATEWAY_SOURCE_DIR}/devicelb/src/main/resources
 	if [ -f "application.properties" ];then
     	rm -f application.properties
@@ -1065,9 +997,9 @@ function DEFINE_SYSTEM_PATH() {
 }
 
 function DEFINE_VARIABLES() {
-    : ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.172.234.162"} ${TOMCAT3:="10.47.138.177"}  
+    : ${WZC3_SOURCE_DIR:="/Data/source/wzc3.0"} ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.47.138.177"} ${EXTERNAL_SOURCE_DIR:="/Data/source/external"} 
 
-    export SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 TOMCAT3
+    export WZC3_SOURCE_DIR SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 EXTERNAL_SOURCE_DIR
 }
 
 

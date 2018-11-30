@@ -9,6 +9,8 @@ mount -t nfs -o rw,ro,bg,fg,nosuid,nodev,noexec,soft,hard,intr,rsize=,wsize=  ip
 
 #autofs自动挂载，非必需，可略过
 #主要配置文件 auto.master
+yum install autofs
+
 vi  /etc/auto.master
 /home   /etc/auto.nfs  #auto.nfs文件名为自定义
 

@@ -7,13 +7,37 @@
 
 ## Dependencies ##
 # git@git.feezu.cn:wzc3.0/common.git
+# git@git.feezu.cn:external/order.git
 
+#判断参数是否正确
+CMD=`echo $(basename $0)`
+if [ $# -lt 3 ];then
+    cowsay -f small "缺少参数!"
+    echo -e "Usage: $CMD [branch name] [depend_name_common]\nE.g:   dep_platform 1.0.26 3.0.1 3.0.1 " | pv -qL 50
+    exit
+#elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
+#    echo -e "参数格式不正确"
+#    exit
+fi
+
+# 加载全局变量
 source ~/common.sh
+
+# 有未定义的变量则退出脚本，防止误删根目录
+
+set -u
+
+START_TIME=`date "+%Y%m%d-%T"`
+BRANCH_NAME=release_$1
+DEPEND_NAME_COMMON=$2
+DEPEND_NAME_ORDER=$3
+BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NAME}
+
 
 # 遇到错误即退出脚本
 trap 'ERRTRAP $LINENO' ERR
 #处理"Ctrl+C"
-trap EXIT_CONFIRMATION SIGINT
+#trap 'EXIT_CONFIRMATION' SIGINT SIGQUIT
 
 # Define Variables
 DEFINE_VARIABLES
@@ -21,23 +45,7 @@ DEFINE_VARIABLES
 #Define system path
 DEFINE_SYSTEM_PATH
 
-# 有未定义的变量则退出脚本，防止误删根目录
-set -u
 
-START_TIME=`date "+%Y%m%d-%T"`
-CMD=`echo $(basename $0)`
-BRANCH_NAME=release_$1
-DEPEND_NAME_COMMON=$2
-BUILD_DIR=/Data/war/Platform/branch/${BRANCH_NAME}
-
-#判断参数是否正确
-if [ $# -lt 2 ];then
-    echo -e "缺少参数\nUsage: $CMD [branch name] [depend_name_common]\nE.g:   dep_platform 1.0.26 3.0.1"
-    exit
-elif ! [[ "$1" =~ ^[1-9]\.[0-9]\.[0-9][0-9]$ ]];then
-    echo -e "参数格式不正确"
-    exit
-fi
 
 # create dirs if not exist
 [ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
@@ -52,9 +60,23 @@ cd ${MANAGE_SOURCE_DIR}
 DELETE_PROFILES
 
 # 切换分支,更新代码
-git pull && git checkout ${BRANCH_NAME}
-if NEW_COMMIT ${BRANCH_NAME};then
-    git pull
+if [ "$(git rev-parse --abbrev-ref HEAD)" == "${BRANCH_NAME}" ];then 
+    if eval NEW_COMMIT ${BRANCH_NAME};then
+        git pull
+    else
+        eval EXIT_CONFIRMATION
+    fi
+else
+    if git branch -vv | grep "${BRANCH_NAME}";then
+        git checkout ${BRANCH_NAME}
+        if eval NEW_COMMIT ${BRANCH_NAME};then
+            git pull
+        else
+            eval EXIT_CONFIRMATION
+        fi
+    else
+        git pull && git checkout ${BRANCH_NAME}
+    fi
 fi
 
 git log | head -2> /tmp/gitinfo
@@ -68,7 +90,6 @@ if [ ! -f "/tmp/last_version_platform_${BRANCH_NAME}" ];then
 else 
     export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NAME}`
 fi
-
 # 生成配置文件
 GENERATE_PROFILES
 
@@ -80,26 +101,25 @@ MODIFY_PROFILES
 #MENU
 
 #判断目标服务器是否已定义
-: ${REMOTE_SERVER:?"变量未定义或者值为空"}
+#: ${REMOTE_SERVER:?"变量未定义或者值为空"}
 
-#保障三台服务器代码版本一致
-#if [ "$need" = "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" = "${LAST_DEPLOY_VERSION}" ];then
-#	echo "No change!"
-#	exit
-#elif [ "$need" != "1" -a  -n "${LAST_DEPLOY_VERSION}" -a "${DEPLOY_VERSION}" != "${LAST_DEPLOY_VERSION}" ];then
-#	echo "Have new submission (${COMMIT_AUTHOR}),Please confirm!"
-#	exit
-#fi 
 
 # 解决依赖
 echo -e "构建依赖: wzc3.0/common [branch: ${DEPEND_NAME_COMMON}]..."
 cd ${WZC3_SOURCE_DIR}/common
 git pull && git checkout ${DEPEND_NAME_COMMON}
-if NEW_COMMIT ${DEPEND_NAME_COMMON};then
+if eval NEW_COMMIT ${DEPEND_NAME_COMMON};then
     git pull
 fi
 mvn clean install
 
+#echo -e "构建依赖: external/order [branch: ${DEPEND_NAME_ORDER}]..."
+cd ${EXTERNAL_SOURCE_DIR}/order
+git pull && git checkout ${DEPEND_NAME_ORDER}
+if eval NEW_COMMIT ${DEPEND_NAME_ORDER};then
+    git pull
+fi
+mvn clean install -Dmaven.test.skip=true
 #build war packages
 #cd ${MANAGE_SOURCE_DIR}/manage-common
 #mvn clean install -Dmaven.test.skip=true
@@ -116,7 +136,7 @@ mvn clean install
    mvn clean package -Dmaven.test.skip=true
 
 # delete old wars & move war to /Data/war/trunk
-PROJS2=(manage-web consumer-app manage-metadata manage-datawarehouse manage-report manage-orders manage-app wechat download manage-thirdparty report-superviser consumer-wap)
+PROJS2=(manage-web consumer-app manage-metadata manage-report manage-orders manage-app wechat download manage-thirdparty consumer-wap)
 
 rm -rf ${BUILD_DIR}/*
 
@@ -124,15 +144,14 @@ for PROJ in ${PROJS2[*]}
     do
         mv -f ${MANAGE_SOURCE_DIR}/${PROJ}/target/*war ${BUILD_DIR}
     done
-
 # rsync war to remote server
-echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to ${REMOTE_ENV}(${REMOTE_SERVER}) ..."
+echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to ${REMOTE_ENV}(${REMOTE_SERVER}) ..." | pv -qL 50
 sleep 2
 
 rsync -az --delete --password-file=/etc/rsync.pass --progress ${BUILD_DIR}/ ${SYNC_USER}@${REMOTE_SERVER}::${RSYNC_MODULE}
 
 #restart tomcat on $(REMOTE_SERVER)
-ssh -p ${SSH_PORT} ${REMOTE_SERVER} "/Data/scripts/restart_tomcat.sh ${DEPLOY_VERSION}" 
+ssh -p ${SSH_PORT} ${REMOTE_SERVER} "/Data/scripts/restart_tomcat.sh ${BRANCH_NAME} ${DEPLOY_VERSION}" 
 
 END_TIME=`date "+%Y%m%d-%T"`
 
@@ -151,6 +170,7 @@ cat /tmp/upinfo >> /Data/logs/deplog/deploy_platform_${BRANCH_NAME}.log
 
 echo ${DEPLOY_VERSION} > /tmp/last_version_platform_${BRANCH_NAME}
 
+cowsay -f small "Success!"
 # Done
 
 exit 0
