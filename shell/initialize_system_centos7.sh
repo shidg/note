@@ -121,15 +121,17 @@ net.ipv4.tcp_max_syn_backlog = 8192
 net.ipv4.tcp_synack_retries = 2
 net.ipv4.tcp_syn_retries = 2
 
+################# 以下选项谨慎开启!!! ########################
+################# 很可能会导致处在NAT环境中的客户端与该服务器的连接出现不可预知的问题  ##########################################
 # tcp时间戳
-net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_timestamps = 0
 
-# TIME-WAIT快速回收,须开启tcp时间戳方能生效
-net.ipv4.tcp_tw_recycle = 1
+# TIME-WAIT快速回收,须开启tcp时间戳方能生效. 
+net.ipv4.tcp_tw_recycle = 0
 
-# TIME_WAIT重用,须开启tcp时间戳方能生效,服务器前端存在NAT设备的时候尽量关闭快速回收
-net.ipv4.tcp_tw_reuse = 1
-
+# TIME_WAIT重用,须开启tcp时间戳方能生效
+net.ipv4.tcp_tw_reuse = 0
+############################################################################################
 
 #系统同时保持TIME_WAIT套接字的最大数量
 net.ipv4.tcp_max_tw_buckets = 5000

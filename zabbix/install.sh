@@ -58,7 +58,7 @@ cd /Data/software/zabbix-4.0.0
 cp -a frontends/php/* /Data/code/zabbix
 #http://monitor.my.com开始zabbix的配置及访问,初始用户名密码admin/zabbix
 
-# zabbix client
+# zabbix client [linux]
 tar zxvf zabbix-4.0.0.tar.gz && cd zabbix-4.0.0
 ./configure --prefix=/Data/app/zabbix-4.0.0/ --enable-agent
 make && make install
@@ -68,6 +68,19 @@ cp /etc/zabbix_agentd.conf /etc/zabbix/
 
 useradd zabbix
 /Data/app/zabbix-4.0.0/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf
+
+# zabbix client [windows]
+# https://www.zabbix.com/download_agents
+# Preparation Zabbix agent is distributed as a zip archive. After you download the archive you need to unpack it. 
+# Choose any folder to store Zabbix agent and the configuration file, e. g.
+C:\zabbix
+
+# Copy bin\win64\zabbix_agentd.exe and conf\zabbix_agentd.win.conf files to c:\zabbix.
+# Edit the c:\zabbix\zabbix_agentd.win.conf file to your needs, making sure to specify a correct “Hostname” parameter.
+
+# Installation
+# After this is done use the following command to install Zabbix agent as Windows service:
+C:\> c:\zabbix\zabbix_agentd.exe -c c:\zabbix\zabbix_agentd.win.conf -i
 
 
 # 邮件报警配置（脚本方式）

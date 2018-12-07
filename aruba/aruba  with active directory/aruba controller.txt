@@ -1,0 +1,15 @@
+# Add RADIUS SERVER
+Configuration---->Authentication--->RADIUS Server
+
+# edit radius server
+Host : ip of radius server
+Key: key of radius server 
+NAS IP: ip of aurba controller
+
+# add radius server to a Server Group, for example: radius
+
+# AAA Profiles----> 802.1x-aaa--->802.1X Authentication Server Group--->radius---> Apply
+# AAA Profiles----> default--->802.1A Authentication Server Group--->radius---> Apply
+# L3 Authentication--->Captive Portal Authentication Profile --->emp-cp--->Server Group ---> radius --->Apply
+
+
