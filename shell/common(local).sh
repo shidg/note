@@ -4,6 +4,8 @@
 # Defining variables and functions. Referenced by /usr/bin/dep_*
 # Modify by shidg 20180420 16:00
 
+#source ~/.bashrc
+
 function UNALIAS_CP {
 	if alias cp >/dev/null 2>&1;then
 		unalias cp
@@ -11,6 +13,7 @@ function UNALIAS_CP {
 }
 
 function NEW_COMMIT() {
+    git fetch
     git log HEAD...origin/$1 --oneline > /tmp/commit.info
     if [ -s /tmp/commit.info ];then
         return 0
@@ -19,13 +22,22 @@ function NEW_COMMIT() {
     fi
 }
 
+function GET_CODE_VERSION {
+    git log | head -2> /tmp/gitinfo
+    git diff HEAD HEAD~ --stat >> /tmp/gitinfo
+    export GIT_MSG=`cat /tmp/gitinfo`
+    export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
+    export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
+    export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
+}
+
 function ERRTRAP(){ 
     echo "[LINE :$1 ] Error: Command or functions exited with status $?"
     exit
 }
 
 function EXIT_CONFIRMATION() {
-    echo -ne "No code update, continue?[Y/N]"
+    echo -ne "Code not updated, continue?[Y/N]"
 	read -n 1 answer
 	case $answer in
 	    Y|y)
@@ -106,15 +118,15 @@ function DELETE_PROFILES() {
 	done
 
 	# manage-datawarehouse
-	for i in jedis msgConfig serverconfig
-	do
-    	rm -f manage-datawarehouse/src/main/resources/$i.properties
-	done
+	#for i in jedis msgConfig serverconfig
+	#do
+    #	rm -f manage-datawarehouse/src/main/resources/$i.properties
+	#done
 
-	for i in log4j hbase-site
-	do
-    	rm -f manage-datawarehouse/src/main/resources/$i.xml
-	done
+	#for i in log4j hbase-site
+	#do
+    #	rm -f manage-datawarehouse/src/main/resources/$i.xml
+	#done
 
 	# wechat
 	for i in acp_sdk config jedis
@@ -256,17 +268,17 @@ function GENERATE_PROFILES() {
 	done
 
 	# manage-datawarehouse
-	for i in jedis msgConfig serverconfig
-	do
-    	cp -f manage-datawarehouse/src/main/resources/$i.properties.template manage-datawarehouse/src/main/resources/$i.properties
-        dos2unix manage-datawarehouse/src/main/resources/$i.properties
-	done
+	#for i in jedis msgConfig serverconfig
+	#do
+    #	cp -f manage-datawarehouse/src/main/resources/$i.properties.template manage-datawarehouse/src/main/resources/$i.properties
+    #    dos2unix manage-datawarehouse/src/main/resources/$i.properties
+	#done
 
-	for i in log4j hbase-site
-	do
-    	cp -f manage-datawarehouse/src/main/resources/$i.xml.template manage-datawarehouse/src/main/resources/$i.xml
-        dos2unix manage-datawarehouse/src/main/resources/$i.xml
-	done
+	#for i in log4j hbase-site
+	#do
+    #	cp -f manage-datawarehouse/src/main/resources/$i.xml.template manage-datawarehouse/src/main/resources/$i.xml
+    #    dos2unix manage-datawarehouse/src/main/resources/$i.xml
+	#done
 
 	# wechat
 	for i in acp_sdk config jedis
@@ -391,6 +403,7 @@ function MODIFY_PROFILES() {
     sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" consumer-app/src/main/resources/jedis.properties
 
     # log4j.xml
+    sed -i '/<appender-ref ref="elkfile"\/>/d' consumer-app/src/main/resources/log4j.xml
     # sed -i "" consumer-app/src/main/resources/log4j.xml
     # applicationContext-dubbo-consumer.xml
     sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.172.164.152:2181"\/>/' consumer-app/src/main/resources/applicationContext-dubbo-consumer.xml
@@ -409,6 +422,7 @@ function MODIFY_PROFILES() {
     sed -i "/^ALI_RETURN_URL/ s/=.*/=https:\/\/mprep.feezu.cn\/paycallback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^WECHAT_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/wechat\/payCallback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^WECHAT_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/appprep.feezu.cn\/payment\/wechat\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^WECHAT_RETURN_URL/ s/=.*/=https:\/\/mprep.feezu.cn\/paycallback/" manage-orders/src/main/resources/acp_sdk.properties
 
     # apollo-env.properties
     sed -i "/^server.env/ s/=.*/=uat/" manage-orders/src/main/resources/apollo-env.properties
@@ -468,6 +482,7 @@ function MODIFY_PROFILES() {
     # serverconfig.properties
 
     # log4j.xml
+    sed -i '/<appender-ref ref="elkfile"\/>/d' manage-orders/src/main/resources/log4j.xml
     # no change
 
     # applicationContext-dubbo-consumer.xml
@@ -589,23 +604,24 @@ function MODIFY_PROFILES() {
     # serverconfig.properties
 
     # log4j.xml
+    sed -i '/<appender-ref ref="elkfile"\/>/d' manage-metadata/src/main/resources/log4j.xml
     # no change
 
 
 	### manage-datawarehouse ###
     # jedis.properties
-    sed -i "/^redis.host/ s/=.*/=redis_01/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.port/ s/=.*/=6379/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.timeout/ s/=.*/=8000/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
-    sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.host/ s/=.*/=redis_01/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.port/ s/=.*/=6379/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.timeout/ s/=.*/=8000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.maxIdle/ s/=.*/=200/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.minIdle/ s/=.*/=30/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
+    #sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-datawarehouse/src/main/resources/jedis.properties
 
     # msgConfig.properties
-    sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.164.152:61616,tcp:\/\/10.44.54.183:61616,tcp:\/\/10.162.198.246:61616\)/" manage-datawarehouse/src/main/resources/msgConfig.properties
-    sed -i "/^amqp.addresses/ s/=.*/=10.172.91.66:5673,10.171.37.50:5673/" manage-datawarehouse/src/main/resources/msgConfig.properties
-    sed -i "/^amqp.password/ s/=.*/=prep123456/" manage-datawarehouse/src/main/resources/msgConfig.properties
+    #sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.164.152:61616,tcp:\/\/10.44.54.183:61616,tcp:\/\/10.162.198.246:61616\)/" manage-datawarehouse/src/main/resources/msgConfig.properties
+    #sed -i "/^amqp.addresses/ s/=.*/=10.172.91.66:5673,10.171.37.50:5673/" manage-datawarehouse/src/main/resources/msgConfig.properties
+    #sed -i "/^amqp.password/ s/=.*/=prep123456/" manage-datawarehouse/src/main/resources/msgConfig.properties
 
     # serverconfig.properties
 
@@ -613,11 +629,11 @@ function MODIFY_PROFILES() {
     # no change
 
     # hbase-site.xml
-    sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/10.162.198.246/" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/10.162.198.246/" manage-datawarehouse/src/main/resources/hbase-site.xml
     #sed -i "s/>1</>3</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>hbase.feezu.cn:60000</>10.162.198.246:16000</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>hbase.feezu.cn</>10.162.198.246</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    sed -i "s/>false</>true</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>hbase.feezu.cn:60000</>10.162.198.246:16000</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>hbase.feezu.cn</>10.162.198.246</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>false</>true</" manage-datawarehouse/src/main/resources/hbase-site.xml
 
 	### wechat ###
     # acp_sdk.properties
@@ -722,6 +738,7 @@ function MODIFY_PROFILES() {
     sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.172.164.152:2181"\/>/' manage-report/src/main/resources/applicationContext-dubbo-consumer.xml
 
     # log4j.xml
+    sed -i '/<appender-ref ref="elkfile"\/>/d' manage-report/src/main/resources/log4j.xml
     # no change
 
 	### manage-thirdparty ###
@@ -779,8 +796,8 @@ function MODIFY_PROFILES() {
     	TOMCAT1)
 			REMOTE_ENV=TOMCAT1
 			REMOTE_SERVER=123.57.66.230
-            sed -i "/^serverId/ s/=.*/=analysis_prep_1/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=1/" manage-datawarehouse/src/main/resources/serverconfig.properties
+            #sed -i "/^serverId/ s/=.*/=analysis_prep_1/" manage-datawarehouse/src/main/resources/serverconfig.properties
+    		#sed -i "/^groupServerId/ s/=.*/=1/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=metadata_prep_1/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-metadata/src/main/resources/serverconfig.properties
@@ -807,8 +824,8 @@ function MODIFY_PROFILES() {
     	TOMCAT2)
 			REMOTE_ENV=TOMCAT2
 			REMOTE_SERVER=123.56.239.95
-            sed -i "/^serverId/ s/=.*/=analysis_prep_2/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		sed -i "/^groupServerId/ s/=.*/=2/" manage-datawarehouse/src/main/resources/serverconfig.properties
+            #sed -i "/^serverId/ s/=.*/=analysis_prep_2/" manage-datawarehouse/src/main/resources/serverconfig.properties
+    		#sed -i "/^groupServerId/ s/=.*/=2/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=metadata_prep_2/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-metadata/src/main/resources/serverconfig.properties
@@ -906,6 +923,10 @@ function GET_READY_FOR_DM() {
 			sed -i "/^file.http.host/ s/=.*/=imgprep.feezu.cn/" gateway-deliver-config.properties
 			sed -i "/^file.device.host/ s/=.*/=101.200.175.64/" gateway-deliver-config.properties
             sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.164.152:61616,tcp:\/\/10.44.54.183:61616,tcp:\/\/10.162.198.246:61616\)/" gateway-deliver-config.properties
+            sed -i "/^rabbitmq.dm.addresses/ s/=.*/=10.172.91.66:5673/" gateway-deliver-config.properties
+            sed -i "/^rabbitmq.dm.username/ s/=.*/=wzc/" gateway-deliver-config.properties
+            sed -i "/^rabbitmq.dm.password/ s/=.*/=prep123456/" gateway-deliver-config.properties
+            # serverconfig.properties
 
             cd ${DM_SOURCE_DIR}/device-manage-service/src/main/resources
             # hbase-site.xml
@@ -947,6 +968,9 @@ function GET_READY_FOR_DM() {
 			sed -i "/^file.http.host/ s/=.*/=img.feezu.cn/" gateway-deliver-config.properties
 			sed -i "/^file.device.host/ s/=.*/=59.110.40.80/" gateway-deliver-config.properties
             sed -i "/^msg.brokerURL/ s/=.*/=failover:\(tcp:\/\/10.172.191.112:61616,tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616\)?randomize=false\&priorityBackup=true\&priorityURIs=tcp:\/\/10.170.202.109:61616,tcp:\/\/10.171.57.30:61616/" gateway-deliver-config.properties
+            sed -i "/^rabbitmq.dm.addresses/ s/=.*/=10.27.74.214:5673,10.30.47.36:5673,10.30.57.7:5673/" gateway-deliver-config.properties
+            sed -i "/^rabbitmq.dm.username/ s/=.*/=wzc/" gateway-deliver-config.properties
+            sed -i "/^rabbitmq.dm.password/ s/=.*/=DFDeoDh9P4Y4HprN/" gateway-deliver-config.properties
             # 按不同的后端服务器修改serverID
     		PS3="目标服务器: "
     		select option in "SERVER1" "SERVER2";do

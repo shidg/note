@@ -1,0 +1,55 @@
+# 转移操作主机
+
+# 试验条件：
+# 1、两台服务器，server01和server03.
+# 2、server01为域控制器，server03为server01的额外域控制器
+
+# 查询当前操作主机
+netdom query fsmo
+
+# 转移操作主机
+# 在server03(转移目标)上进入控制台
+
+# ntdsutil
+# roles
+# connection
+# connect to server server03
+# quit
+# ？
+# Transfer infrastructure master
+# Transfer domain naming master
+# Transfer PDC
+# Transfer RID master
+# Transfer schema master
+
+# 验证转移结果
+# netdom query fsmo
+
+
+
+# 迁移DNS
+# 以域管理身份登陆到源服务器，打开运行，输入如下命令：
+
+dnscmd /EnumDirectoryPartitions
+# 查看是否有未注册（not-enlisted）分区（如果有，需要在目标服务器使用dnscmd /EnlistDirectoryPartition <FQDN of partition>，FQDN of partition为未注册分区）
+
+# 源服务器上停止 DNS 服务器服务
+net stop "DNS Server"
+
+# 导出源服务器注册表
+# 在"运行"框中直接运行
+reg export HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\DNS\Parameters %Windir%\System32\DNS\Dns-Service.REG
+# 在"运行"框中输入regedit，打开注册表编辑器,找到HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\DNS Server，然后右键点击DNS Server，选择导出注册表到c:\windows\System32\DNS\ Dns-Software.REG
+
+# 保存源服务器上c:\windows\System32\DNS 下的所有文件和子文件夹（不复制DNS文件夹中的 samples 文件夹）
+
+# 在目标服务器导入源服务器DNS设置
+# 以域管理身份登录到目标服务器上,停止DNS服务器：
+net stop "DNS Server"
+
+# 导入源服务器注册表：
+# 将源服务器上备份的 Dns-Service.REG 和 Dns-Software.REG 文件复制到目标服务器，然后运行这两个文件
+# 将源服务器备份c:\windows\System32\DNS下的所有文件复制到目标服务器C:\windows\System32\DNS目录下。
+
+# 启动DNS服务
+net start "DNS Server"

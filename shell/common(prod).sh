@@ -20,13 +20,22 @@ function NEW_COMMIT() {
     fi  
 }
 
+function GET_CODE_VERSION {
+    git log | head -2> /tmp/gitinfo
+    git diff HEAD HEAD~ --stat >> /tmp/gitinfo
+    export GIT_MSG=`cat /tmp/gitinfo`
+    export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
+    export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
+    export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
+}
+
 function ERRTRAP(){ 
     echo "[LINE :$1 ] Error: Command or functions exited with status $?"
     exit
 }
 
 function EXIT_CONFIRMATION() {
-    echo -ne "No code update, continue?[Y/N]"
+    echo -ne "Code not updated, continue?[Y/N]"
 	read -n 1 answer
 	case $answer in
 	    Y|y)
@@ -506,10 +515,9 @@ function MODIFY_PROFILES() {
     # cur_2000399vw66t 付建
     # cur_100038r57lpr 毛冲冲
     # cur_2000376m6dgk 方意
-    # cur_200038mqlkrj 杨志强
     # cur_2000376m6dg4 钟政
     # cur_10003731hj14 朱建刚
-    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_200038mqlkrj,cur_2000376m6dg4,cur_10003731hj14/" manage-web/src/main/resources/config.properties
+    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_2000376m6dg4,cur_10003731hj14/" manage-web/src/main/resources/config.properties
     sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties

@@ -37,11 +37,12 @@ START_TIME=`date "+%Y%m%d-%T"`
 BRANCH_NAME=$1
 DEPEND_BRANCH_METADATA=release_$2
 DEPEND_BRANCH_COMPANY=$3
-BUILD_DIR=/Data/war/device-manage/${BRANCH_NAME}
+BUILD_DIR_DMW=/Data/war/device-manage-web/${BRANCH_NAME}
+BUILD_DIR_DMS=/Data/war/device-manage-service/${BRANCH_NAME}
 
 #Create dir if not exist
-[ ! -d ${BUILD_DIR} ] && mkdir -p ${BUILD_DIR}
-
+[ ! -d ${BUILD_DIR_DMW} ] && mkdir -p ${BUILD_DIR_DMW}
+[ ! -d ${BUILD_DIR_DMS} ] && mkdir -p ${BUILD_DIR_DMS}
 
 # 更新代码
 cd ${DM_SOURCE_DIR}
@@ -52,10 +53,35 @@ if [ -f "device-manage-web/src/main/resources/gateway-deliver-config.properties"
     rm -f device-manage-web/src/main/resources/gateway-deliver-config.properties
 fi
 
-git pull && git checkout ${BRANCH_NAME}
-if NEW_COMMIT ${BRANCH_NAME};then
-    git pull
+if [ -f "device-manage-web/src/main/resources/serverconfig.properties" ];then
+    rm -f device-manage-web/src/main/resources/serverconfig.properties
 fi
+
+if [ -f "device-manage-service/src/main/resources/hbase-site.xml" ];then
+    rm -f device-manage-service/src/main/resources/hbase-site.xml
+fi
+
+if [ "$(git rev-parse --abbrev-ref HEAD)" == "${BRANCH_NAME}" ];then 
+	if eval NEW_COMMIT ${BRANCH_NAME};then
+		git pull
+	else
+		eval EXIT_CONFIRMATION
+	fi
+else
+	if git branch -vv | grep "${BRANCH_NAME}";then
+		git checkout ${BRANCH_NAME}
+		if eval NEW_COMMIT ${BRANCH_NAME};then
+			git pull
+		else
+			eval EXIT_CONFIRMATION
+		fi
+	else
+		git pull && git checkout ${BRANCH_NAME}
+	fi  
+fi
+
+# 记录代码版本信息
+GET_CODE_VERSIONI
 
 # 初始化配置文件
 GET_READY_FOR_DM
@@ -65,18 +91,12 @@ echo -e "构建依赖：platform/manage-metadata-api [branch: ${DEPEND_BRANCH_ME
 sleep 1
 cd ${MANAGE_SOURCE_DIR}/manage-metadata-api
 git pull && git checkout ${DEPEND_BRANCH_METADATA}
-if NEW_COMMIT ${DEPEND_BRANCH_METADATA};then
-    git pull
-fi
 mvn clean install -Dmaven.test.skip=true
 
 echo -e "构建依赖: wzc3.0/company [branch: ${DEPEND_BRANCH_COMPANY}] ..."
 sleep 1
 cd ${WZC3_SOURCE_DIR}/company
 git pull && git checkout ${DEPEND_BRANCH_COMPANY}
-if NEW_COMMIT ${DEPEND_BRANCH_COMPANY};then
-    git pull
-fi
 mvn clean install -Dmaven.test.skip=true
 
 echo -e "构建依赖: deviceclound/device-manage/device-deliver-api [branch: ${BRANCH_NAME}]..."
@@ -93,16 +113,18 @@ cd ${DM_SOURCE_DIR}
 mvn clean package -Dmaven.test.skip=true
 
 UNALIAS_CP
-cp -f ${DM_SOURCE_DIR}/device-manage-web/target/device-manage-web.war ${BUILD_DIR}
+cp -f ${DM_SOURCE_DIR}/device-manage-web/target/device-manage-web.war ${BUILD_DIR_DMW}
+cp -f ${DM_SOURCE_DIR}/device-manage-service/target/device-manage-service*jar ${BUILD_DIR_DMS}
 
 END_TIME=`date "+%Y%m%d-%T"`
 
 cat >> /Data/logs/deplog/dep_dm.log <<EOF
 ========================================
-Rebuild device-manage-web for [${REMOTE_ENV}] success.
+Rebuild device-manage for [${REMOTE_ENV}] success.
 
 TIME: ${START_TIME}
-DM Version: ${BRANCH_NAME}
+Branch: ${BRANCH_NAME}
+$GIT_MSG
 EOF
 
 exit 0

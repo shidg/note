@@ -43,31 +43,74 @@ BUILD_DIR=/Data/war/api/${BRANCH_NAME}
 # 解决依赖
 echo -e "构建依赖: wzc3.0/common [branch: ${DEPEND_BRANCH_COMMON}] ..."
 sleep 1
+
 cd ${WZC3_SOURCE_DIR}/common
 git pull && git checkout ${DEPEND_BRANCH_COMMON}
-if NEW_COMMIT ${DEPEND_BRANCH_COMMON};then
-    git pull
-fi
 mvn clean install -Dmaven.test.skip=true
 
 echo -e "构建依赖：deviceclound/device-manage [branch: ${DEPEND_BRANCH_DM}] ..."
 sleep 1
 
-cd ${DM_SOURCE_DIR}
+cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources                                                                                                 
+    if [ -f "dubbo.properties" ];then
+        rm -f dubbo.properties
+    fi  
+
+    if [ -f "gateway-deliver-config.properties" ];then
+        rm -f gateway-deliver-config.properties
+    fi  
+
+    if [ -f "serverconfig.properties" ];then
+        rm -f serverconfig.properties
+    fi  
+
+cd ${DM_SOURCE_DIR}/device-manage-service/src/main/resources 
+    if [ -f "hbase-site.xml" ];then
+        rm -f hbase-site.xml
+    fi  
 git pull && git checkout ${DEPEND_BRANCH_DM}
-if NEW_COMMIT ${DEPEND_BRANCH_DM};then
-    git pull
-fi
+
+cd ${DM_SOURCE_DIR}
 mvn clean install -Dmaven.test.skip=true
 
 # 更新代码
 cd ${API_SOURCE_DIR}
 
-git pull && git checkout ${BRANCH_NAME}
-
-if NEW_COMMIT ${BRANCH_NAME};then
-    git pull
+# 删除上次部署的残留配置文件
+if [ -f wzc-api/src/main/resources/logback-spring.xml ];then
+    rm -f wzc-api/src/main/resources/logback-spring.xml
 fi
+
+# 切换分支，更新代码
+if [ "$(git rev-parse --abbrev-ref HEAD)" == "${BRANCH_NAME}" ];then
+    if eval NEW_COMMIT ${BRANCH_NAME};then
+        git pull
+    else
+        eval EXIT_CONFIRMATION
+    fi
+else
+    if git branch -vv | grep "${BRANCH_NAME}";then
+        git checkout ${BRANCH_NAME}
+        if eval NEW_COMMIT ${BRANCH_NAME};then
+            git pull
+        else
+            eval EXIT_CONFIRMATION
+        fi
+    else
+        git pull && git checkout ${BRANCH_NAME}
+    fi
+fi
+
+# 记录提交信息
+GET_CODE_VERSION
+
+# 处理配置文件
+if [ -f "wzc-api/src/main/resources/logback-spring.xml" ];then
+    rm -f wzc-api/src/main/resources/logback-spring.xml
+fi
+
+UNALIAS_CP
+cp wzc-api/src/main/resources/logback-spring.xml.template wzc-api/src/main/resources/logback-spring.xml
 
 # 解决依赖
 echo -e "构建依赖：deviceclound/device-api下的device-control-service ..."
@@ -83,7 +126,7 @@ mvn clean package -Dmaven.test.skip=true
 
 UNALIAS_CP
 
-cp -f ${API_SOURCE_DIR}/wzc-api/api/target/api-*.jar ${BUILD_DIR}
+cp -f ${API_SOURCE_DIR}/wzc-api/target/*api-*.jar ${BUILD_DIR}
 
 END_TIME=`date "+%Y%m%d-%T"`
 
@@ -92,7 +135,8 @@ cat >> /Data/logs/deplog/dep_api.log <<EOF
 Rebuild api for success.
 
 TIME: ${START_TIME}
-DM Version: ${BRANCH_NAME}
+Branch: ${BRANCH_NAME}
+$GIT_MSG
 EOF
 
 exit 0

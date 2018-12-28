@@ -69,7 +69,9 @@ cp /etc/zabbix_agentd.conf /etc/zabbix/
 useradd zabbix
 /Data/app/zabbix-4.0.0/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf
 
-# zabbix client [windows]
+
+
+###### zabbix client [windows] #########
 # https://www.zabbix.com/download_agents
 # Preparation Zabbix agent is distributed as a zip archive. After you download the archive you need to unpack it. 
 # Choose any folder to store Zabbix agent and the configuration file, e. g.
