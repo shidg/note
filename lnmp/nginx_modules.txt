@@ -1,0 +1,4 @@
+https://github.com/simplresty/ngx_devel_kit/releases
+
+https://github.com/openresty/lua-nginx-module
+https://github.com/openresty/luajit2

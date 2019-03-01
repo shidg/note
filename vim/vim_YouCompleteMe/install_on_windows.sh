@@ -20,7 +20,7 @@ call vundle#end()
 
 # install 7zip
 
-# install Visual Studio 2017 Community版本
+# install Visual Studio 2017 Community版本,安装时选择"Desktop development with C++"
 # https://www.visualstudio.com/zh-hans/downloads/
 
 # install YouCompleteMe
