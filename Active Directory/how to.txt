@@ -17,7 +17,7 @@ netdom query fsmo
 # quit
 # ？
 # Transfer infrastructure master
-# Transfer domain naming master
+# Transfer naming master
 # Transfer PDC
 # Transfer RID master
 # Transfer schema master
