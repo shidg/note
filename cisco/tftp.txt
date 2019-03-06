@@ -1,0 +1,18 @@
+# tftp在线备份或恢复cisco设备的配置
+
+# centos 7
+# yum install xinetd tftp tftp-server -y
+
+# vi /etc/xinetd.d/tftp
+# server_args     = -s /var/lib/tftpboot -c  # -c代表允许写入
+# disable         = no
+
+# chmod 777 /var/lib/tftpboot
+
+
+
+# 备份
+# copy run copy running-config tftp
+
+# 恢复
+# copy tftp running-config
