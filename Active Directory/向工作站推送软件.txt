@@ -1,0 +1,2 @@
+AvastSetup.bat
+DelTemp.bat
