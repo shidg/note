@@ -29,6 +29,7 @@ sh utils/install_server.sh
 
 # settings
 echo "vm.overcommit_memory=1" >> /etc/sysctl.conf
+echo "net.core.somaxconn = 500" >> /etc/sysctl.conf
 #默认值为：0
 #从内核文档里得知，该参数有三个值，分别是：
 #0：当用户空间请求更多的的内存时，内核尝试估算出剩余可用的内存。

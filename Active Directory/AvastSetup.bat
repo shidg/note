@@ -15,13 +15,13 @@ echo 内网安全软件更新维护中……
 echo  请勿关闭此对话框。
 ping -n 2 127.1>c:\avast_temp\null
 
-:: 打开网络共享连接，其中\\10.10.8.x\shared\avast为网络共享的文件夹，feezu\username为共享用户名，password为密码。192.168.10.19 该地址在此脚本中无意义，用于格式要求
-net use \\10.10.8.x\shared\avast password /user:feezu\username
+:: 打开网络共享连接，其中\\10.10.8.15\shared\avast为网络共享的文件夹，administrator 为共享用户名，Ywx*12345为密码。192.168.10.19 该地址在此脚本中无意义，用于格式要求
+net use \\10.10.8.15\shared\avast  jira*12345 /user:feezu\jira
 
 ping -n 4 127.1>c:\avast_temp\null
 
 :: 拷贝静默安装包到本地文件夹
-copy \\10.10.8.x\shared\avast\avast_free_setup_offline.exe c:\avast_temp>c:\avast_temp\null   
+copy \\10.10.8.15\shared\avast\avast_free_setup_offline.exe c:\avast_temp>c:\avast_temp\null   
 
 ping -n 4 127.1>c:\avast_temp\null
 echo  请耐心等待，更新时间约 10 分钟……
@@ -31,7 +31,7 @@ start c:\avast_temp\avast_free_setup_offline.exe
 ping -n 2 127.1>c:\avast_temp\null
 
 :: 断开网络共享文件夹的连接。有的服务器会有连接数限制，此命令是为了避免过多的连接导致共享目录无法访问的问题
-net use \\10.10.8.x /delete   
+net use * /delete   
 
 ping -n 50 127.1>c:\avast_temp\null
 exit    

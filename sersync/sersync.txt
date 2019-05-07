@@ -1,0 +1,2 @@
+https://code.google.com/archive/p/sersync/downloads
+https://github.com/wsgzao/sersync/blob/master/sersync2.5.4_64bit_binary_stable_final.tar.gz

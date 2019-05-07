@@ -128,7 +128,6 @@ localhost
 
 # start
 /Data/app/hbase/bin/start-hbase.sh
-/Data/app/hbase/bin/local-regionservers.sh start 0
 #http://localhost:16010
 # jps 查看java进程
 # HQuorumPeer

@@ -20,13 +20,22 @@ function NEW_COMMIT() {
     fi  
 }
 
+function GET_CODE_VERSION {
+    git log | head -3> /tmp/gitinfo
+    git diff HEAD HEAD~ --stat >> /tmp/gitinfo
+    export GIT_MSG=`cat /tmp/gitinfo`
+    export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
+    export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
+    export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
+}
+
 function ERRTRAP(){ 
     echo "[LINE :$1 ] Error: Command or functions exited with status $?"
     exit
 }
 
 function EXIT_CONFIRMATION() {
-    echo -ne "No code update, continue?[Y/N]"
+    echo -ne "Code not updated, continue?[Y/N]"
 	read -n 1 answer
 	case $answer in
 	    Y|y)
@@ -45,6 +54,21 @@ function EXIT_CONFIRMATION() {
 		EXIT_CONFIRMATION
 		;;
 	esac
+}
+
+function CONTINUE_CONFIRMATION() {
+    echo -ne "Type [Y/y] to continue"
+    read -n 1 key
+    case $key in
+    ¦   Y|y)
+        echo
+        echo "The script will continue..."
+        ;;   
+        *)   
+        echo 
+        CONTINUE_CONFIRMATION
+        ;;   
+    esac 
 }
 
 function DELETE_PROFILES() {
@@ -133,7 +157,7 @@ function DELETE_PROFILES() {
     	rm -f manage-app/src/main/resources/$i.properties
 	done
 
-	for i in log4j
+	for i in log4j applicationContext-dubbo-consumer
 	do
     	rm -f manage-app/src/main/resources/$i.xml
 	done
@@ -287,7 +311,7 @@ function GENERATE_PROFILES() {
         dos2unix manage-app/src/main/resources/$i.properties
 	done
 
-	for i in log4j
+	for i in log4j applicationContext-dubbo-consumer
 	do
     	cp -f manage-app/src/main/resources/$i.xml.template manage-app/src/main/resources/$i.xml
         dos2unix manage-app/src/main/resources/$i.xml
@@ -383,7 +407,7 @@ function MODIFY_PROFILES() {
     # sed -i "" consumer-app/src/main/resources/log4j.xml
 
     # applicationContext-dubbo-consumer.xml
-    sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' consumer-app/src/main/resources/applicationContext-dubbo-consumer.xml
+    sed -i '/dubbo:registry address/ s/\/\/.*2181/\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/' consumer-app/src/main/resources/applicationContext-dubbo-consumer.xml
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" consumer-app/src/main/resources/jedis.properties
@@ -469,7 +493,7 @@ function MODIFY_PROFILES() {
     # no change
 
     # applicationContext-dubbo-consumer.xml
-    sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' manage-orders/src/main/resources/applicationContext-dubbo-consumer.xml
+    sed -i '/dubbo:registry address/ s/\/\/.*2181/\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/' manage-orders/src/main/resources/applicationContext-dubbo-consumer.xml
 
 	### report-superviser ###
     # config.properties
@@ -506,10 +530,9 @@ function MODIFY_PROFILES() {
     # cur_2000399vw66t 付建
     # cur_100038r57lpr 毛冲冲
     # cur_2000376m6dgk 方意
-    # cur_200038mqlkrj 杨志强
     # cur_2000376m6dg4 钟政
     # cur_10003731hj14 朱建刚
-    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_200038mqlkrj,cur_2000376m6dg4,cur_10003731hj14/" manage-web/src/main/resources/config.properties
+    sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_2000376m6dg4,cur_10003731hj14/" manage-web/src/main/resources/config.properties
     sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties
@@ -536,7 +559,7 @@ function MODIFY_PROFILES() {
     sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-web/src/main/resources/jedis.properties
 
     # applicationContext-dubbo-consumer.xml
-    sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' manage-web/src/main/resources/applicationContext-dubbo-consumer.xml
+    sed -i '/dubbo:registry address/ s/\/\/.*2181/\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/' manage-web/src/main/resources/applicationContext-dubbo-consumer.xml
 
 	### manage-metadata ###
     # apollo-env.properties
@@ -655,6 +678,9 @@ function MODIFY_PROFILES() {
     sed -i "/^redis.pool.maxActive/ s/=.*/=2000/" manage-app/src/main/resources/jedis.properties
     sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" manage-app/src/main/resources/jedis.properties
 
+    # applicationContext-dubbo-consumer.xml
+    sed -i '/dubbo:registry address/ s/\/\/.*2181/\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/' manage-app/src/main/resources/applicationContext-dubbo-consumer.xml
+
     # log4j.xml
     # no change
 
@@ -714,13 +740,14 @@ function MODIFY_PROFILES() {
     # serverconfig.properties
 
     # applicationContext-dubbo-consumer.xml
-    sed -i '/dubbo:registry address/ s/=.*/="zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181"\/>/' manage-report/src/main/resources/applicationContext-dubbo-consumer.xml
+    sed -i '/dubbo:registry address/ s/\/\/.*2181/\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/' manage-report/src/main/resources/applicationContext-dubbo-consumer.xml
 
     # log4j.xml
     # no change
 
 	### manage-thirdparty ###
     # config.properties
+    sed -i "/^ALIPAY_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\//" manage-thirdparty/src/main/resources/config.properties
     # no change
     # dubbo.properties
     sed -i "/^dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" manage-thirdparty/src/main/resources/dubbo.properties
@@ -769,13 +796,11 @@ function MODIFY_PROFILES() {
 
     # 按不同的后端服务器修改serverconfig.properties
 	PS3="目标服务器: "
-	select option in "TOMCAT1" "TOMCAT2";do
+	select option in "TOMCAT1" "TOMCAT2" "TOMCAT3";do
 	case $option in
     	TOMCAT1)
 			REMOTE_ENV=TOMCAT1
 			REMOTE_SERVER=10.51.84.95
-            #sed -i "/^serverId/ s/=.*/=analysis_demo_1/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		#sed -i "/^groupServerId/ s/=.*/=1/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_1/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-metadata/src/main/resources/serverconfig.properties
@@ -801,8 +826,6 @@ function MODIFY_PROFILES() {
     	TOMCAT2)
 			REMOTE_ENV=TOMCAT2
 			REMOTE_SERVER=10.47.138.177
-            #sed -i "/^serverId/ s/=.*/=analysis_demo_2/" manage-datawarehouse/src/main/resources/serverconfig.properties
-    		#sed -i "/^groupServerId/ s/=.*/=2/" manage-datawarehouse/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=metadata_demo_2/" manage-metadata/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-metadata/src/main/resources/serverconfig.properties
@@ -825,33 +848,32 @@ function MODIFY_PROFILES() {
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-thirdparty/src/main/resources/serverconfig.properties
 			break
 		;;
-#    	TOMCAT3)
-#			REMOTE_ENV=TOMCAT3
-#			REMOTE_SERVER=
-#            sed -i "/^serverId/ s/=.*/=analysis_demo_3/" manage-datawarehouse/src/main/resources/serverconfig.properties
-#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-datawarehouse/src/main/resources/serverconfig.properties
+    	TOMCAT3)
+			REMOTE_ENV=TOMCAT3
+			REMOTE_SERVER=10.31.150.61
 
-#           sed -i "/^serverId/ s/=.*/=metadata_demo_3/" manage-metadata/src/main/resources/serverconfig.properties
- #   		sed -i "/^groupServerId/ s/=.*/=3/" manage-metadata/src/main/resources/serverconfig.properties
- #   		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
-#            sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
-#            sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
-#            sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-#            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^serverId/ s/=.*/=metadata_demo_3/" manage-metadata/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=3/" manage-metadata/src/main/resources/serverconfig.properties
+    		sed -i "/^STATION_CARS_CHECK_COMPANYID/ s/=.*/=com_10003ctt6jcr,com_10001s20b33b,com_20002n4jgt2r,com_20003q4sn7x8,com_10003rrszqm6,com_20003zzggl84/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
 
-#            sed -i "/^serverId/ s/=.*/=orders_demo_3/" manage-orders/src/main/resources/serverconfig.properties
-#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-orders/src/main/resources/serverconfig.properties
+            sed -i "/^serverId/ s/=.*/=orders_demo_3/" manage-orders/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=3/" manage-orders/src/main/resources/serverconfig.properties
 
-#            sed -i "/^serverId/ s/=.*/=superviser_demo_3/" report-superviser/src/main/resources/serverconfig.properties
-#    		sed -i "/^groupServerId/ s/=.*/=3/" report-superviser/src/main/resources/serverconfig.properties
+            sed -i "/^serverId/ s/=.*/=superviser_demo_3/" report-superviser/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=3/" report-superviser/src/main/resources/serverconfig.properties
 
-#            sed -i "/^serverId/ s/=.*/=report_demo_3/" manage-report/src/main/resources/serverconfig.properties
-#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-report/src/main/resources/serverconfig.properties
+            sed -i "/^serverId/ s/=.*/=report_demo_3/" manage-report/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=3/" manage-report/src/main/resources/serverconfig.properties
 
-#            sed -i "/^serverId/ s/=.*/=thirdparty_demo_3/" manage-thirdparty/src/main/resources/serverconfig.properties
-#    		sed -i "/^groupServerId/ s/=.*/=3/" manage-thirdparty/src/main/resources/serverconfig.properties
-#			break
-#		;;
+            sed -i "/^serverId/ s/=.*/=thirdparty_demo_3/" manage-thirdparty/src/main/resources/serverconfig.properties
+    		sed -i "/^groupServerId/ s/=.*/=3/" manage-thirdparty/src/main/resources/serverconfig.properties
+			break
+		;;
+
         *)
        		clear
         	echo "Error! Wrong choice!"
@@ -997,9 +1019,9 @@ function DEFINE_SYSTEM_PATH() {
 }
 
 function DEFINE_VARIABLES() {
-    : ${WZC3_SOURCE_DIR:="/Data/source/wzc3.0"} ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.47.138.177"} ${EXTERNAL_SOURCE_DIR:="/Data/source/external"} 
+    : ${WZC3_SOURCE_DIR:="/Data/source/wzc3.0"} ${SETUP_SOURCE_DIR:="/Data/source/setup"} ${EXTGATEWAY_SOURCE_DIR:="/Data/source/external-gateway"} ${DM_SOURCE_DIR:="/Data/source/device-manage"} ${MANAGE_SOURCE_DIR:="/Data/source/Platform/platform"} ${MINA_SOURCE_DIR:="/Data/source/Mina/mina"} ${WZC_SOURCE_DIR:="/Data/source/Mina/mina/wzc"} ${GATEWAY_SOURCE_DIR:="/Data/source/device-gateway"} ${CONF_DIR:="src/main/resources"} ${SYNC_USER:="rsync_user"} ${SSH_PORT:="5122"} ${RSYNC_MODULE:="platform"} ${TOMCAT1:="10.51.84.95"} ${TOMCAT2:="10.47.138.177"} ${TOMCAT3:="10.31.150.61"} ${EXTERNAL_SOURCE_DIR:="/Data/source/external"} 
 
-    export WZC3_SOURCE_DIR SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 EXTERNAL_SOURCE_DIR
+    export WZC3_SOURCE_DIR SETUP_SOURCE_DIR EXTGATEWAY_SOURCE_DIR DM_SOURCE_DIR MANAGE_SOURCE_DIR MINA_SOURCE_DIR WZC_SOURCE_DIR GATEWAY_SOURCE_DIR  CONF_DIR SYNC_USER SSH_PORT RSYNC_MODULE  TOMCAT1 TOMCAT2 TOMCAT3 EXTERNAL_SOURCE_DIR
 }
 
 

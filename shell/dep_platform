@@ -57,33 +57,32 @@ if [ "$(git rev-parse --abbrev-ref HEAD)" == "${BRANCH_NAME}" ];then
     if eval NEW_COMMIT ${BRANCH_NAME};then
         git pull
     else
-		eval EXIT_CONFIRMATION
-    fi  
+        eval EXIT_CONFIRMATION
+    fi
 else
     if git branch -vv | grep "${BRANCH_NAME}";then
-    ¦   git checkout ${BRANCH_NAME}
-    	if  eval NEW_COMMIT ${BRANCH_NAME};then
-    ¦   	git pull
-    	else
-    ¦   	eval EXIT_CONFIRMATION 
-    	fi 
+        git checkout ${BRANCH_NAME}
+        if  eval NEW_COMMIT ${BRANCH_NAME};then
+            git pull
+        else
+            eval EXIT_CONFIRMATION 
+        fi 
     else
-    ¦   git pull && git checkout ${BRANCH_NAME}
+        git pull && git checkout ${BRANCH_NAME}
     fi  
 fi
 
-# 代码提交详情
-git log | head -2> /tmp/gitinfo
-git diff HEAD HEAD~ --stat >> /tmp/gitinfo
-export GIT_MSG=`cat /tmp/gitinfo`
-export COMMIT_VERSION=`head -1 /tmp/gitinfo | cut -d " " -f 2`
-export COMMIT_AUTHOR=`head -2 /tmp/gitinfo |tail -1 | cut -d ":" -f 2`
-export DEPLOY_VERSION=`echo ${COMMIT_VERSION:0:5}`
-if [ ! -f "/tmp/last_version_platform_${BRANCH_NAME}" ];then
-    export LAST_DEPLOY_VERSION=${DEPLOY_VERSION}
-else 
-    export LAST_DEPLOY_VERSION=`cat /tmp/last_version_platform_${BRANCH_NAME}`
-fi
+# 获取代码提交详情
+GET_CODE_VERSION
+
+# 确认提交内容
+echo 
+echo -e "================= The last commition: ================"
+echo "$GIT_MSG"
+echo 
+echo -e "=================  ==================  ================"
+
+CONTINUE_CONFIRMATION
 
 
 # 生成配置文件
@@ -120,16 +119,7 @@ echo -e "构建依赖: Platform/manage-global-api"
 cd ${MANAGE_SOURCE_DIR}/manage-global-api                                                  
 mvn clean install -Dmaven.test.skip=true
 
-: << BLOCK
-echo -e "构建依赖: external/order [branch: ${DEPEND_NAME_ORDER}]..."
-cd ${EXTERNAL_SOURCE_DIR}/order
-git pull && git checkout ${DEPEND_NAME_ORDER}
-if eval NEW_COMMIT ${DEPEND_NAME_ORDER};then
-    git pull
-fi
-mvn clean install -Dmaven.test.skip=true
 
-BLOCK
 #build war packages
 
    cd ${MANAGE_SOURCE_DIR}/wzc
@@ -148,7 +138,7 @@ for PROJ in ${PROJS2[*]}
         mv -f ${MANAGE_SOURCE_DIR}/${PROJ}/target/*war ${BUILD_DIR}
     done
 
-# BLOCK
+#BLOCK
 # rsync war to remote server
 echo -e "Current version is ${DEPLOY_VERSION}\nUploading packages to ${REMOTE_ENV}(${REMOTE_SERVER}) ..." | pv -qL 50
 sleep 2
@@ -167,13 +157,11 @@ Start at:${START_TIME}
 Finish at:${END_TIME}
 $GIT_MSG
 Current version:${DEPLOY_VERSION}
-Last version:${LAST_DEPLOY_VERSION}
 EOF
 
 #log
-cat /tmp/upinfo >> /Data/logs/deplog/deploy_platform_${BRANCH_NAME}.log
+cat /tmp/upinfo >> /Data/logs/deplog/dep_platform.log
 
-echo ${DEPLOY_VERSION} > /tmp/last_version_platform_${BRANCH_NAME}
 
 cowsay -f small "Success!"
 

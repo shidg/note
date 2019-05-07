@@ -12,7 +12,7 @@
 
 
 # 备份
-# copy run copy running-config tftp
+# copy running-config tftp
 
 # 恢复
 # copy tftp running-config
