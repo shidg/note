@@ -4,7 +4,7 @@
 # on all servers
 useradd hadoop
 
-#配置服务器之间的SSH无密码登录(hadoop用户)，包含K-master本机无密码登录、K-master无密码登录K-slave1~K-slave3、K-slave1~K-slave3无密码登录K-master
+#配置主从服务器之间的双向SSH免密认证(hadoop用户)，包含K-master本机无密码登录、K-master无密码登录K-slave1~K-slave3、K-slave1~K-slave3无密码登录K-master
 
 
 
