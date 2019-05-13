@@ -1,4 +1,7 @@
-## INSTALL RABBITMQ-3.6.10 ON CentOS 7 ##
+# INSTALL RABBITMQ-3.6.10 ON CentOS 7 ##
+
+## install perl
+yum install perl ncurses-devel openssl openssl-devel -y
 
 ## install erlang
 tar zxvf otp_src_19.3.tar.gz && cd otp_src_19.3
