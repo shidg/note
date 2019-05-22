@@ -1,0 +1,60 @@
+## 该文档记录的yum在线安装方式，该安装方式下，数据默认存储在/var/opt/gitlab,所以数据盘应该挂载到/var下
+
+## 安装依赖
+yum install wget curl policycoreutils-python openssh-server -y
+
+## 防火墙开放http服务
+firewall-cmd --permanent --add-service=http
+systemctl reload firewalld
+
+## 添加yum源
+curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.rpm.sh | sudo bash
+
+## 安装gitlab-ce
+yum install -y gitlab-ce
+
+## 修改配置文件，指定域名(/etc/gitlab/gitlab.rb )
+external_url 'http://gitlab.feezu.cn'
+
+## 加载配置文件，启动gitlab
+gitlab-ctl reconfigure
+
+## 页面访问gitlab，初次访问会要求设置密码，用户名默认为root
+http://gitlab.feezu.cn
+
+## 启动LDAP,和AD域控集成 /etc/gitlab/gitlab.rb
+### LDAP Settings
+###! Docs: https://docs.gitlab.com/omnibus/settings/ldap.html
+###! **Be careful not to break the indentation in the ldap_servers block. It is
+###!   in yaml format and the spaces must be retained. Using tabs will not work.**
+gitlab_rails['ldap_enabled'] = true
+
+###! **remember to close this block with 'EOS' below**
+gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
+   main: # 'main' is the GitLab 'provider ID' of this LDAP server
+     label: 'LDAP'
+     host: '10.10.8.9'
+     port: 389
+     uid: 'sAMAccountName'
+     bind_dn: 'gitlab'
+     password: 'Ywx**123456'
+     encryption: 'plain' # "start_tls" or "simple_tls" or "plain"
+#     verify_certificates: true
+#     smartcard_auth: false
+     active_directory: true
+     allow_username_or_email_login: false
+#     lowercase_usernames: false
+     block_auto_created_users: false
+     base: 'DC=feezu,DC=cn'
+EOS
+
+## 重启gitlab
+gitlab-ctl reconfigure
+
+## 使用域账号登录，之后切换到root用户并将域账号提升为管理员
+## Admin Area --> Users --> 域账号右侧的Edit --> Access --> Access level --> Admin
+
+
+## 为用户添加ssh_key,免密码认证
+登录后，User Settings --> SSH Keys
+## 通过页面添加的SSH Key服务器上的存放位置为/var/opt/gitlab/.ssh/下(gitlab的安装位置)

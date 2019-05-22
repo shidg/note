@@ -1,0 +1,34 @@
+ ## INSTALL JAVA
+
+ ## INSTALL JENKINS
+ wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+ rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key 
+ yum install jenkins -y
+
+## 查看安装位置
+rpm -ql jenkins
+
+
+## 修改配置文件 /etc/sysconfig/jenkins
+JENKINS_HOME="/Data/jenkins"
+JENKINS_JAVA_CMD="/Data/app/jdk1.8.0_162/bin/java"
+
+## 创建目录，修改权限 (jenkins默认以jenkins用户身份运行)
+mkdir /Data/jenkins && chown -R jenins:jenkins /Data/jenkins
+
+## 启动服务
+systemctl start jenkins
+
+## 登录
+http://ip:8080，管理密码会自动写入/Data/jenkins/secrets/initialAdminPassword文件中
+
+## 安装插件
+登录城后后会提示安装插件，可选择安装默认插件或者按找需求自定义安装
+
+## 创建管理员用户或直接使用admin登录
+
+## 登录后安装Active Directory插件
+
+## 启用Active Directory,使用域账号进行认证
+
+
