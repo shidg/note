@@ -1,0 +1,49 @@
+##集群扩容
+
+1. 新节点修改主机名为K-slave7
+
+2. 修改HBASE集群中所有主机的hosts文件，添加K-slave7
+
+3. 修改HBASE集群中所有服务器的防火墙，保证新增节点与其他各节点的互通
+
+4. K-master到K-slave7、K-slave7到K-master之间的ssh免密码登录
+
+5. 新节点添加haoop用户，uid、gid保持与其他节点相同
+
+6. 修改HBASE客户端（三台tomcat）防火墙，使其可以与K-slave7通信
+
+7. 修改HBASE客户端（三台tomcat）hosts文件，添加K-slave7
+
+8. K-slvae7安装hadoop+hbase,并修改配置文件
+   hadoop: core-site.xml、hdfs-site.xml、mapred-env.sh、mapred-site.xml、yarn-site.xml
+   hbase: hbase-env.sh 、 hbae-site.xml 、regionservers
+
+9. HBASE集群原有节点配置文件修改：
+   修改K-master上hadoop的slaves文件，添加K-slave7
+
+   修改K-master上hbase的regionservers文件，添加K-slave7
+
+   修改K-slave1~6上hbase的regionservers文件，添加K-slave7
+
+10.K-slave7上启动hadoop:  
+   ./sbin/hadoop-daemon.sh start datanode
+   ./sbin/yarn-daemon.sh start nodemanager
+
+   # 刷新节点
+   hdfs dfsadmin -refreshNodes
+   hdfs dfsadmin -report
+
+11.K-slave7上启动hbase：
+   ./bin/hbase-daemon.sh start regionserver
+
+   hbase shell > status
+
+   hbase hbck -summary
+
+   hbase hbck -details
+
+12.#hadoop集群数据重新均衡  
+   在K-slave6上（选择较空闲的DataNode,最好不要在NameNode，也就是master上执行）
+   #set balance to 50M/s
+   hdfs dfsadmin -setBalancerBandwidth 52428800
+   start-balancer.sh -threshold 5
