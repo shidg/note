@@ -1,0 +1,10 @@
+配置管理-->认证模式-->LDAP
+
+LDAP URL     ldap://ab.com
+LDAP搜索DN   CN=Administrator,CN=Users,DC=ABC,DC=COM
+LDAP搜索密码 *******
+LDAP基础DN   OU=Users,OU=harborusers,DC=ABC,DC=COM
+LDAP过滤器   (&(sAMAccountName=%u)(memberof=CN=harborusers,DC=feezu,DC=cn))
+#LDAP过滤器  (&(objectclass=person)(memberof=CN=harborusers,DC=feezu,DC=cn))
+LDAP用户UID的属性  sAMAccountName
+LDAP搜索范围   子树
