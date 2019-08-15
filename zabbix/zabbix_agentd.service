@@ -1,0 +1,15 @@
+[Unit]
+Description=Zabbix Agent
+After=network.target
+
+[Service]
+Environment="CONFFILE=/etc/zabbix/zabbix_agentd.conf"
+EnvironmentFile=-/etc/sysconfig/zabbix-agent
+Type=forking
+Restart=always
+PIDFile=/tmp/zabbix_agentd.pid
+KillMode=mixed
+ExecStart=/Data/app/zabbix/sbin/zabbix_agentd -c $CONFFILE
+
+[Install]
+WantedBy=multi-user.target
