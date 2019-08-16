@@ -17,6 +17,7 @@
 *.pm
 *.chm
 *.jar
+.DS_Store
 /gcc/gcc/
 
 #example
