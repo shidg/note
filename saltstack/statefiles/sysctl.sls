@@ -102,10 +102,10 @@ vm.max_map_count:
   sysctl.present:
     - value: 2048000
 
-kernel.pid_max
+kernel.pid_max:
   sysctl.present:
     - value: 1200000
 
-kernel.threads_max
+kernel.threads_max:
   sysctl.present:
     - value: 150000
