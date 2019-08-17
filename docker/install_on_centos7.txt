@@ -1,15 +1,28 @@
+# 卸载旧版本
+yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
 
-## yum repos
-cat > /etc/yum.repos.d/docker.repo <<EOF
-[dockerrepo]
-name=Docker Repository
-baseurl=https://yum.dockerproject.org/repo/main/centos/\$releasever/
-enable=1
-gpgcheck=1
-gpgkey=https://yum.dockerproject.org/gpg
-EOF
+# 安装依赖
+yum install -y yum-utils \
+  device-mapper-persistent-data \
+  lvm2
 
-yum install dock-engine
+# 添加yum源
+yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+yum-config-manager --enable docker-ce-nightly
+yum-config-manager --enable docker-ce-test
+yum-config-manager --disable docker-ce-nightly
 
-systemctl start docker
+# 安装
+yum -y install docker-ce docker-ce-cli containerd.io
 
+
+# yum list docker-ce --showduplicates | sort -r
