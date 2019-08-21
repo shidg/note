@@ -1,3 +1,8 @@
+install_iptables:
+  pkg.installed:
+    - name: iptables-services
+    - order: 1
+
 clear_iptables:
   cmd.run:
   {% if grains['osfinger'] == 'CentOS-6' %}
@@ -6,57 +11,122 @@ clear_iptables:
     - name: systemctl stop iptables && echo >/etc/sysconfig/iptables
   {% endif %}
 
-#### 添加白名单ip
-{% for fw, rule in pillar['white_list'].items() %}
-{{ fw }}_INPUT:
+# white_list
+{% for key, value in pillar['ip_address'].items() %}
+{{ key }}_input:
   iptables.insert:
      - position: 1
      - table: filter
      - chain: INPUT
      - jump: ACCEPT
-     - source: {{ rule['ip'] }}
-     - save: True
-
-{{ fw }}_OUTPUT:
+     - source: {{ value['ip'] }}
+{{ key }}_output:
   iptables.insert:
      - position: 1
      - table: filter
      - chain: OUTPUT
      - jump: ACCEPT
-     - destination: {{ rule['ip'] }}
-     - save: True
+     - destination: {{ value['ip'] }}
 {% endfor %}
 
-# ssh入站访问
+drop_invalid_input:
+  iptables.insert:
+    - position: 1
+    - table: filter
+    - chain: INPUT
+    - jump: DROP
+    - match: state
+    - connstate: INVALID
+
+accept_estab_input:
+  iptables.insert:
+    - position: 2
+    - table: filter
+    - chain: INPUT
+    - jump: ACCEPT
+    - match: state
+    - connstate: RELATED,ESTABLISHED
+
 ssh_input:
   iptables.append:
     - table: filter
     - chain: INPUT
     - jump: ACCEPT
-    - dport: {{ pillar['ssh_in']['port'] }}
-    - proto: {{ pillar['ssh_in']['proto'] }}
-    - save: True
+    - dport: {{ pillar['service_port']['ssh_port']['port'] }}
+    - proto: tcp
 
-# web访问出站规则
-{% for fw, rule in pillar['web_out'].items() %}
-{{ fw }}_OUTPUT:
+icmp_input:
+  iptables.append:
+    - table: filter
+    - chain: INPUT
+    - jump: ACCEPT
+    - proto: icmp
+    - match: icmp
+    - icmp-type: echo-request
+
+drop_invalid_output:
+  iptables.insert:
+    - position: 1
+    - table: filter
+    - chain: OUTPUT
+    - jump: DROP
+    - match: state
+    - connstate: INVALID
+
+accept_estab_output:
+  iptables.insert:
+    - position: 2
+    - table: filter
+    - chain: OUTPUT
+    - jump: ACCEPT
+    - match: state
+    - connstate: RELATED,ESTABLISHED
+
+{% for key, value in pillar['web_out'].items() %}
+{{ key }}_output:
   iptables.append:
     - table: filter
     - chain: OUTPUT
     - jump: ACCEPT
-    - dport: {{ rule['port'] }}
-    - proto: {{ rule['proto'] }}
-    - save: Ture
+    - dport: {{ value['port'] }}
+    - proto: {{ value['proto'] }}
 {% endfor %}
 
-# dns出站规则
-{% for fw, rule in pillar['dns_out'].items() %}
-{{ fw }}_OUTPUT:
+{% for key, value in pillar['service_proto'].items() %}
+dns_output_with_{{ key }}:
   iptables.append:
     - table: filter
     - chain: OUTPUT
     - jump: ACCEPT
-    - dport: {{ rule['port'] }}
-    - proto: {{ rule['proto'] }}
-    - save: Ture
+    - dport: 53
+    - proto: {{ value['proto'] }}
 {% endfor %}
+
+ntp_output:
+  iptables.append:
+    - table: filter
+    - chain: OUTPUT
+    - jump: ACCEPT
+    - proto: tcp
+    - dport: 123
+
+icmp_output:
+  iptables.append:
+    - table: filter
+    - chain: OUTPUT
+    - jump: ACCEPT
+    - proto: icmp
+    - match: icmp
+    - icmp-type: echo-request
+
+{% for key, value in pillar['chains_of_filter'].items() %}
+{{ key }}_policy:
+  iptables.set_policy:
+    - table: filter
+    - chain: {{ value['chain_name'] }}
+    - policy: DROP
+{% endfor %}
+
+save iptables rules:
+  cmd.run:
+    - name: service iptables save
