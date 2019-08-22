@@ -1,4 +1,5 @@
 include:
+  - init.install_tools
   - init.sysctl
   - init.audit
   - init.history
