@@ -17,6 +17,12 @@ service_port:
     port: 5122
   dns_port:
     port: 53
+  zabbix_in_port:
+    port: 10050
+  zabbix_out_port:
+    port: 10051
+  mysql_port:
+    port: 3306
 
 service_proto:
   tcp_proto:
