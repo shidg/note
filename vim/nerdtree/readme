@@ -1,0 +1,34 @@
+# .vimrc
+call vundle#begin()
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'scrooloose/nerdtree' 
+Plugin 'Xuyuanp/nerdtree-git-plugin'
+call vundle#end()
+
+
+"NERDTree
+autocmd vimenter * NERDTree
+map <F3> :NERDTreeMirror<CR>
+map <F3> :NERDTreeToggle<CR>
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+let NERDTreeWinSize=25
+let NERDTreeShowBookmarks=1
+"let NERDTreeChDirMode=1
+"let NERDTreeShowHidden=1
+"let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
+
+"nerdtree-git-plugin
+let g:NERDTreeShowIgnoredStatus = 1
+let g:NERDTreeIndicatorMapCustom = {
+    \ "Modified"  : "✹",
+    \ "Staged"    : "✚",
+    \ "Untracked" : "✭",
+    \ "Renamed"   : "➜",
+    \ "Unmerged"  : "═ ",
+    \ "Deleted"   : "✖",
+    \ "Dirty"     : "✗",
+    \ "Clean"     : "✔︎",
+    \ 'Ignored'   : '☒',
+    \ "Unknown"   : "?"
+    \ }
+
