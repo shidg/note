@@ -2,13 +2,13 @@
 func SetTitle() 
     if &filetype == 'sh'                                                            
         call setline(1,"\#!/bin/bash") 
-        call append(line("."), "# File Name: -- ".expand("%")."--") 
+        call append(line("."), "# File Name: -- ".expand("%")." --") 
         call append(line(".")+1, "# author: -- shidegang --")
         call append(line(".")+2, "# Created Time: ".strftime("%Y-%m-%d %H:%M:%S"))
 
     elseif &filetype == 'python'
         call setline(1, "#!/usr/local/bin/python3")
-        call append(line("."), "# -*- coding: utf-8 -*-#")
+        call append(line("."), "# -*- coding: utf-8 -*- #")
         call append(line(".")+1, "'''")
         call append(line(".")+2, "author: -- shidegang --")
         call append(line(".")+3, "Created Time: ".strftime("%Y-%m-%d %H:%M:%S"))
