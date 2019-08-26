@@ -80,5 +80,9 @@ filetype plugin indent on "required
 #安装 YouCompleteMe
 cd ~/.vim/bundle/YouCompleteMe 
 git submodule update --init --recursive
+# tools.git无法直接从google下载，手动从github检出
+cd ~/.vim/bundle/YouCompleteMe/third_party/ycmd/third_party/go/src/golang.org/x
+git clone https://github.com/golang/tools.git
+
 yum install cmake -y
 ./install.py --clang-completer
