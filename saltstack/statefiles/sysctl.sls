@@ -18,10 +18,12 @@ net.ipv4.tcp_mem:
   sysctl.present:
     - value: 524288 699050 1048576  
 
+# TCP能够使用的内存页数，1个page页=4096 Bytes(getconf PAGESIZE)
 net.ipv4.tcp_rmem:
   sysctl.present:
     - value: 4096 8192 4194304
 
+# tcp连接的读写缓冲区，单位Bytes
 net.ipv4.tcp_wmem:
   sysctl.present:
     - value: 4096 8192 4194304
