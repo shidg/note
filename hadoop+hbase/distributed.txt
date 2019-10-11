@@ -40,13 +40,24 @@ export HADOOP_SSH_OPTS="-p 5122"
 
 ## core-site.xml ##
 <configuration>
-<property>
+    <property>
         <name>fs.default.name</name>
         <value>hdfs://K-master:9000</value>
     </property>
      <property>
         <name>hadoop.tmp.dir</name>
         <value>/Data/app/hadoop/tmp</value>
+    </property>
+    <property>
+        <name>fs.checkpoint.period</name>
+        <value>3600</value>
+    <description>
+        The number of seconds between two periodic checkpoints.
+    </description>
+    </property>
+    <property>
+        <name>fs.checkpoint.size</name>
+    <value>67108864</value>
     </property>
 </configuration>
 
@@ -64,6 +75,18 @@ export HADOOP_SSH_OPTS="-p 5122"
     <property>
         <name>dfs.data.dir</name>
         <value>/Data/app/hadoop/hdfs/data</value>
+    </property>
+    <property>
+        <name>dfs.http.address</name>
+        <value>K-master:50070</value>
+    <description>
+        The address and the base port where the dfs namenode web ui will listen on.
+        If the port is 0 then the server will start on a free port.
+    </description>
+    </property>
+    <property>
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>K-slave2:50090</value>
     </property>
 </configuration>
 
@@ -94,8 +117,9 @@ export JAVA_HOME=/Data/app/jdk1.8.0_162
         </property>
 </configuration>
 
-## cat  masters ##
-K-master
+## cat  masters ## #
+## 这个master文件的作用是指定SecondaryNameNode的安装位置，可是是多台，但是最好不要与NameNode在同一台机器
+K-slave2
 
 ## cat slaves ##
 K-slave1

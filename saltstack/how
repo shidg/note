@@ -1,0 +1,2 @@
+# 如何生成hash之后的用户密码，在添加用户时做为- password: 的值，为用户设置密码
+python -c 'import crypt,getpass;pw="Ywx*12345";print(crypt.crypt(pw))'
