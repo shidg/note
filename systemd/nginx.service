@@ -1,0 +1,65 @@
+[Unit]
+Description=The NGINX HTTP and reverse proxy server
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+User=www
+Group=www
+PIDFile=/run/nginx.pid
+
+# 启动类型
+Type=forking
+    # simple 通过ExecStart字段启动进程，默认值
+    # notify 类似于simple,服务启动结束后会发出通知信号，然后systemd再启动其他服务
+
+# 依赖环境，可以指定多个    
+EnvironmentFile=-/etc/sysconfig/nginx.conf
+
+# 启动服务之前要执行的命令
+ExecStartPre=/usr/sbin/nginx -t
+
+ExecStart=/usr/sbin/nginx
+
+# 启动服务之后要执行的命令
+ExecStartPost=
+
+# 重启服务时要执行的命令
+ExecReload=/usr/sbin/nginx -s reload
+#ExecReload=/bin/kill -s HUP $MAINPID
+
+# 停止服务时要执行的命令
+ExecStop=
+#ExecStop=/bin/kill -s QUIT $MAINPID
+
+# 停止服务后要执行的命令
+ExecStopPost=
+
+# 停止超时时间
+TimeoutStopSec=5
+
+# 重启行为配置
+KillMode=process
+    # control-group 默认值，当前控制组里面的所有子进程都会被杀掉
+    # process 只杀主进程，信号可以通过如下方式定义
+    # mixed 主进程将受到SIGTERM信号，子进程受到SIGKILL信号
+    # none  没有进程会被杀掉，只是执行服务的stop命令
+KillSignal=SIGQUIT
+
+# 意外失败后重启方式，正常停止不重启
+Restart=on-failure 
+    # no 退出后不重启，默认值
+    # on-success 只有正常退出（退出状态码为0）时候才会重启
+    # on-failure 非正常退出(退出状态码非0)，包括被信号终止和超时，才会重启
+    # on-abnormal 只有被信号终止和超时，才会重启
+    # on-abort 只有在收到没有捕捉到的信号终止时，才会重启
+    # on-watchdog 超时退出，才会重启
+    # always 不管什么原因退出，总是重启
+
+# 重启服务之前需要等待的秒数，默认100ms
+RestartSec=
+
+# 给服务分配独立的临时空间
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
