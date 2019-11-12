@@ -43,7 +43,7 @@ class Foo2():
 
 obj1 = Foo2()
 
-obj.per
+obj1.per
 
 obj1.per = 876
 
