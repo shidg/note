@@ -21,7 +21,7 @@ class Foo():
         print('per has been deleted')
 
 obj = Foo()
-res = obj.per  #这里当做字典调用，执行函数并接收返回值
+res = obj.per  #这里当做字段调用，执行函数并接收返回值
 print(res)
 
 obj.per = '123' #对per进行设置，函数2执行
