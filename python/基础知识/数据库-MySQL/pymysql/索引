@@ -1,0 +1,72 @@
+索引的作用：
+1. 约束  （主键、外键、唯一、普通、组合）
+2. 加速查找
+    创建索引其实是为某列的数据另外创建了一份数据结构（一个b-tree），类似于书籍的目录。
+    之后再查找这一列数据的时候，先去索引数据中找对应目录，然后按照目录去表中找这条数据，而不再是全表扫描
+
+B-tree  # 第一行一个数据，之后每一行的数据个数是上一行的2倍，如果比这当前数小向左查询，反之向右查询，直到查询到目标。
+
+                               30
+                 15                           40
+        11              17             32                48
+   9        12     16      19       31     35      42            50
+
+
+# 索引的创建
+
+#####      普通索引，仅加速查询 ###########
+
+create table tb1 (
+    nid int not null auto_increment primary key,
+    name varchar(32) not null,
+    email varchar(64) not null,
+    extra text;
+    index ix_name (name)   # index命令 在建表的时候就创建一条索引，ix_name为自定义名字，name为字段名
+)
+# 或者单独添加索引：
+create index ix_name on tb1(name);   # 表名(字段名)
+
+# 查看索引
+show index from tb1
+
+# 删除索引
+drop index on tb1
+
+
+###### 唯一索引 ，加速查询+唯一约束（可以为Null） ##########
+create table tb1 (
+    nid int not null auto_increment primary key,
+    name varchar(32) not null,
+    email varchar(64) not null,
+    extra text;
+    unique ix_name (name)   # unique命令 在建表的时候就创建索引，ix_name为自定义名字，name为字段名
+)
+
+create unique index ix_name on tb1(name)
+
+###### 主键索引 加速查询+唯一约束+不能为Null#####
+
+create table tb1 (
+    nid int not null auto_increment,
+    name varchar(32) not null,
+    email varchar(64) not null,
+    extra text;
+    primary key(nid),       # primary key命令 创建一个主键索引
+    unique ix_name (name)   # unique命令 在建表的时候就创建索引，ix_name为自定义名字，name为字段名
+)
+
+alter table tb1 add primary key(nid);
+alter table tb drop primary key;  # 删除主键
+
+
+####### 组合索引 ##########
+
+1. 普通组合索引，无约束，加速查找
+
+2. 联合唯一索引，有约束，两列数据不能同时相同，加速查找
+
+组合索引的查找规则： 最左匹配，比如有一个组合索引： name,pwd
+
+select * from tb1 where name = 'tom';   # 走索引
+select * from tb1 where name = 'tom' and pwd = '123';  # 走索引
+select * from tb1 where pwd = '123';  # 不走索引

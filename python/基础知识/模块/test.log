@@ -1,0 +1,11 @@
+2019-08-31 18:29:25 logging模块 DEBUG debug
+2019-08-31 18:29:25 logging模块 INFO info
+2019-08-31 18:29:25 logging模块 WARNING warning
+2019-08-31 18:29:25 logging模块 ERROR error
+2019-08-31 18:29:25 logging模块 CRITICAL critical
+2019-08-31 18:29:50 logging模块 ERROR error
+2019-08-31 18:29:50 logging模块 CRITICAL critical
+2019-08-31 18:39:38 logging模块 INFO info
+2019-08-31 18:39:38 logging模块 WARNING warning
+2019-08-31 18:39:38 logging模块 ERROR error
+2019-08-31 18:39:38 logging模块 CRITICAL critical

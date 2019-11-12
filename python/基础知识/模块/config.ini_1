@@ -1,0 +1,13 @@
+[DEFAULT]
+serveraliveinterval = 45
+compression = yes
+compressionlevel = 9
+forwardx11 = yes
+
+[bitbucket.org]
+user = hg
+
+[topsecret.server.com]
+host port = 5122
+forwardx11 = no
+

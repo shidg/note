@@ -1,0 +1,12 @@
+# 存储过程：
+    支持写SQL语句
+    用out  inout构造返回值
+    使用call('p1')方式调用 p1为存储过程的名字
+
+# 自定义函数
+    不允许写SQL,但是赋值操作除外。
+    select nid into a from student where tname = 'xx' ; # 将查询到的nid赋值给a
+    使用return返回值
+    使用select 来调用
+
+select f1(nid) from t1b1; # 可以将复杂的计算逻辑写到f1里，然后去查询表里的nid并进行计算。
