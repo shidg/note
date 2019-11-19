@@ -6,9 +6,9 @@ create table userinfo(
     nid int not null auto_increment primary key,
     name varchar(16),
     age int default 20,
-    part_nid int)engine=innodb default charset=utf8;
+    part_id int)engine=innodb default charset=utf8;
 
-nid   name    age   partment
+nid   name    age   part_id
  1     tom     19      3
  2     jerry   20      1
  3     lucy    21      2

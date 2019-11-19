@@ -1,6 +1,6 @@
 # 默认值  default 2
 # 是否可以为空 null   not null
-# 自增列 （int类型，I必须是索引-一般是主键索引，一张表只能有一个自增列）
+# 自增列 （int类型，必须是索引,一般是主键索引，一张表只能有一个自增列）
 create table tb1(
     uid int not null auto_increment primary key,
     age int default 20) engine=innodb default charset=utf8
