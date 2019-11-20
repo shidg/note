@@ -1,0 +1,38 @@
+SELECT
+	@rownum := @rownum + 1 AS ROWNUM,
+	a.* 
+FROM
+	( SELECT @rownum := 0 ) b,
+	score a
+  
+  
+ 
+ 排名 (  rank() &  dense_rank()  )
+ 
+ SELECT
+    s.*,
+    rank_01,
+    rank_02,
+    rank_03,
+    rank_total
+FROM
+    student s
+    LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_01 FROM score WHERE cid =   01 ) A ON s.sid = A.student_id
+    LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_02 FROM score WHERE cid =   02 ) B ON s.sid = B.student_id
+    LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_03 FROM score WHERE cid =   03 ) C ON s.sid = C.student_id
+    LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( ORDER BY avg( num ) DESC ) AS rank_total FROM score GROUP BY student_id  ) D ON s.sid = D.student_id
+ORDER BY
+    rank_total ASC
+ 
+  
+  SELECT
+IF
+	( @npe = a.num, @rank := @rank + 1, @rank := 1 ) AS PaiMing,
+	@npe := a.num,
+	a.* 
+FROM
+	( SELECT @npe := NULL, @rank := 0 ) b,
+	(SELECT * FROM score ORDER BY num DESC) a
+  
+  
+  
