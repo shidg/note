@@ -256,3 +256,52 @@ FROM
 	LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( ORDER BY avg( num ) DESC ) AS rank_total FROM score GROUP BY student_id ) D ON s.sid = D.student_id 
 ORDER BY
 	rank_total ASC
+
+# 查询各科前三名
+SELECT
+	a.*,
+	b.sname 
+FROM
+	( SELECT *, rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS graderank FROM score ) a,
+	student b 
+WHERE
+	a.student_id = b.sid 
+	AND graderank <= 3 
+ORDER BY
+	cid
+
+# 计算学生年龄
+
+SELECT
+	sid,
+	sname,
+	YEAR ( NOW( ) ) - YEAR ( sage ) AS age
+FROM
+	student
+
+# 按照出生日期来算，当前月日 < 出生年月的月日,则年龄减一(计算周岁)
+# TIMESTAMPDIFF函数，不到生日则不计为一年
+SELECT
+	sid,
+	sname,
+	TIMESTAMPDIFF( YEAR, sage, NOW( ) ) AS age 
+FROM
+	student
+
+# 查询本周过生日的学生
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	WEEK ( sage ) = WEEK ( NOW( ) )
+
+# 查询下周过生日的人
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	WEEK ( sage ) = WEEK ( NOW( ) +1)
+
+
