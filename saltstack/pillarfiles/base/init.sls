@@ -1,3 +1,3 @@
 user_list: ['tom1','tom2']
-tools_list: ['epel-release', 'lrzsz', 'tree', 'lsof', 'unzip', 'bzip2', 'yum-utils']
+tools_list: ['epel-release', 'lrzsz', 'tree', 'lsof', 'unzip', 'bzip2', 'yum-utils', 'bash-completion']
 editor: vim-core
