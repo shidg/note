@@ -156,6 +156,15 @@ spec:
   selector:
     k8s-app: kubernetes-dashboard
 
+# Secret部分注释掉
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  labels:
+#    k8s-app: kubernetes-dashboard
+#  name: kubernetes-dashboard-certs
+#  namespace: kubernetes-dashboard
+#type: Opaque
 
 kind: Deployment
 apiVersion: apps/v1
