@@ -220,3 +220,63 @@ kubectl apply -f dashboard-ClusterRoleBinding.yaml
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
 
 
+# metrics-server
+# 在node1上操作
+# 下载镜像并重新打tag
+docker pull mirrorgooglecontainers/metrics-server-amd64:v0.3.6
+docker tag mirrorgooglecontainers/metrics-server-amd64:v0.3.6 k8s.gcr.io/metrics-server-amd64:v0.3.6
+
+
+# 在master上操作
+# https://github.com/kubernetes-sigs/metrics-server
+git clone https://github.com/kubernetes-incubator/metrics-server.git
+cd metrics-server/
+# vi deploy/1.8+/metrics-server-deployment.yaml
+containers:
+      - name: metrics-server
+        image: k8s.gcr.io/metrics-server-amd64:v0.3.6
+        args:
+          - --cert-dir=/tmp
+          - --secure-port=4443
+          # 以下两行增加
+          - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+          - --kubelet-insecure-tls
+        ports:
+        - name: main-port
+          containerPort: 4443
+          protocol: TCP
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+        imagePullPolicy: IfNotPresent #修改
+        volumeMounts:
+        - name: tmp-dir
+          mountPath: /tmp
+        #以下两行新增
+        command:
+        - /metrics-server
+
+# 启动
+kubectl apply  -f 1.8+/
+
+#检查安装是否成功
+kubectl get apiservices | grep metrics
+#v1beta1.metrics.k8s.io                 kube-system/metrics-server   True 29m
+
+# 几分钟后验证效果
+kubectl top nodes
+
+# 待解决问题
+# 1. 证书过期
+# 2. 权限控制 RBAC(Role Base Access Control)的权限控制机制
+
+
+
+
+
+
+
+### k8s集群的监控 ###
+
+# https://github.com/cuishuaigit/k8s-monitor
