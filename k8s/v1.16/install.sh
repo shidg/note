@@ -21,6 +21,8 @@ yum install chrony yum-utils bash-completion wget iptables-services -y
 # 修改服务器名为期望的名字
 # hostnamectl --static set-hostname xxx
 
+# hosts文件添加所有节点的记录
+
 # 关闭并禁用firewalld
 systemctl stop firewalld && systemctl disable firewalld
 
@@ -107,6 +109,15 @@ kubeadm init --kubernetes-version=v1.16.3 --apiserver-advertise-address 192.168.
 # kubeadm join 10.10.12.63:6443 --token yjzxvz.ll846nc34snt0di0 \
     --discovery-token-ca-cert-hash sha256:9bfcd6c1cca6333fac8fd858118011a157ba70364a97846392f20e2983536906
 
+# 查看token
+kubeadm token list
+
+# 获取ca证书sha256编码hash值
+openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+
+# token有效期为24小时，过期后需要重新生成,ca证书的hash值不变(只要初始化时生成的ca证书未更换)
+kubeadm token create
+
 # 环境变量
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile && source ~/.bash_profile
 
@@ -119,6 +130,7 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 kubeadm join 10.10.12.63:6443 --token yjzxvz.ll846nc34snt0di0 \
     --discovery-token-ca-cert-hash sha256:9bfcd6c1cca6333fac8fd858118011a157ba70364a97846392f20e2983536906
 
+# 如果不知道ca的hash值，可以使用--discovery-token-unsafe-skip-ca-verification参数跳过此项
 ### master上查看运行信息
 kubectl get -A pods -o wide
 kubectl get nodes
@@ -127,14 +139,54 @@ kubectl get nodes
 ### 安装dashboard  在master上执行 ##
 
 # 生成自签名证书
-mkdir ~/certs  && cd ~/.certs
-openssl genrsa -out tls.key 2048
-openssl req -days 36000 -new -out tls.csr -key tls.key -subj '/CN=dashboard-cert'
-openssl x509 -req -in tls.csr -signkey tls.key -out tls.crt
+mkdir ~/certs  && cd ~/certs
 
-# 生成dashboard使用的证书，要和dashboar在同一个namespace中(-n 参数指定namespace) 
-kubectl create namespace kubernetes-dashboard
-kubectl create secret generic kubernetes-dashboard-certs --from-file=$HOME/certs -n kubernetes-dashboard
+cat csr.cnf
+
+[ req ]
+default_bits = 2048
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C = CN
+ST = BeiJing
+L = BeiJing
+O = FEC
+OU = Operations
+CN = My-CA
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = kubernetes
+DNS.2 = kubernetes.default
+DNS.3 = kubernetes.default.svc
+DNS.4 = kubernetes.default.svc.cluster
+DNS.5 = kubernetes.default.svc.cluster.local
+IP.1 = 10.10.12.63
+IP.2 = 127.0.0.1
+
+[v3_ext]
+keyUsage = keyEncipherment,dataEncipherment
+extendedKeyUsage = serverAuth,clientAuth
+basicConstraints = CA:FALSE
+authorityKeyIdentifier = keyid,issuer:always
+subjectAltName = @alt_names
+
+# 先生成自签名的CA证书
+openssl genrsa -out ca.key 2048
+openssl req -new -x509 -key ca.key -out ca.crt -days 3650 -config csr.cnf
+
+# 使用自签名的CA证书对自生成的dashboard证书进行签名
+openssl genrsa -out dashboard.key 2048
+openssl req -new -sha256 -key dashboard.key -out dashboard.csr -config csr.cnf
+# 签发证书
+openssl x509 -req -sha256 -days 3650 -in dashboard.csr -out dashboard.crt -CA ca.crt -CAkey ca.key -CAcreateserial  -extensions v3_ext  -extfile csr.cnf
+
 
 # wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta6/aio/deploy/recommended.yaml
 # 做如下修改
@@ -156,16 +208,6 @@ spec:
   selector:
     k8s-app: kubernetes-dashboard
 
-# Secret部分注释掉
-#apiVersion: v1
-#kind: Secret
-#metadata:
-#  labels:
-#    k8s-app: kubernetes-dashboard
-#  name: kubernetes-dashboard-certs
-#  namespace: kubernetes-dashboard
-#type: Opaque
-
 kind: Deployment
 apiVersion: apps/v1
     spec:
@@ -177,15 +219,22 @@ apiVersion: apps/v1
             - containerPort: 8443
               protocol: TCP
           args:
-            - --auto-generate-certificates
+            # 禁止自动生成证书
+            #- --auto-generate-certificates
             - --namespace=kubernetes-dashboard
-            # 以下两行新增
-            - --tls-cert-file=/tls.crt
-            - --tls-key-file=/tls.key
 
 
 # 启动dashboard
 kubectl apply -f recommended.yaml
+
+# 更新证书
+# 生成dashboard使用的证书，要和dashboar在同一个namespace中(-n 参数指定namespace) 
+kubectl delete secret kubernetes-dashboard-certs -n kubernetes-dashboard
+kubectl create secret generic kubernetes-dashboard-certs --from-file="certs/dashboard.crt,certs/dashboard.key" -n kubernetes-dashboard
+
+# 重启服务
+# 删除pod，因为该Pod被Deployment管理，所以删除后k8s会自动再新建一个pod 
+kubectl delete pod kubernetes-dashboard-746dfd476-b2r5f -n kubernetes-dashboard
 
 # dashboard默认权限非常小，需要新增用户并设置权限
 # 为dashboard添加用户，类型为ServiceAccount,用户名admin-user
@@ -196,7 +245,7 @@ metadata:
   name: admin-user
   namespace: kubernetes-dashboard
 
-kubectl apply -f cat dashboard-adminuser.yaml
+kubectl apply -f dashboard-adminuser.yaml
 
 # 将admin-user用户绑定到cluster-admin角色
 # cat dashboard-ClusterRoleBinding.yaml
