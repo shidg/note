@@ -1,0 +1,31 @@
+kubectl create configmap --from-file=nginx.conf
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: centos-configmap
+spec:
+  containers:
+  - name: configmaptest
+    image: centos
+    args:
+    - /bin/bash
+    - -c
+    - >
+      i=0;
+      while true;
+      do
+        echo "$i: $(date)" >> /var/log/1.log;
+        i=$((i+1));
+        sleep 1;
+      done
+    volumeMounts:
+    - name: configvolume
+      mountPath: /etc/nginx/
+
+  volumes:
+  - name: configvolume
+    configMap:
+      name: nginx-conf
