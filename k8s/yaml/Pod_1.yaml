@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: counter
+spec:
+  containers:
+  - name: count
+    image: centos
+    args:
+    - /bin/bash
+    - -c
+    - 'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'

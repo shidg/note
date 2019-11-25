@@ -1,0 +1,13 @@
+# 设置当前上下文中所有后续 kubectl 命令使用的命名空间
+kubectl config set-context --current --namespace=<insert-namespace-name-here>
+
+
+# 根据label标签过滤查询结果
+kubectl get pods -l environment=production,tier=frontend
+kubectl get pods -l 'environment in (production),tier in (frontend)'
+kubectl get pods -l 'environment in (production, qa)'
+kubectl get pods -l 'environment,environment notin (frontend)'
+
+# field-selector
+kubectl get pods --field-selector status.phase=Running
+kubectl get pods --field-selector=status.phase!=Running,spec.restartPolicy=Always

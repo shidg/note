@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: logging
+spec:
+  containers:
+  - name: log-producer
+    image: centos
+    args:
+    - /bin/bash
+    - -c
+    - >
+      i=0;
+      while true;
+      do
+        echo "$i: $(date)" >> /var/log/1.log;
+        echo "$(date) INFO $i" >> /var/log/2.log;
+        i=$((i+1));
+        sleep 1;
+      done
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+  - name: log-1
+    image: centos
+    args: [/bin/sh, -c, 'tail -n+1 -f /var/log/1.log']
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+  - name: log-2
+    image: centos
+    args: [/bin/sh, -c, 'tail -n+1 -f /var/log/2.log']
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+  volumes:
+  - name: varlog
+    emptyDir: {}
