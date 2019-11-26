@@ -1,0 +1,112 @@
+yum -y install pam_krb5* krb5-libs* krb5-workstation* krb5-devel*  samba samba-winbind* samba-client* samba-swat*
+
+systemctl start smb nmb
+systemctl start winbind
+
+
+[global]
+realm = FEEZU.CN
+workgroup = FEEZU
+security = ads
+server string = Samba Server Version %v
+idmap config * : range = 16777216-33554431
+template shell = /bin/bash
+template homedir = /home/%D/%U
+winbind enum users = yes
+winbind enum groups =yes
+winbind use default domain = true
+winbind offline logon = true
+#netbios name = FileServer
+#wins support = yes
+#domain master = yes
+#local master = yes
+#allow hosts = 10.0.8.0/24
+#deny hosts = 192.168.100.0/24
+log file = /var/log/samba/%m.log
+max log size = 50
+#map to guest = bad user
+#guest account = nobody
+passdb backend = tdbsam
+#load printers = no
+#cups options = raw
+#printing = cups
+[public]
+comment = public
+path= /Data/software
+
+
+# /etc/nsswitch.conf  （只显示修改项）
+passwd:     files winbind
+shadow:     files winbind
+group:      files winbind
+
+
+/etc/krb5.conf（全部显示）
+
+includedir /etc/krb5.conf.d/
+
+[logging]
+ default = FILE:/var/log/krb5libs.log
+ kdc = FILE:/var/log/krb5kdc.log
+ admin_server = FILE:/var/log/kadmind.log
+
+[libdefaults]
+ dns_lookup_realm = false
+ dns_lookup_kdc = false
+ ticket_lifetime = 24h
+ renew_lifetime = 7d
+ forwardable = true
+ rdns = false
+ pkinit_anchors = /etc/pki/tls/certs/ca-bundle.crt
+ default_realm = FEEZU.CN
+ default_ccache_name = KEYRING:persistent:%{uid}
+
+[realms]
+FEEZU.CN= {
+  kdc = 10.10.8.8
+  admin_server = 10.10.8.8
+}
+
+[domain_realm]
+.example.com = FEEZU.CN
+example.com = FEEZU.CN
+
+
+### /etc/pam.d/system-auth（在末行增加以下内容：）
+session     required      pam_mkhomedir.so
+
+
+### /etc/pam.d/password-auth（在末行增加以下内容：）
+session     required      pam_mkhomedir.so
+
+### /etc/security/pam_winbind.conf （在末行增加以下内容：）
+require_membership_of =S-1-5-21-1111111111-1111111111-1111111111-111
+
+
+# 加入AD域：
+net ads join -U "DOMAIN\administrator"
+
+#加入后，请重新服务：
+systemctl restart smb
+systemctl restart winbind
+
+## 测试winbind
+wbinfo -t
+wbinfo -u
+wbinfo -g
+
+# 测试kerberos
+kinit administrator
+
+[root@pt2ctd samba]# kinit administrator
+Password for administrator@SILANIC.CN:
+
+
+# 重载smbd，nmbd，winbindd的配置，请将reload-config消息类型发送到all目标：
+smbcontrol all reload-config
+
+# 测试samba配置参数：
+testparm /etc/samba/smb.conf
+
+# 加入AD域命令：
+net ads join -U "DOMAIN\administrator"
