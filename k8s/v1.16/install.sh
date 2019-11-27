@@ -26,7 +26,27 @@ yum install chrony yum-utils bash-completion wget iptables-services -y
 # 关闭并禁用firewalld
 systemctl stop firewalld && systemctl disable firewalld
 
-# 修改内核参数
+# 自动加载必要模块
+# br_netfilter
+cat >> /etc/sysconfig/modules/br_netfilter << EOF
+#! /bin/bash
+modinfo -F filename br_netfilter >/dev/null 2>&1
+[[ $? -eq 0  ]] && modprobe br_netfilter
+EOF
+
+# ip_vs
+cat >> /etc/sysconfig/modules/ipvs.modules << EOF
+#! /bin/bash
+modprobe ip_vs
+modprobe ip_vs_rr
+modprobe ip_vs_wrr
+modprobe ip_vs_sh
+modprobe nf_conntrack_ipv4
+EOF
+
+chmod +x /etc/sysconfg/modules/* && cat /etc/sysconfig/modules/* | bash
+
+# 内核参数修改
 cat >> /etc/sysctl.d/k8s.conf << EOF
 net.ipv4.ip_forward=1
 net.bridge.bridge-nf-call-ip6tables=1
@@ -135,6 +155,19 @@ kubeadm join 10.10.12.63:6443 --token yjzxvz.ll846nc34snt0di0 \
 kubectl get -A pods -o wide
 kubectl get nodes
 
+# kube-proxy修改为ipvs模式(默认iptables模式)
+# 修改ConfigMap的kube-system/kube-proxy中的config.conf，把 mode: ""
+# 改为mode:"ipvs" 保存退出即可
+kubectl edit cm kube-proxy -n kube-system
+
+# 删除当前正在运行的kube-proxy  pod, k8s会自动生成新的，并应用新的配置
+kubectl get pod -n kube-system |grep kube-proxy |awk '{system("kubectl delete pod "$1" -n kube-system")}'
+
+# 确认新的pod运行正常
+kubectl get pods | grep kube-proxy
+
+# 查看日志，有 `Using ipvs Proxier.` 说明kube-proxy的ipvs 开启成功
+kubectl logs kube-proxy-54qnw -n kube-system
 
 ### 安装dashboard  在master上执行 ##
 
