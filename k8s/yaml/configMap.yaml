@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: cm-appconfigfiles
 data:
-  key-serverxml: |
+  key-serverxml: /
     <?xml version='1.0' encoding='utf-8'?>
     <Server port="8005" shutdown="SHUTDOWN">
       <Listener className="org.apache.catalina.startup.VersionLoggerListener" />

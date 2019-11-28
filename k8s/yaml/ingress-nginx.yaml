@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-my-nginx
+  namespace: default
+  annotations:
+    kubernets.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: mynginx.ingress.io
+    http:
+      paths:
+      - path:
+        backend:
+          serviceName: nginx-1
+          servicePort: 80
+  - host: mynginx.ingress.tw
+    http:
+      paths:
+      - path:
+        backend:
+          serviceName: nginx-2
+          servicePort: 80

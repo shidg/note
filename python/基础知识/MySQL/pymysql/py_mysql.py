@@ -11,10 +11,10 @@ import pymysql
 # 创建连接
 mysql_connect_dict = {
     'host':'127.0.0.1',
-    'port':3306,
+    'port':32768,
     'user':'root',
-    'passwd':'admin',
-    'db':'test',
+    'passwd':'admincp',
+    'db':'mysql',
     'charset':'utf8'
 }
 #conn = pymysql.connect(host = '127.0.0.1', port = 3306, user = 'root', passwd = 'admin', db = 'test',charset = 'utf8')
@@ -54,24 +54,24 @@ cursor = conn.cursor(pymysql.cursors.DictCursor) # 这样设置之后，返回�
 
 # select # select 不需要commit
 
-#r = cursor.execute('select * from class')
+r = cursor.execute('select * from user')
 #print(r)  # execute的返回值是受影响的行数，并不是查询结果
-##result = cursor.fetchall() # 返回所有查询结果
+result = cursor.fetchall() # 返回所有查询结果
 ##result = cursor.fetchone() # 返回第一条结果
 #result = cursor.fetchmany(3) # 返回三条结果
-#for i in result:
-#    print(i['caption'])  #通过设置cursor以字典来保存查询结果，方便遍历
-#print(result)
+for i in result:
+    print(i['User'])
+print(result)
 
 # 获取新创建数据的自增ID
 # new_rowid = cursor.lastrowid
-cursor.execute('insert into teacher (tname) values (%s)',('诸葛山珍',))
-new_rowid = cursor.lastrowid
-print(new_rowid)
+#cursor.execute('insert into teacher (tname) values (%s)',('诸葛山珍',))
+#new_rowid = cursor.lastrowid
+#print(new_rowid)
 
 
 # 提交
-conn.commit()
+#conn.commit()
 
 # 关闭游标
 cursor.close()
@@ -80,8 +80,8 @@ cursor.close()
 conn.close()
 
 
-import random
-import string
+#import random
+#import string
 
-rand = ''.join(random.sample(string.ascii_letters + string.digits, 20))
-print('rand: ',rand)
+#rand = ''.join(random.sample(string.ascii_letters + string.digits, 20))
+#print('rand: ',rand)

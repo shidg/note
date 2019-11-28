@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pepa
+spec:
+  containers:
+  - name: centos
+    image: centos
+    imagePullPolicy: IfNotPresent
+
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: www-volume
+      # 多条命令写法1
+      #command: ["/bin/bash"]
+      #args: ["-c","dnf install python36 -y;pip3 install pymysql;python3 /var/www/html/mysql.py;sleep 30000"]
+      # 多条命令写法2
+      #command: ["/bin/bash"]
+      #args:
+      #- -c
+      #- dnf install python36 -y;pip3 install pymysql;python3 /var/www/html/mysql.py;sleep 30000
+      # 多条命令写法3
+      #args:
+      #- /bin/bash
+      #- -c
+      #- dnf install python36 -y;pip3 install pymysql;python3 /var/www/html/mysql.py;sleep 30000
+      # 多条命令写法4
+      #args:
+      #- /bin/bash
+      #- -c
+      #- >
+      #  dnf install python36 -y;
+      #  pip3 install pymysql;
+      #  python3 /var/www/html/mysql.py;
+      #  sleep 30000
+  volumes:
+  - name: www-volume
+    configMap:
+      name: pyfile
