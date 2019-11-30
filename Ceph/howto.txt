@@ -1,0 +1,29 @@
+# https://github.com/rook/rook
+# https://rook.github.io/docs/rook/v0.9/ceph-quickstart.html
+
+
+# https://juejin.im/post/5b766acce51d4566877c1909
+# https://blog.csdn.net/networken/article/details/85772418
+# https://cloud.tencent.com/developer/article/1472724
+# https://www.jianshu.com/p/750a8fde377b?tdsourcetag=s_pctim_aiomsg
+
+
+# 定义主机名、写入各服务器hosts文件
+# 10.10.8.57 ceph-m
+# 10.10.8.73 ceph-s1
+# 10.10.8.78 ceph-s2
+
+# 各服务器创建ceph运行账户cephd(官方不建议使用该用户名),
+# 保证该账户拥有免密sudo权限
+# 配置sudo 不需要tty
+# sed -i '/Default requiretty/ s/^/#/' /etc/sudoers
+# 该账户从ceph-m到其他节点可以无密码登录
+# 该账户权限较高，注意安全
+
+
+# 关闭SElinux及防火墙
+
+# 保证各服务器时间同步
+# chrony
+
+#  
