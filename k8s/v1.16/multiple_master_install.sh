@@ -267,18 +267,17 @@ docker images
 ######  以下操作在master节点执行 ##########
 # 初始化第一台 master
 # api.k8s.com指向10.10.8.88(VIP)
-kubeadm init --kubernetes-version v1.16.3 --control-plane-endpoint "api.k8s.com:8443"  --pod-network-cidr=10.244.0.0/16 --upload-certs
+kubeadm init --kubernetes-version v1.16.3 --control-plane-endpoint "api.k8s.com:8443" --service-cidr=10.1.0.0/16  --pod-network-cidr=10.244.0.0/16 --upload-certs
 
 # 记录下如下信息
 # 添加control-plane nodes
-kubeadm join api.k8s.com:8443 --token 6uuybh.6b6jtwv5v7bpos6n \
-    --discovery-token-ca-cert-hash sha256:c602ee1719558e1dde7354b24505845438a7f00efcc3386f533a2cc7bc409937 \
-    --control-plane --certificate-key dca07fd66dd8c1964666b02f1770ef643d9422431a6711c2b766cc2f6d4bb81b
+kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
+    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4 \
+    --control-plane --certificate-key 3a4ee556eed947be4baf79273f17a20591ea8684c35d0276da0ab3c5e09ed245
 
 # 添加worker nodes
-kubeadm join api.k8s.com:8443 --token 6uuybh.6b6jtwv5v7bpos6n \
-    --discovery-token-ca-cert-hash
-    sha256:c602ee1719558e1dde7354b24505845438a7f00efcc3386f533a2cc7bc409937
+kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
+    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4
 
 # 查看token
 kubeadm token list
@@ -297,16 +296,16 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 ### 添加剩余master节点,在master-2  master-3执行
 # 添加control-plane nodes
-kubeadm join api.k8s.com:8443 --token 6uuybh.6b6jtwv5v7bpos6n \
-    --discovery-token-ca-cert-hash sha256:c602ee1719558e1dde7354b24505845438a7f00efcc3386f533a2cc7bc409937 \
-    --control-plane --certificate-key dca07fd66dd8c1964666b02f1770ef643d9422431a6711c2b766cc2f6d4bb81b
+kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \ 
+    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4 \ 
+    --control-plane --certificate-key 3a4ee556eed947be4baf79273f17a20591ea8684c35d0276da0ab3c5e09ed245
 
+echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile && source ~/.bash_profile
 
 ######### 添加worker nodes  在node1~node3上执行 ###########
 # 添加worker nodes
-kubeadm join api.k8s.com:8443 --token 6uuybh.6b6jtwv5v7bpos6n \
-    --discovery-token-ca-cert-hash sha256:c602ee1719558e1dde7354b24505845438a7f00efcc3386f533a2cc7bc409937
-
+kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
+    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4
 
 # 如果不知道ca的hash值，可以使用--discovery-token-unsafe-skip-ca-verification参数跳过此项
 ### master上查看运行信息
@@ -399,22 +398,6 @@ spec:
   selector:
     k8s-app: kubernetes-dashboard
 
-kind: Deployment
-apiVersion: apps/v1
-    spec:
-      containers:
-        - name: kubernetes-dashboard
-          image: kubernetesui/dashboard:v2.0.0-beta6
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8443
-              protocol: TCP
-          args:
-            # 禁止自动生成证书
-            #- --auto-generate-certificates
-            - --namespace=kubernetes-dashboard
-
-
 # 启动dashboard
 kubectl apply -f recommended.yaml
 
@@ -461,7 +444,7 @@ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboar
 
 
 # metrics-server
-# 在node1上操作
+# 在各worker nodes上操作
 # 下载镜像并重新打tag
 docker pull mirrorgooglecontainers/metrics-server-amd64:v0.3.6
 docker tag mirrorgooglecontainers/metrics-server-amd64:v0.3.6 k8s.gcr.io/metrics-server-amd64:v0.3.6

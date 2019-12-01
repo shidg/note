@@ -242,21 +242,6 @@ spec:
   selector:
     k8s-app: kubernetes-dashboard
 
-kind: Deployment
-apiVersion: apps/v1
-    spec:
-      containers:
-        - name: kubernetes-dashboard
-          image: kubernetesui/dashboard:v2.0.0-beta6
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8443
-              protocol: TCP
-          args:
-            # 禁止自动生成证书
-            #- --auto-generate-certificates
-            - --namespace=kubernetes-dashboard
-
 
 # 启动dashboard
 kubectl apply -f recommended.yaml
