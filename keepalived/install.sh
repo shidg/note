@@ -11,7 +11,30 @@
 yum install libnl-devel libnl3-dev
 #
 yum install -y libnfnetlink-devel openssl-devel
-tar zxvf keepalived-2.0.19.tar.gz && cd keepalived-2.0.19 &&./configure && make
-&& make install
+
+yum install keepalived
+
+#tar zxvf keepalived-2.0.19.tar.gz && cd keepalived-2.0.19 &&./configure && make && make install
 
 ## iptables ##
+# keepalived
+-A INPUT -i eno16777985  -p vrrp -j ACCEPT
+-A INPUT -d $VIP -j ACCEPT
+-A OUTPUT -o  eno16777985 -p vrrp -j ACCEPT
+
+
+
+##  chk_haproxy.sh
+#!/bin/bash
+
+A=`ps -C haproxy --no-header | wc -l`
+
+if [ $A -eq 0 ];then
+    systemctl start haproxy.service
+    sleep 3
+    if [ `ps -C haproxy --no-header | wc -l ` -eq 0 ];then
+    ¦   systemctl stop keepalived.service
+    fi
+fi
+
+chmod +x chk_haproxy.sh

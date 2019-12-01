@@ -44,7 +44,7 @@ modprobe ip_vs_sh
 modprobe nf_conntrack_ipv4
 EOF
 
-chmod +x /etc/sysconfg/modules/* && cat /etc/sysconfig/modules/* | bash
+chmod +x /etc/sysconfig/modules/* && cat /etc/sysconfig/modules/* | bash
 
 # 内核参数修改
 cat >> /etc/sysctl.d/k8s.conf << EOF
@@ -66,7 +66,8 @@ fi
 
 # 安装docker
 # docker源
-yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
+#yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
+yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 yum install -y docker-ce-18.09.9 docker-ce-cli-18.09.9 containerd.io
 
 # 启动docker
@@ -77,9 +78,7 @@ systemctl start docker && systemctl enable docker
 
 cat >> /etc/docker/daemon.json <<EOF
 {
-  # 阿里镜像服务加速器
   "registry-mirrors": ["https://v16stybc.mirror.aliyuncs.com"],
-  # cgroupdriver修改为systemd,与k8s保持一致
   "exec-opts": ["native.cgroupdriver=systemd"]
 }
 EOF
