@@ -1,0 +1,93 @@
+# 调度
+
+# nodeSelector
+# e.g.
+kubectl label node node1 disktype=ssd
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-test-1
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  nodeSelector:
+    disktype: ssd
+
+
+# 污点和容忍  Taint  & Toleration
+# https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ 
+# 为节点设置taint(污点),
+# 有三种类型的taint:
+# NoSchedule 不要将pod调度到这个节点，除非pod设置了对应的容忍(toleration)
+# PreferNoSchedule 尽量不要将pod调度到这个节点，除非pod设置了对应的容忍(toleration)
+# NoExecute 不要将pod调度到本节点，已经在该节点运行的pod会被驱逐,但是pod可以通过设置tolerationSeconds来决定多长时间后背驱逐
+
+# 污点的作用是排斥pod,只有配置了toleration的pod才能分配到设置了污点的节点 e.g.
+# 假设有节点node1,设置了如下taint：
+kubectl taint nodes node1 key1=value1:NoSchedule
+
+# pod 设置toleration
+tolerations:
+- key: "key1"
+  operator: "Equal"
+  value: "value1"
+  effect: "NoSchedule"
+
+# 或者这样写:
+tolerations:
+- key: "key1"
+  operator: "Exists"
+  effect: "NoSchedule"
+
+pod加入了以上的toleration(在spec段中)就能够被分配到节点A上
+
+
+# 存在两种特殊情况：
+# 表示这个 toleration 与任意的 key 、 value 和 effect 都匹配，即这个toleration 能容忍任意 taint,包括NoExecute。
+tolerations:
+- operator: "Exists"
+
+#如果一个 toleration 的effect 为空，则 key 值与之相同的taint 的 effect 可以是任意值。
+tolerations:
+- key: "key"
+operator: "Exists"
+
+# 可以给一个节点添加多个 taint ，也可以给一个 pod 添加多个 toleration。
+# Kubernetes 处理多个 taint 和 toleration 的过程：
+# 从一个节点的所有 taint 开始遍历，过滤掉所有能够与pod中的toleration匹配的taint,然后，
+# 余下未被过滤的 taint 的 effect 值决定了 pod 是否会被分配到该节点
+
+
+
+
+### 亲和性和反亲和性
+
+NodeAffinity
+Q & A
+强亲和性到底多强算强?
+首选亲和性中的首选体现在那些方面?
+强亲和性配置时,有两种配置方式,两种的区别是什么?
+首选亲和性中的权重值到底是什么规则? 值越大权重值越高么？还是值越小越高(1最大)?
+首选亲和性配置中, 如果Pod能匹配A节点的多个Label,也能匹配B节点的一个Label(A的Label权重之和等于B单个Label的权重),这时Pod会优先调度到A节点么?
+缩容时,是先从低权重的节点上开始杀么？ 
+如果Pod是以强亲和性的方式绑定在节点上且Pod已经正常运行在此节点上,此时删除节点的标签是否会导致Pod重启发生漂移。
+
+
+(回答问题1)其实强亲和性和首选亲和性区别体现在:Pod对节点的选择上。就强亲和性而言,如果节点不能匹配Pod对Label的要求, Pod永远不会调度到这类节点。 
+(回答问题2)首选亲和性体现在PodLabel的权重值上,而与节点Label的匹配个数无关。
+(回答问题4)在首选亲和性配置中会多一个权重值的字段(weight),这个值越大,权重越大,Pod调度到对应此Label的节点的概率越高。
+(回答问题5)一个节点有多个Label且节点能满足Pod所要求的所有Label,如果多个Label的权重值相加仍然小于某单个Label的节点,那么Pod首选是权重值高的节点;如果Pod能匹配到A 节点的所有Label,同时也能匹配到B 节点某一个Label.但是,A节点 Label的权重之和刚好等于B 节点的单个Label的权重，这时,Pod优先选择的A还是B这是随机的(只针对亲和性来说是随机的,实际情况还要考虑其他情况)。而不会管Label的匹配个数。
+创建或扩容Pod时,优先选择Label匹配权重值大的节点,若此节点的其他条件不满足(比如内存不足),选择次权重的,最后选择Label不匹配或者根本没有Label的节点。
+(回答问题6)缩容时,随机选择Pod杀掉,而不是我们预想的从低权重的节点开始杀,这点值得注意。
+(回答问题7)答案是不会,正在运行的Pod不会被调度到新的节点去, 当Pod因为某种原因重启(指Pod名字改变,触发重调度,名字不改变,意味着不触发调度器调度,只是原地重启)后,会自动调度到符合亲和性选择的节点上。
+
+
+
+
+
+PodAffinity
