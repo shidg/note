@@ -302,6 +302,11 @@ kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
 
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile && source ~/.bash_profile
 
+# 其他非root用户想使用kubectl命令执行以下操作
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
 ######### 添加worker nodes  在node1~node3上执行 ###########
 # 添加worker nodes
 kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
@@ -516,15 +521,6 @@ kubeadm init \
 
 
 
-注：如果由于初始化信息没设置好，已经执行了初始化命令，可以使用kubeadm reset重置。但本人部署时遇到问题，reset后，再次初始化，始终不成功。发现docker ps里面全部镜像都没启动。怀疑是reset时，某些docker相关的文件没有删除干净。通过yum remove docker-ce卸载docker，重启服务器，再重新安装docker，我的问题就解决了
-
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-# 添加另一个master
-kubeadm join 192.168.200.214:8443 --token fo15mb.w2c272dznmpr1qil \
-    --discovery-token-ca-cert-hash sha256:3455de957a699047e817f3c42b11da1cc665ee667f78661d20cfabc5abcc4478 \
-    --control-plane --certificate-key bcd49ad71ed9fa66f6204ba63635a899078b1be908a69a30287554f7b01a9421
 
 
 
