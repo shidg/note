@@ -1,7 +1,7 @@
 # 强制亲和
 # 与、或两种匹配原则
 # 同一个matchExpressions之中的多个key为与
-# 不同matchExpressions之间为或
+# 同一个nodeSelectorTerms下的多个matchExpressions之间为或
 # 
 apiVersion: v1
 kind: Pod
