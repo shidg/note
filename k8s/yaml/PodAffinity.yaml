@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - web
+          topologyKey: "kubernetes.io/hostname"
+
+  containers:
+    - name: nginx-daemon
+      image: nginx
+      imagePullPolicy: IfNotPresent
