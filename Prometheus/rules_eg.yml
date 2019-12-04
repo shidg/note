@@ -1,0 +1,63 @@
+groups:
+- name: example
+  rules:
+ 
+  - alert: 实例丢失
+    expr: up{job="node-exporter"} == 0
+    for: 1m
+    labels:
+      severity: page
+    annotations:
+      summary: "服务器实例 {{ $labels.instance }} 丢失"
+      description: "{{ $labels.instance }} 上的任务 {{ $labels.job }} 已经停止了 1 分钟已上了"
+ 
+  - alert: 磁盘容量小于 5%
+    expr: 100 - ((node_filesystem_avail_bytes{job="node-exporter",mountpoint=~".*",fstype=~"ext4|xfs|ext2|ext3"} * 100) / node_filesystem_size_bytes {job="node-exporter",mountpoint=~".*",fstype=~"ext4|xfs|ext2|ext3"}) > 95
+    for: 30s
+    annotations:
+      summary: "服务器实例 {{ $labels.instance }} 磁盘不足 告警通知"
+      description: "{{ $labels.instance }}磁盘 {{ $labels.device }} 资源 已不足 5%, 当前值: {{ $value }}"
+ 
+  - alert: "内存容量小于 20%"
+    expr: ((node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes) / (node_memory_MemTotal_bytes )) * 100 > 80
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      summary: "服务器实例 {{ $labels.instance }} 内存不足 告警通知"
+      description: "{{ $labels.instance }}内存资源已不足 20%,当前值: {{ $value }}"
+ 
+  - alert: "CPU 平均负载大于 4 个"
+    expr: node_load5 > 4
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} CPU 负载 告警通知"
+      description: "{{ $labels.instance }}CPU 平均负载(5 分钟) 已超过 4 ,当前值: {{ $value }}"
+ 
+  - alert: "磁盘读 I/O 超过 30MB/s"
+    expr: irate(node_disk_read_bytes_total{device="sda"}[1m]) > 30000000
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} I/O 读负载 告警通知"
+      description: "{{ $labels.instance }}I/O 每分钟读已超过 30MB/s,当前值: {{ $value }}"
+ 
+  - alert: "磁盘写 I/O 超过 30MB/s"
+    expr: irate(node_disk_written_bytes_total{device="sda"}[1m]) > 30000000
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} I/O 写负载 告警通知"
+      description: "{{ $labels.instance }}I/O 每分钟写已超过 30MB/s,当前值: {{ $value }}"
+ 
+  - alert: "网卡流出速率大于 10MB/s"
+    expr: (irate(node_network_transmit_bytes_total{device!~"lo"}[1m]) / 1000) > 1000000
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} 网卡流量负载 告警通知"
+      description: "{{ $labels.instance }}网卡 {{ $labels.device }} 流量已经超过 10MB/s, 当前值: {{ $value }}"
+ 
+  - alert: "CPU 使用率大于 90%"
+    expr: 100 - ((avg by (instance,job,env)(irate(node_cpu_seconds_total{mode="idle"}[30s]))) *100) > 90
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} CPU 使用率 告警通知"
+      description: "{{ $labels.instance }}CPU 使用率已超过 90%, 当前值: {{ $value }}"

@@ -67,3 +67,47 @@ docker run -d -p 3000:3000 --name grafana grafana/grafana
 # http://192.168.0.100:3000 默认用户名/密码 admin/admin
 # 为Grafana添加数据源-->Prometheus--->http://192.168.0.100:9090
 
+
+# AlertManager
+docker run -d -p 9093:9093 --name alertmanager -v /Users/shidegang/prometheus/alertmmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml prom/alertmanager
+# alertmanager.yml
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.xx.xx:25'
+  smtp_from: 'prometheus'
+  smtp_auth_username: 'xxx@ddd.xx'
+  smtp_auth_password: 'fadaxx'
+route:
+  group_by: ['web']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1m
+  receiver: 'ops'
+receivers:
+- name: 'ops'
+  email_configs:
+  - to: '94586572@qq.com
+
+
+# 修改prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'codelab-monitor'
+rule_files:
+  - /Users/shidegang/prometheus/rules.yml
+scrape_configs:
+  - job_name: 'myself'
+    static_configs:
+    - targets: ['192.168.0.100:9090']
+  - job_name: 'my-mac'
+    static_configs:
+    - targets: ['192.168.0.100:9100']
+  - job_name: 'MySQL'
+    static_configs:
+    - targets: ['192.168.0.100:9104']
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: ['192.168.0.100:9093']

@@ -1,0 +1,11 @@
+[Unit]
+Description=node_exporter
+Documentation=https://prometheus.io/
+After=network.target
+[Service]
+Type=simple
+User=prometheus
+ExecStart=/usr/local/bin/node_exporter
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

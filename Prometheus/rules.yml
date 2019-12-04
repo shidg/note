@@ -1,0 +1,26 @@
+groups:
+- name: example
+  rules:
+ 
+  - alert: 实例丢失
+    expr: up{job="node-exporter"} == 0
+    for: 1m
+    labels:
+      severity: page
+    annotations:
+      summary: "服务器实例 {{ $labels.instance }} 丢失"
+      description: "{{ $labels.instance }} 上的任务 {{ $labels.job }} 已经停止了 1 分钟已上了"
+ 
+  - alert: "网卡流出速率大于 10MB/s"
+    expr: (irate(node_network_transmit_bytes_total{device!~"lo"}[1m]) / 1000) > 1000000
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} 网卡流量负载 告警通知"
+      description: "{{ $labels.instance }}网卡 {{ $labels.device }} 流量已经超过 10MB/s, 当前值: {{ $value }}"
+ 
+  - alert: "CPU 使用率大于 90%"
+    expr: 100 - ((avg by (instance,job,env)(irate(node_cpu_seconds_total{mode="idle"}[30s]))) *100) > 90
+    for: 30s
+    annotations:
+      sumary: "服务器实例 {{ $labels.instance }} CPU 使用率 告警通知"
+      description: "{{ $labels.instance }}CPU 使用率已超过 90%, 当前值: {{ $value }}"

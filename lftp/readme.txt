@@ -9,10 +9,12 @@ set file:charset UTF-8
 
 # lftp连接方式
 lftp -u username,passwd -p 21 ftp.exam.com
+
+lftp username@exam.com:port
 lftp username:passwd@ftp.exam.com:port
+
 lftp ftp://user:passwd@exam.com:port
 lftp sftp://user:passwd@exam.com:port
-lftp username@exam.com:port
 
 
 #lftp连接使用ssl加密
