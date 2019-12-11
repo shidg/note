@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  serviceAccountName: prometheus
+  serviceAccount: prometheus
+  containers:
+  - name: busybox
+    image: yauritux/busybox-curl
+    imagePullPolicy: IfNotPresent
+    command:
+      - sleep
+      - "3600"
