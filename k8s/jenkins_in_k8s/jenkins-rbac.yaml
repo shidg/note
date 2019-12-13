@@ -1,3 +1,6 @@
+# 权限控制
+# 创建jenkins使用的ServiceAccount
+
 apiVersion: v1
 kind: Namespace
 metadata:
