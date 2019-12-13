@@ -8,7 +8,7 @@
 # nfs-client-provisioner
 wget https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/deployment.yaml
 # 注意修改image版本,默认的latest测试不通过
-# image: quay.io/external_storage/nfs-client-provisioner:v2.0.0
+# image: quay.io/external_storage/nfs-client-provisioner:v3.1.0-k8s1.11
 # 修改nfs服务器信息
 
 kubectl apply -f deployment.yaml
