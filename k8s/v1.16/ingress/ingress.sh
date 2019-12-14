@@ -4,12 +4,12 @@
 # Created Time: 2019-11-27 21:19:26
 
 # install ingress controller
-# 使用镜像ginx-ingress-controller部署一个pod
+# 使用镜像nginx-ingress-controller部署一个pod
 # 可以理解为使用deployment部署了一个nginx pod，该nginx将用来将请求转发到后端的service)
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
 
 # 将上一步骤中的nginx pod做为service暴露出去，使其可以接受外部流量
-apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/baremetal/service-nodeport.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/baremetal/service-nodeport.yaml
 
 # 查看service外部端口
 kubectl get svc ingress-nginx -n ingress-nginx
