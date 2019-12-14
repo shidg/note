@@ -1,0 +1,11 @@
+# gitlab/gitlab-ce:12.5.4-ce.0
+
+
+# ssh
+/etc/gitlab/gitlab.rb
+
+
+
+# http
+
+/var/opt/gitlab/nginx/conf/gitlab-httpd

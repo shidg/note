@@ -1,0 +1,19 @@
+# 创建pvc,用来为jenkins挂载maven
+# 该pvc将在jenkins-deployment.yaml中引用
+# 创建该pvc资源的前提在于创建nfs storageClass
+# kubectl get sc
+# NAME                  PROVISIONER      AGE
+# managed-nfs-storage   fuseim.pri/ifs   25h
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: jenkins-claim-maven
+  namespace: kube-ops
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+  storageClassName: "managed-nfs-storage"
