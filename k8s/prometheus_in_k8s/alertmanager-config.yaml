@@ -1,4 +1,4 @@
-# 该configMap被prometheus-deployment.yaml所创建的pod挂载，作为alertmanager的配置文件
+# 该configMap被prometheus-deployment.yml所创建的pod挂载，作为alertmanager的配置文件
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,18 +6,18 @@ metadata:
 data:
   alertmanager.yml: |
     global:
-      smtp_smarthost: 'smtp.xx.xx:25'
-      smtp_from: 'xx@xx.xx'
-      smtp_auth_username: 'xx@xx.xx'
-      smtp_auth_password: 'xxxx'
-      smtp_require_tls: false
+      smtp_smarthost: 'smtp.163.com:465'
+      smtp_from: 'xxx@163.com'
+      smtp_auth_username: 'xxx@163.com'
+      smtp_auth_password: 'n1hjdbts4cdg7cb' # 这里是授权码，不是邮箱密码
+      smtp_require_tls: false  # 必须为false
     route:
-      group_by: ['alertname']
+      group_by: [alertname]
       group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 10m
+      group_interval: 1m
+      repeat_interval: 2m
       receiver: default-receiver
     receivers:
     - name: 'default-receiver'
       email_configs:
-      - to: 'xx@xx.com'
+      - to: 'xxx@xx.com'
