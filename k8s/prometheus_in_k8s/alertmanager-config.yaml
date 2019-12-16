@@ -1,0 +1,23 @@
+# 该configMap被prometheus-deployment.yaml所创建的pod挂载，作为alertmanager的配置文件
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.xx.xx:25'
+      smtp_from: 'xx@xx.xx'
+      smtp_auth_username: 'xx@xx.xx'
+      smtp_auth_password: 'xxxx'
+      smtp_require_tls: false
+    route:
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 10m
+      receiver: default-receiver
+    receivers:
+    - name: 'default-receiver'
+      email_configs:
+      - to: 'xx@xx.com'
