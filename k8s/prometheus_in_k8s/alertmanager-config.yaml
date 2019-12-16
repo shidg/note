@@ -13,11 +13,41 @@ data:
       smtp_require_tls: false  # 必须为false
     route:
       group_by: [alertname]
+      # 一个 AlertGroup 新建多长时间后触发第一次Notification Pipeline
       group_wait: 30s
-      group_interval: 1m
-      repeat_interval: 2m
+      # 一个持续存在的AlertGroup每隔多长时间触发一次Notification Pipeline
+      # Notification Pipeline通过一系列逻辑（如抑制、静默、去重）来获得更高的警报质量
+      group_interval: 5m
+      # 同样的告警再次发送邮件的时间间隔
+      repeat_interval: 2h
       receiver: default-receiver
+
+      routes:
+      - receiver: ops
+          # 这里的时间设置会覆盖上一层的默认设置,因为
+          # 根节点的所有参数都会被子节点继承（除非子节点重写了这个参数）
+          group_wait:
+          group_interval: 5m
+          repeat_interval: 2h
+        match_re:
+          service: mysql|redis
+      routes:
+      - receiver: devs
+          # 这里的时间设置会覆盖上一层的默认设置
+          group_wait:
+          group_interval: 5m
+          repeat_interval: 2h
+        match_re:
+          service: backend
     receivers:
     - name: 'default-receiver'
+      email_configs:
+      - to: 'xxx@xx.com'
+    receivers:
+    - name: 'ops'
+      email_configs:
+      - to: 'xxx@xx.com'
+    receivers:
+    - name: 'devs'
       email_configs:
       - to: 'xxx@xx.com'
