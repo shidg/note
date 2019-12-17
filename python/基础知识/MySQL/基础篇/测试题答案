@@ -283,6 +283,34 @@ ORDER BY
 	) a,
 	( SELECT @rownum := 0 ) b
 
+# sql2
+SELECT
+	student_id,
+	cid,
+	num,
+	rn 
+FROM
+	(
+SELECT
+	a.*,
+IF
+	( @p = a.cid, @r := @r + 1, @r := 1 ) AS rn,
+	@p := a.cid 
+FROM
+	( SELECT * FROM score ORDER BY cid, num DESC ) a,
+	( SELECT @r := 0, @p := '' ) b 
+	) c 
+WHERE
+	rn <= 3
+
+# sql 3 (mysql8)
+SELECT
+	* 
+FROM
+	( SELECT a.*, rank ( ) over ( PARTITION BY cid ORDER BY num ) AS rn FROM score a ) b 
+WHERE
+	rn <=3
+
 #  查询出只选修了一门课程的全部学生的学号和姓名；
 
 SELECT
