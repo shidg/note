@@ -128,4 +128,5 @@ def FlagsForFile( filename, **kwargs ):
 #加载自定义配置,在.vimrc中添加以下内容：
 let g:ycm_global_ycm_extra_conf='~/.vim/bundle/YouCompleteMe/cpp/.ycm_extra_conf.py'
 
+# this is a test,nothing has changed
 # End
