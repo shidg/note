@@ -4,6 +4,6 @@
 author: -- shidegang --
 Created Time: 2019-08-28 10:43:17
 '''
-import datetime
+from datetime import datetime
 
-print(datetime.datetime.now())
+print("当前时间:",datetime.now())
