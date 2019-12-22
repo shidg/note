@@ -6,7 +6,7 @@ Created Time: 2019-08-28 10:43:17
 '''
 
 class Province():
-    country = '中国'  #静态字段，保存于类
+    country = '中国'  #静态字段(类属性)，保存于类
     def __init__(self,name):
         self.name = name   # 普通字段，保存于对象
         #self.country = '中国'  # 如果在这里定义country的话

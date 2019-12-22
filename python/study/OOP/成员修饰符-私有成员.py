@@ -36,7 +36,7 @@ class Foo1():
 print(Foo1.v)  #静态字段直接用类来调用，无需实例化对象
 
 print(Foo1().show())
-print(Foo1.stat())
+print(Foo1.stat())  # 静态方法的调用
 
 
 ## 私有方法
