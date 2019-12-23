@@ -19,6 +19,7 @@
 *.jar
 .DS_Store
 /gcc/gcc/
+__pycache__/
 
 #example
 # 此为注释 – 将被 Git 忽略
