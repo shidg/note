@@ -52,7 +52,7 @@ class Foo(metaclass=MyType):  ## 代码运行到这的时候,其实是创建了�
 
 # 1. 执行type的__call__ (因为Foo本身也是一个对象，对象后加括号调用的是其所属类的__call__方法)
 
-# 2. __call__调用Foo的__new__方法，__new__方法创建一个对象，并返回给__call__
+# 2. __call__调用type的__new__方法，__new__方法创建一个对象，并返回给__call__
 
 # 3. __call__调用Foo的__init__方法(self.__init__)，并将上一步__new__创建的对象做为参数传入，初始化了该对象的属性
 

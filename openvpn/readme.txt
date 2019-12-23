@@ -1,3 +1,6 @@
+
+# 参考资料 https://github.com/shenjinian/openvpn
+
 ###网络设置
 #### 1.开启服务器端路由转发功能和tun支持
 # vi /etc/sysctl.conf

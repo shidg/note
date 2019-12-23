@@ -64,8 +64,32 @@ logger.addHandler(consle_handler)
 
 #  定义日志器并设置日志级别 logging.getLogger() / setLevel() ----> 定义handler  logger.xxHandler ---->
 #  定义日志格式并交给handler使用 logging.Formatter  setFormatter() --- > 日志器添加handler addHandler()
+
+# 调用日志器的各个方法（接口）生成日志信息
 logger.debug('debug')
 logger.info('info')
 logger.warning('warning')
 logger.error('error')
 logger.critical('critical')
+
+
+# 一个日志器(logger)可以绑定多个处理器(handler),将同一份日志发送到不同地方，比如同时发送到终端和日志文件。
+# 而不同的处理器可以定义不同的日志级别，就可以实现发送到文件的内容和发送到终端的内容是不同的
+
+
+
+# 可用的变量
+变量	         格式	              变量描述
+asctime	         %(asctime)s`	      日志生成时间，默认精确到毫秒，可以额外指定 datefmt 参数来指定该变量的格式
+name	         %(name)	      日志对象的名称
+filename	 %(filename)s	      不包含路径的文件名
+pathname	 %(pathname)s	      包含路径的文件名
+funcName	 %(funcName)s	      日志记录所在的函数名
+levelname	 %(levelname)s	      日志的级别名称
+message	         %(message)s	      具体的日志信息
+lineno	         %(lineno)d	      日志记录所在的行号
+pathname	 %(pathname)s	      完整路径
+process	         %(process)d	      当前进程ID
+processName	 %(processName)s      当前进程名称
+thread	         %(thread)d	      当前线程ID
+threadName	 %threadName)s	      当前线程名称

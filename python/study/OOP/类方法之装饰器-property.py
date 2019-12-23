@@ -48,3 +48,23 @@ obj1.per
 obj1.per = 876
 
 del obj1.per
+
+
+# 使用property装饰器，保证用户仍能像访问一个属性一样简单地访问一个方法，
+# 同时又能对age的取值做有效限制
+class Student(object):
+    @property
+    def age(self): # 这里定义的是方法，但是用户调用时就像访问一个属性
+        return self.__age
+    @age.setter
+    def age(self,value):
+        if not isintance(value,int):
+            raise ValueError('age must be an integer!')
+        if value < 1 or value > 130:
+            raise ValueError('age must between 0 ~ 100!')
+        self.__age = value
+
+a = Student()
+
+a.age = 30 # 赋值，受到setter的约束
+print(a.age)  # 取值，像访问一个变量一样简单，并不需要形如a.get_age()这样调用方法
