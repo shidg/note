@@ -20,6 +20,7 @@
 .DS_Store
 /gcc/gcc/
 __pycache__/
+migrations/
 db.sqlite3
 
 #example
