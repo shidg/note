@@ -16,7 +16,7 @@ Including another URLconf
 from django.urls import path,re_path
 from . import views
 
-app_name = 'learning_logs'
+app_name = 'learning_logs' # 与项目主urls.py中的""namespace"的值保持一致
 urlpatterns = [
     re_path('^$', views.index,name='index'),
     re_path('^topic/$', views.topics,name='topics'),

@@ -17,7 +17,7 @@ from django.urls import path,re_path
 from django.contrib.auth.views import LoginView
 from . import views
 
-app_name = 'users'
+app_name = 'users' # 与项目主urls.py中的""namespace"的值保持一致
 urlpatterns = [
     re_path('^login/$', LoginView.as_view(template_name='users/login.html'), name='login'),
     re_path('^logout/$', views.logout_view, name='logout'),
