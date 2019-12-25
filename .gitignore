@@ -21,7 +21,7 @@
 /gcc/gcc/
 __pycache__/
 migrations/
-db.sqlite3
+learning_log/db.sqlite3
 
 #example
 # 此为注释 – 将被 Git 忽略

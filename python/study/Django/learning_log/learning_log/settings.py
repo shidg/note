@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 第三方应用
+    'bootstrap4',
+    # My Apps
     'learning_logs',
     'users',
 ]
@@ -123,3 +126,8 @@ STATIC_URL = '/static/'
 
 ## 
 LOGIN_URL = '/users/login/'
+
+# bootstrap4
+BOOTSTRAP4 = {
+    'include_jquery': True,
+}
