@@ -18,5 +18,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('learning_logs.urls')),
+
+    # include使用了namespace选项，要求对应的app的urls.py中必须定义了app_name,且值相同
+    path('', include('learning_logs.urls', namespace='learning_logs')),
+    path('users/', include('users.urls', namespace='users')),
 ]
