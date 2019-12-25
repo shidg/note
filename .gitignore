@@ -20,7 +20,7 @@
 .DS_Store
 /gcc/gcc/
 __pycache__/
-db.*
+db.sqlite3
 
 #example
 # 此为注释 – 将被 Git 忽略
