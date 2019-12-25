@@ -12,31 +12,57 @@
 
     <body>
         <!-- Static navbar-->        
-        <nav class="navbar navbar-default navbar-static-top">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed"
-                        data-toggle="collapse" data-target="#navbar"
-                        aria-expanded="false" aria-controls="navbar">
-                    </button>
-                    <a class="navbar-brand" href="{% url 'learning_logs:index' %}">Learning Log</a>
-                </div>
-                <div id="navbar" class="navbar-collapse collapse">
-                    <ul class="nav navbar-nav">
-                        <li><a href="{% url 'learning_logs:topics' %}">Topics</a></li>
-                    </ul>
-                    <ul class="nav navbar-nav navbar-right">
-                        {% if user.is_authenticated %}
-                        <li><a>Hello, {{ user.username }}.</a></li>
-                        <li><a href="{% url 'users:logout' %}">log out</a></li>
-                        {% else %}
-                        <li><a href="{% url 'users:register' %}">register</a></li>
-                        <li><a href="{% url 'users:login' %}">log in</a></li>
-                        {% endif %}
-                    </ul>
-                </div><!--/.nav-collapse-->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="{% url 'learning_logs:index' %}">Learning Logs</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+          
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                  <a class="nav-link" href="{% url 'learning_logs:topics' %}">Topics <span class="sr-only">(current)</span></a>
+                </li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'users:logout' %}">logout</a>
+                </li>
+                <li class="nav-item"><a class="nav-link"> Hello, {{ user.username }}.</a></li>
+                {% else %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'users:login' %}">login</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'users:register' %}">register</a>
+                </li>
+
+                {% endif %}
+                <!--
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Dropdown
+                  </a>
+                  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <a class="dropdown-item" href="#">Action</a>
+                    <a class="dropdown-item" href="#">Another action</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#">Something else here</a>
+                  </div>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                </li>
+                -->
+              </ul>
+              <!--
+              <form class="form-inline my-2 my-lg-0">
+                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+              </form>
+            -->
             </div>
-        </nav>
+          </nav>
+
         <div class="container">
             <div class="page-header">
                 {% block header %}{% endblock header %}
