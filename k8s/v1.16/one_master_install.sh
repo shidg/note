@@ -78,7 +78,7 @@ systemctl start docker && systemctl enable docker
 
 cat >> /etc/docker/daemon.json <<EOF
 {
-  "registry-mirrors": ["https://v16stybc.mirror.aliyuncs.com"],
+  "registry-mirrors": ["https://xxxx.mirror.aliyuncs.com"],
   "exec-opts": ["native.cgroupdriver=systemd"]
 }
 EOF
