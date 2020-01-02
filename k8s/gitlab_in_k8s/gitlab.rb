@@ -21,6 +21,8 @@
 ##! For more details on configuring external_url see:
 ##! https://docs.gitlab.com/omnibus/settings/configuration.html#configuring-the-external-url-for-gitlab
 # external_url 'GENERATED_EXTERNAL_URL'
+#  若端口为非标准端口，除了修改本参数，
+#  还要在gitlab的nginx配置文件(gitlab-httpd)中指定listen: *:30080
 external_url 'http://10.10.8.80:30080'
 
 ## Roles for multi-instance GitLab
@@ -54,8 +56,12 @@ external_url 'http://10.10.8.80:30080'
 ## gitlab.yml configuration
 ##! Docs: https://gitlab.com/gitlab-org/omnibus-gitlab/blob/master/doc/settings/gitlab.yml.md
 ################################################################################
-# gitlab_rails['gitlab_ssh_host'] = 'ssh.host_example.com'
-# gitlab_rails['time_zone'] = 'UTC'
+### GitLab Shell settings for GitLab
+# gitlab_rails['gitlab_shell_git_timeout'] = 800
+# 指定ssh的服务器地址和（非标准）端口
+gitlab_rails['gitlab_ssh_host'] = '10.10.xx'
+gitlab_rails['gitlab_shell_ssh_port'] = 30022
+gitlab_rails['time_zone'] = 'Asia/Shanghai'
 
 ### Email Settings
 # gitlab_rails['gitlab_email_enabled'] = true
@@ -450,9 +456,6 @@ external_url 'http://10.10.8.80:30080'
 ###! Docs: https://docs.gitlab.com/omnibus/settings/configuration.html#only-start-omnibus-gitlab-services-after-a-given-filesystem-is-mounted
 # high_availability['mountpoint'] = ["/var/opt/gitlab/git-data", "/var/opt/gitlab/gitlab-rails/shared"]
 
-### GitLab Shell settings for GitLab
-gitlab_rails['gitlab_shell_ssh_port'] = 30022
-# gitlab_rails['gitlab_shell_git_timeout'] = 800
 
 ### Extra customization
 # gitlab_rails['extra_google_analytics_id'] = '_your_tracking_id'
