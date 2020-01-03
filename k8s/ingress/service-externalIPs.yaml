@@ -19,6 +19,10 @@ spec:
       port: 443
       targetPort: 443
       protocol: TCP
+    - name: proxy-tcp-22 # 四层代理,与tcp-services(ConfigMap)中的配置相对应
+      port: 22
+      targetPort: 22
+      protocol: TCP
   selector:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx

@@ -26,7 +26,8 @@ metadata:
   labels:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
-
+data:
+  22: "default/gitlab:22"  # tcp转发（四层代理）
 ---
 kind: ConfigMap
 apiVersion: v1
