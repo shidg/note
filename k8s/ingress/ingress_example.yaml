@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-jenkins
+  namespace: kube-ops # namespace必须与想要请求的服务相同，可以与ingress-controller不同
+spec:
+  rules:
+  - host: jenkins.ingress.com
+    http:
+      paths:
+      - backend:
+          serviceName: jenkins
+          servicePort: 8080
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-gitlab
+  namespace: default  # default为默认值，当namespace为default时该参数可省略
+spec:
+  rules:
+  - host: gitlab.ingress.com
+    http:
+      paths:
+      - backend:
+          serviceName: gitlab
+          servicePort: 80
