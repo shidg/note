@@ -3,13 +3,7 @@ kind: Ingress
 metadata:
   name: ingress-jenkins
   namespace: kube-ops # namespace必须与想要请求的服务相同，可以与ingress-controller不同
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod 
 spec:
-  tls:
-  - hosts:
-    - jenkins.ingress.com
-    secretName: jenkins-tls-cert
   rules:
   - host: jenkins.ingress.com
     http:
@@ -24,13 +18,7 @@ kind: Ingress
 metadata:
   name: ingress-gitlab
   namespace: default  # default为默认值，当namespace为default时该参数可省略
-  annotations:
-    kubernetes.io/tls-acme: "true"
 spec:
-  tls:
-  - hosts:
-    - gitlab.ingress.com
-    secretName: gitlab-tls-cert
   rules:
   - host: gitlab.ingress.com
     http:

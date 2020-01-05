@@ -5,6 +5,7 @@
 
 ## cert-manager v0.12.0
 
+# cert-manager可以自动进行证书的申请和续期,结合let's encrypt，实现ssl证书的免费和自动管理
 # install cert-manager
 
 kubectl create namespace cert-manager
