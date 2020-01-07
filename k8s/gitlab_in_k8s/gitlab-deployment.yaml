@@ -5,20 +5,17 @@ metadata:
   labels:
     app: gitlab
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: gitlab
   ports:
   - name: gitlab-http
     port: 80
-    nodePort: 30080
     targetPort: gitlab-http
   - name: gitlab-https
     port: 443
-    nodePort: 30443
     targetPort: gitlab-https
   - name: gitlab-ssh
-    nodePort: 30022
     port: 22
     targetPort: gitlab-ssh
 ---
@@ -46,7 +43,7 @@ spec:
         - containerPort: 22
           name: gitlab-ssh
           protocol: TCP
-        - containerPort: 30080
+        - containerPort: 80
           name: gitlab-http
           protocol: TCP
         - containerPort: 443
@@ -60,7 +57,7 @@ spec:
       volumes:
       - name: gitlabhome
         persistentVolumeClaim:
-          claimName: gitlab-claim
+          claimName: gitlab-claim-data
       - name: gitlabconf
         persistentVolumeClaim:
-          claimName: gitlab-claim-conf
+          claimName: gitlab-claim-main-conf

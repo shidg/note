@@ -1,30 +1,36 @@
-#tcl##
-#"You need tcl 8.5 or newer in order to run the Redis test"
-#tar zxvf tcl8.6.5-src.tar.gz && cd tcl8.6.5/unix
-#./configure --prefix=/usr && make && make install
-#
-###################################################################
-tar zxvf redis-3.2.9.tar.gz && cd redis-3.2.9
+# https://redis.io/download
 
-make
+yum install gcc gcc-c++ -y
 
+# 若执行make操作之前未安装gcc,会提示gcc未找到，这种情况下安装gcc之后再次执行make
+# 可能会遇到以下错误提示:
 ##########################make若遇到错误：###############################
 #zmalloc.h:50:31: error: jemalloc/jemalloc.h: No such file or directory
 #zmalloc.h:55:2: error: #error "Newer version of jemalloc required"
 #make[1]: *** [adlist.o] Error 1
 #make[1]: Leaving directory `/data0/src/redis-2.6.2/src'
 #make: *** [all] Error 2
-##解决方案
-#make MAKLOC=libc
 ############################################################################
+# 只需要make distclean清除缓存之后重新执行make即可
 
-make test 
-make install 默认安装到/usr/local/bin下
+
+make
+
+make install 
+# make install 默认安装到/usr/local/bin下
 
 #将redis安装到指定位置
 make PREFIX=/path  install
 
-sh utils/install_server.sh 
+
+# make test
+
+#tcl##
+#"You need tcl 8.5 or newer in order to run the Redis test"
+#tar zxvf tcl8.6.5-src.tar.gz && cd tcl8.6.5/unix
+#./configure --prefix=/usr && make && make install
+#
+
 
 
 # settings
@@ -36,10 +42,9 @@ echo "net.core.somaxconn = 500" >> /etc/sysctl.conf
 #1：当设这个参数值为1时，内核允许超量使用内存直到用完为止，主要用于科学计算
 #2：当设这个参数值为2时，内核会使用一个决不过量使用内存的算法，即系统整个内存地址空间不能超过swap+50%的RAM值，50%参数的设定是在overcommit_ratio中设定。
 
-
 echo "never" > /sys/kernel/mm/transparent_hugepage/enabled
 
 sysctl -p
 
 #服务启动
-service redis start
+systemctl redis start

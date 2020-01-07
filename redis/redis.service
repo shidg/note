@@ -1,0 +1,21 @@
+[Unit]
+Description=Redis Server
+After=network.target
+
+[Service]
+User=redis
+Group=redis
+
+#Environment=statedir=/var/run/redis
+PermissionsStartOnly=true
+#ExecStartPre=/bin/mkdir -p ${statedir}
+#ExecStartPre=/bin/chown -R redis:redis ${statedir}
+#ExecStartPost=/bin/sh -c "echo 6739 > /var/run/redis/redis.pid"
+ExecStart=/usr/local/bin/redis-server /etc/redis/redis.conf --supervised systemd
+ExecReload=/bin/kill -USR2 $MAINPID
+ExecStop=/usr/local/bin/redis-cli shutdown
+Restart=always
+Type=notify
+
+[Install]
+WantedBy=multi-user.target

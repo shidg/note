@@ -1,0 +1,48 @@
+# redis 5.0之后将集群管理功能集中到了redis-cli命令中
+# 通过 --cluster参数调用各项功能
+
+# redis.conf
+# cluster-enabled yes
+# cluster-config-file /etc/redis/nodes-6379.conf #该文件由redis自行管理，注意目录权限
+
+
+# 创建集群主节点
+redis-cli --cluster create host1:port host2:port host3:port
+
+# 添加从节点,并指定对应的主节点
+# 若不使用--cluster-slave参数则添加为主节点
+redis-cli --cluster add-node newhost:port existing_host:port  --cluster-slave --cluster-master-id <> 
+
+# 查看集群状态
+redis-cli --cluster check existing_host:port
+
+# 重新分片
+redis-cli --cluster reshard existing_host:port --cluster-from <id> --cluster-to <id> --cluster-slots <数量> 
+# --cluster-yes                 #指定迁移时的确认输入
+# --cluster-timeout <arg>       #设置migrate命令的超时时间
+# --cluster-pipeline <arg>      #定义cluster getkeysinslot命令一次取出的key数量，不传的话使用默认值为10
+# --cluster-replace             #是否直接replace到目标节点
+
+# 删除节点 
+redis-cli --cluster del-node existing_host:port  node_id
+
+
+
+
+rebalance      host:port                                      #指定集群的任意一节点进行平衡集群节点slot数量
+                 --cluster-weight <node1=w1...nodeN=wN>         #指定集群节点的权重
+                 --cluster-use-empty-masters                    #设置可以让没有分配slot的主节点参与，默认不允许
+                 --cluster-timeout <arg>                        #设置migrate命令的超时时间
+                 --cluster-simulate                             #模拟rebalance操作，不会真正执行迁移操作
+                 --cluster-pipeline <arg>                       #定义cluster getkeysinslot命令一次取出的key数量，默认值为10
+                 --cluster-threshold <arg>                      #迁移的slot阈值超过threshold，执行rebalance操作
+                 --cluster-replace                              #是否直接replace到目标节点
+  add-node       new_host:new_port existing_host:existing_port  #添加节点，把新节点加入到指定的集群，默认添加主节点
+                 --cluster-slave                                #新节点作为从节点，默认随机一个主节点
+                 --cluster-master-id <arg>                      #给新节点指定主节点
+  call           host:port command arg arg .. arg               #在集群的所有节点执行相关命令
+  set-timeout    host:port milliseconds                         #设置cluster-node-timeout
+  import         host:port                                      #将外部redis数据导入集群
+                 --cluster-from <arg>                           #将指定实例的数据导入到集群
+                 --cluster-copy                                 #migrate时指定copy
+                 --cluster-replace                              #migrate时指定replace
