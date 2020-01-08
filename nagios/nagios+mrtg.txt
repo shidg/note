@@ -1,7 +1,7 @@
 yum install mrtg
 
 #生成配置文件
-cfgmaker -output=/usr/local/nagios/mrtg/253.cfg feezu@cn@10.10.8.253
+cfgmaker -output=/usr/local/nagios/mrtg/253.cfg eg.com@10.10.8.253
 
 # 修改配置文件
 vi mrtg/253.cfg

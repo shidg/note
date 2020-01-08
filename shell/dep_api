@@ -2,11 +2,11 @@
 # dep_api
 
 ## sourcecode ##
-# git@git.feezu.cn:devicecloud/device-api.git
+# git@git.eg.com:devicecloud/device-api.git
 
 ## Dependencies ##
-# git@git.feezu.cn:wzc3.0/common.git
-# git@git.feezu.cn:devicecloud/device-manage.git
+# git@git.eg.com:wzc3.0/common.git
+# git@git.eg.com:devicecloud/device-manage.git
 
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT

@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    ingress.kubernetes.io/ssl-passthrough: "true"
+    kubernetes.io/ingress.allow-http: "false"
+  name: ingress-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  tls:
+  - hosts:
+    - k8s.eg.com
+    secretName: secret-tls
+  rules:
+  - host: k8s.eg.com
+    http:
+      paths:
+      - backend:
+          serviceName: kubernetes-dashboard
+          servicePort: 8443

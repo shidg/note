@@ -3,11 +3,11 @@
 # dep_device_manage
 
 ## sourcecode ##
-# git@git.feezu.cn:devicecloud/device-manage.git
+# git@git.eg.com:devicecloud/device-manage.git
 
 ## Dependencies ##
-# git@git.feezu.cn:soft/platform.git [manage-metadata-api]
-# git@git.feezu.cn:wzc3.0/company.git
+# git@git.eg.com:soft/platform.git [manage-metadata-api]
+# git@git.eg.com:wzc3.0/company.git
 
 
 source ~/common.sh

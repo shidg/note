@@ -2,16 +2,16 @@
 # export_prod_info.sh
 # Run at 1st, 00:00:00 every month
 # modify by shidg (20190102)
-# mail to chanpin@feezu.cn
+# mail to chanpin@eg.com
 
 MAIL="/bin/mail"
 MYSQL="/Data/app/mysql/bin/mysql"
-DB_SERVER="rr-2zev3gzmso46nikib.mysql.rds.aliyuncs.com"
-DB_USER="mainuser"
-DB_PASS="NbcbKCSTQpa"
-DB_NAME="wzc"
-DB2_NAME="orders"
-DB3_NAME="device_order"
+DB_SERVER=""
+DB_USER=""
+DB_PASS=""
+DB_NAME=""
+DB2_NAME=""
+DB3_NAME=""
 DATE=`date -d yesterday +%Y-%m-%d`
 SAVE_PATH="/tmp"
 TXT2XLS=/usr/bin/t2e
@@ -118,8 +118,7 @@ echo -e "\n" >> ${SAVE_PATH}/prod.txt
 #gzip -9 ${SAVE_PATH}/SQL4.txt
 
 #mail
-$MAIL -s "ProdInfo" -a ${SAVE_PATH}/prod.txt -c zhongzheng@feezu.cn -c dongle@feezu.cn -c mengzl@feezu.cn -c fangyi@feezu.cn -c xiedan@feezu.cn -c tiansh@feezu.cn -c gaoaj@feezu.cn -b shidg@feezu.cn yelw@feezu.cn < /Data/scripts/prodinfo.txt
-#$MAIL -s "ProdInfo" -a ${SAVE_PATH}/prod.txt shidg@feezu.cn  < /Data/scripts/prodinfo.txt
+$MAIL -s "ProdInfo" -a ${SAVE_PATH}/prod.txt -c xx@eg.com -c xx@eg.com -c xx@eg.com -c fi@eg.com @eg.com  -b xx@eg.com  yyy@eg.com < /Data/scripts/prodinfo.txt
 
 #rm -f ${SAVE_PATH}/SQL*.txt
 mkdir -p /Data/backup/ProdInfo/$DATE

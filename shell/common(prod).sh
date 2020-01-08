@@ -366,7 +366,7 @@ function MODIFY_PROFILES() {
     ### consumer-app ###
 	# apollo-env.properties 
     sed -i "/^server.env/ s/=.*/=pro/" consumer-app/src/main/resources/apollo-env.properties
-    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.feezu.cn:8582/" consumer-app/src/main/resources/apollo-env.properties
+    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.eg.com:8582/" consumer-app/src/main/resources/apollo-env.properties
 
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" consumer-app/src/main/resources/config.properties
@@ -375,18 +375,18 @@ function MODIFY_PROFILES() {
     sed -i "/^WECHAT_PAY_AVAILABLE_COM_CODE/ s/=.*/=YWX00001/" consumer-app/src/main/resources/config.properties
     sed -i "/^NEED_UPDATE_COMPANY_CODE/ s/=.*/=YWX00001,DZ00001,QZBJX001/" consumer-app/src/main/resources/config.properties
     sed -i "/^EXCEPT_UPDATE_COMPANY_CODE/ s/=.*/=DZ00002/" consumer-app/src/main/resources/config.properties
-    sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" consumer-app/src/main/resources/config.properties
-    sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" consumer-app/src/main/resources/config.properties
+    sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.eg.com/" consumer-app/src/main/resources/config.properties
+    sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.eg.com/" consumer-app/src/main/resources/config.properties
     sed -i "/^RUN_ENVIRONMENT/ s/=.*/=prod/" consumer-app/src/main/resources/config.properties
 
     # fastdfs-client.properties
     sed -i "/^fastdfs.tracker_servers/ s/= .*/= 10.44.183.203:22122/" consumer-app/src/main/resources/fastdfs-client.properties
     
     # ftpconfig.properties
-    sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" consumer-app/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.host/ s/=.*/=img.eg.com/" consumer-app/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" consumer-app/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" consumer-app/src/main/resources/ftpconfig.properties
-    sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" consumer-app/src/main/resources/ftpconfig.properties
+    sed -i "/^img.http.host/ s/=.*/=img.eg.com/" consumer-app/src/main/resources/ftpconfig.properties
 
     # log4j.xml
     # sed -i "" consumer-app/src/main/resources/log4j.xml
@@ -405,29 +405,29 @@ function MODIFY_PROFILES() {
 
 	### manage-orders ###
     # acp_sdk.properties
-    sed -i "/^create_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callback/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^create_backURL/ s/=.*/=https:\/\/app.eg.com\/payment\/unionpay\/callback/" manage-orders/src/main/resources/acp_sdk.properties
     sed -i "/^finish_backURL/ s/=.*/=https:\/\/111.200.241.178\/manage\/orderpayment\/notify4finishOrder/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callbackRenew/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^refund_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/refundCallback/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^EPPS_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/epps\/notify/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^EPPS_RETURN_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/epps\/epps_return/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^EPPS_REFUND_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/epps\/refundNotify/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^ALI_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/ali\/notifyByAlipay/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^ALI_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/ali\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^ALI_RETURN_URL/ s/=.*/=https:\/\/m.feezu.cn\/pay\/completed/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^WECHAT_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/wechat\/payCallback/" manage-orders/src/main/resources/acp_sdk.properties
-    sed -i "/^WECHAT_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/wechat\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/app.eg.com\/payment\/unionpay\/callbackRenew/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^refund_backURL/ s/=.*/=https:\/\/app.eg.com\/payment\/unionpay\/refundCallback/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^EPPS_NOTIFY_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/epps\/notify/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^EPPS_RETURN_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/epps\/epps_return/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^EPPS_REFUND_NOTIFY_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/epps\/refundNotify/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^ALI_NOTIFY_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/ali\/notifyByAlipay/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^ALI_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/ali\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^ALI_RETURN_URL/ s/=.*/=https:\/\/m.eg.com\/pay\/completed/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^WECHAT_NOTIFY_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/wechat\/payCallback/" manage-orders/src/main/resources/acp_sdk.properties
+    sed -i "/^WECHAT_RECHARGE_NOTIFY_URL/ s/=.*/=https:\/\/app.eg.com\/payment\/wechat\/rechargeCallback/" manage-orders/src/main/resources/acp_sdk.properties
 
     # apollo-env.properties
     sed -i "/^server.env/ s/=.*/=pro/" manage-orders/src/main/resources/apollo-env.properties
-    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.feezu.cn:8582/" manage-orders/src/main/resources/apollo-env.properties
+    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.eg.com:8582/" manage-orders/src/main/resources/apollo-env.properties
 
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-orders/src/main/resources/config.properties
     sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/analysis\/services/" manage-orders/src/main/resources/config.properties
-    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@feezu.cn/" manage-orders/src/main/resources/config.properties
+    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@eg.com/" manage-orders/src/main/resources/config.properties
     sed -i "/^EXCLUDE_COM_CODE/ s/=.*/=BJCX001,BJCXQC001,GZWL001,YGMM001,BQXNY00001,HY00001/" manage-orders/src/main/resources/config.properties
     sed -i "/^TLD_URL/ s/=.*/=http:\/\/hlht.teld.cn:9201\/evcs\/v20161110\//" manage-orders/src/main/resources/config.properties
 
@@ -435,8 +435,8 @@ function MODIFY_PROFILES() {
     sed -i "/^dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" manage-orders/src/main/resources/dubbo.properties
 
     # ftpconfig.properties
-    sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-orders/src/main/resources/ftpconfig.properties
-    sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-orders/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.host/ s/=.*/=img.eg.com/" manage-orders/src/main/resources/ftpconfig.properties
+    sed -i "/^img.http.host/ s/=.*/=img.eg.com/" manage-orders/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-orders/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-orders/src/main/resources/ftpconfig.properties
 
@@ -463,7 +463,7 @@ function MODIFY_PROFILES() {
     sed -i "/^amqp.password/ s/=.*/=DFDeoDh9P4Y4HprN/" manage-orders/src/main/resources/msgConfig.properties
 
     # refund.properties
-    sed -i "/^user.applay.refund.peccancy/ s/=.*/=https:\/\/app.feezu.cn\/payment\/ali\/refundCallback/" manage-orders/src/main/resources/refund.properties
+    sed -i "/^user.applay.refund.peccancy/ s/=.*/=https:\/\/app.eg.com\/payment\/ali\/refundCallback/" manage-orders/src/main/resources/refund.properties
 
     # securityConfig.properties
     sed -i "/^SECURITY_KEY=/ s/=.*/=Dkwz8z8lJh94tPxP/" manage-orders/src/main/resources/securityConfig.properties
@@ -502,7 +502,7 @@ function MODIFY_PROFILES() {
 	### manage-web ###
     # apollo-env.properties
     sed -i "/^server.env/ s/=.*/=pro/" manage-web/src/main/resources/apollo-env.properties
-    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.feezu.cn:8582/" manage-web/src/main/resources/apollo-env.properties
+    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.eg.com:8582/" manage-web/src/main/resources/apollo-env.properties
     
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-web/src/main/resources/config.properties
@@ -518,18 +518,18 @@ function MODIFY_PROFILES() {
     # cur_2000376m6dg4 钟政
     # cur_10003731hj14 朱建刚
     sed -i "/^ALLOW_CHANGE_LOGIN_IDS/ s/=.*/=cur_2000399vw66t,cur_100038r57lpr,cur_2000376m6dgk,cur_2000376m6dg4,cur_10003731hj14/" manage-web/src/main/resources/config.properties
-    sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@feezu.cn/" manage-web/src/main/resources/config.properties
-    sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.feezu.cn/" manage-web/src/main/resources/config.properties
+    sed -i "/^bill_police_to_mail/ s/=.*/=ruanjian@eg.com/" manage-web/src/main/resources/config.properties
+    sed -i "/^qrcode_url/ s/=.*/=https:\/\/app.eg.com/" manage-web/src/main/resources/config.properties
     sed -i "/^OPEN_OTHERPICTURE_HANDSHOLD/ s/=.*/=BJCXQC001,YWX00001,DZ00001/" manage-web/src/main/resources/config.properties
-    sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-web/src/main/resources/config.properties
+    sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.eg.com/" manage-web/src/main/resources/config.properties
     sed -i "/^WZC_LOGIN_IPS/ s/=.*/=111.200.241.178,111.200.241.179/" manage-web/src/main/resources/config.properties
 
     # fastdfs-client.properties
     sed -i "/^fastdfs.tracker_servers/ s/=.*/= 10.44.183.203:22122/" manage-web/src/main/resources/fastdfs-client.properties
 
     # ftpconfig.properties
-    sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-web/src/main/resources/ftpconfig.properties
-    sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-web/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.host/ s/=.*/=img.eg.com/" manage-web/src/main/resources/ftpconfig.properties
+    sed -i "/^img.http.host/ s/=.*/=img.eg.com/" manage-web/src/main/resources/ftpconfig.properties
     sed -i "/^img.device.host/ s/=.*/=10.27.81.198/" manage-web/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-web/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-web/src/main/resources/ftpconfig.properties
@@ -549,18 +549,18 @@ function MODIFY_PROFILES() {
 	### manage-metadata ###
     # apollo-env.properties
     sed -i "/^server.env/ s/=.*/=pro/" manage-metadata/src/main/resources/apollo-env.properties
-    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.feezu.cn:8582/" manage-metadata/src/main/resources/apollo-env.properties
+    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.eg.com:8582/" manage-metadata/src/main/resources/apollo-env.properties
 
     # dubbo.properties
     sed -i "/^dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" manage-metadata/src/main/resources/dubbo.properties
 
     # ftpconfig.properties
-    sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.host/ s/=.*/=img.eg.com/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-metadata/src/main/resources/ftpconfig.properties
-    sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i "/^img.http.host/ s/=.*/=img.eg.com/" manage-metadata/src/main/resources/ftpconfig.properties
     sed -i "/^img.device.host/ s/=.*/=59.110.40.80/" manage-metadata/src/main/resources/ftpconfig.properties
-    sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.feezu.cn/" manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i "/^FAST_DNF_URL/ s/=.*/=http:\/\/img.eg.com/" manage-metadata/src/main/resources/ftpconfig.properties
 
     # jdbc.properties 
     sed -i "/^masterdb.url/ s/=.*/=jdbc:mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-metadata/src/main/resources/jdbc.properties
@@ -617,10 +617,10 @@ function MODIFY_PROFILES() {
     # no change
 
     # hbase-site.xml
-    #sed -i "s/hdfs:\/\/hbase.feezu.cn/hdfs:\/\/K-master/" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/hdfs:\/\/hbase.eg.com/hdfs:\/\/K-master/" manage-datawarehouse/src/main/resources/hbase-site.xml
     #sed -i "s/>1</>3</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    #sed -i "s/>hbase.feezu.cn:60000</>K-master:16000</" manage-datawarehouse/src/main/resources/hbase-site.xml
-    #sed -i "s/>hbase.feezu.cn</>K-slave1,K-slave2,K-slave3</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>hbase.eg.com:60000</>K-master:16000</" manage-datawarehouse/src/main/resources/hbase-site.xml
+    #sed -i "s/>hbase.eg.com</>K-slave1,K-slave2,K-slave3</" manage-datawarehouse/src/main/resources/hbase-site.xml
     #sed -i "s/>false</>true</" manage-datawarehouse/src/main/resources/hbase-site.xml
 
 	### wechat ###
@@ -630,8 +630,8 @@ function MODIFY_PROFILES() {
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" wechat/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" wechat/src/main/resources/config.properties
-    sed -i "/^Request.ConsumerApp.Url/ s/=.*/=https:\/\/app.feezu.cn/" wechat/src/main/resources/config.properties
-    sed -i "/^YwxWeiXin.Url/ s/=.*/=https:\/\/wx.feezu.cn/" wechat/src/main/resources/config.properties
+    sed -i "/^Request.ConsumerApp.Url/ s/=.*/=https:\/\/app.eg.com/" wechat/src/main/resources/config.properties
+    sed -i "/^YwxWeiXin.Url/ s/=.*/=https:\/\/wx.eg.com/" wechat/src/main/resources/config.properties
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" wechat/src/main/resources/jedis.properties
@@ -643,7 +643,7 @@ function MODIFY_PROFILES() {
     sed -i "/^redis.pool.maxWait/ s/=.*/=2000/" wechat/src/main/resources/jedis.properties
 
     # base.js
-    sed -i "/apiUrl/ s/\/\/.*/\/\/app.feezu.cn',/" wechat/WebContent/resources/js/base.js
+    sed -i "/apiUrl/ s/\/\/.*/\/\/app.eg.com',/" wechat/WebContent/resources/js/base.js
 
     # log4j.xml
     # no change
@@ -668,29 +668,29 @@ function MODIFY_PROFILES() {
 
 	### manage-report ###
     # acp_sdk.properties
-    sed -i "/^create_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callback/" manage-report/src/main/resources/acp_sdk.properties
+    sed -i "/^create_backURL/ s/=.*/=https:\/\/app.eg.com\/payment\/unionpay\/callback/" manage-report/src/main/resources/acp_sdk.properties
     sed -i "/^finish_backURL/ s/=.*/=https:\/\/111.200.241.178\/manage\/orderpayment\/notify4finishOrder/" manage-report/src/main/resources/acp_sdk.properties
-    sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/callbackRenew/" manage-report/src/main/resources/acp_sdk.properties
-    sed -i "/^refund_backURL/ s/=.*/=https:\/\/app.feezu.cn\/payment\/unionpay\/refundCallback/" manage-report/src/main/resources/acp_sdk.properties
+    sed -i "/^create_renew_backURL/ s/=.*/=https:\/\/app.eg.com\/payment\/unionpay\/callbackRenew/" manage-report/src/main/resources/acp_sdk.properties
+    sed -i "/^refund_backURL/ s/=.*/=https:\/\/app.eg.com\/payment\/unionpay\/refundCallback/" manage-report/src/main/resources/acp_sdk.properties
 
     # apollo-env.properties
     sed -i "/^server.env/ s/=.*/=pro/" manage-report/src/main/resources/apollo-env.properties
-    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.feezu.cn:8582/" manage-report/src/main/resources/apollo-env.properties
+    sed -i "/^pro.meta/ s/=.*/=http:\/\/meta.apollo.pro.eg.com:8582/" manage-report/src/main/resources/apollo-env.properties
 
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^REPORT_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8040\/report\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" manage-report/src/main/resources/config.properties
     sed -i "/^ANALYSIS_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8030\/analysis\/services/" manage-report/src/main/resources/config.properties
-    sed -i "/^bill_police_to_mail/ s/=.*/=chanpin@feezu.cn/" manage-report/src/main/resources/config.properties
-    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@feezu.cn/" manage-report/src/main/resources/config.properties
-    sed -i "/^ALERT_MAIL_CAIWU/ s/=.*/=ruanjian@feezu.cn/" manage-report/src/main/resources/config.properties
+    sed -i "/^bill_police_to_mail/ s/=.*/=chanpin@eg.com/" manage-report/src/main/resources/config.properties
+    sed -i "/^ALERT_MAIL_RECIPIENT/ s/=.*/=ruanjian@eg.com/" manage-report/src/main/resources/config.properties
+    sed -i "/^ALERT_MAIL_CAIWU/ s/=.*/=ruanjian@eg.com/" manage-report/src/main/resources/config.properties
 
     # ftpconfig.properties
-    sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-report/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.host/ s/=.*/=img.eg.com/" manage-report/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-report/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-report/src/main/resources/ftpconfig.properties
-    sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-report/src/main/resources/ftpconfig.properties
+    sed -i "/^img.http.host/ s/=.*/=img.eg.com/" manage-report/src/main/resources/ftpconfig.properties
 
     # jdbc.properties
     sed -i "/^wzc.db.url/ s/=.*/=jdbc:mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306\/wzc?useUnicode=true\&amp;characterEncoding=utf-8/" manage-report/src/main/resources/jdbc.properties
@@ -733,10 +733,10 @@ function MODIFY_PROFILES() {
     # dubbo.properties
     sed -i "/^dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" manage-thirdparty/src/main/resources/dubbo.properties
     # ftpconfig.properties
-    sed -i "/^img.ftp.host/ s/=.*/=img.feezu.cn/" manage-thirdparty/src/main/resources/ftpconfig.properties
+    sed -i "/^img.ftp.host/ s/=.*/=img.eg.com/" manage-thirdparty/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxIdle/ s/=.*/=50/" manage-thirdparty/src/main/resources/ftpconfig.properties
     sed -i "/^img.ftp.maxActive/ s/=.*/=50/" manage-thirdparty/src/main/resources/ftpconfig.properties
-    sed -i "/^img.http.host/ s/=.*/=img.feezu.cn/" manage-thirdparty/src/main/resources/ftpconfig.properties
+    sed -i "/^img.http.host/ s/=.*/=img.eg.com/" manage-thirdparty/src/main/resources/ftpconfig.properties
     # jdbc.properties
     sed -i "/^db.url/ s/=.*/=jdbc:mysql:\/\/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com:3306\/thirdparty?useUnicode=true\&amp;characterEncoding=utf-8/" manage-thirdparty/src/main/resources/jdbc.properties
     sed -i "/^db.user/ s/=.*/=mainuser/g" manage-thirdparty/src/main/resources/jdbc.properties
@@ -762,7 +762,7 @@ function MODIFY_PROFILES() {
     # config.properties
     sed -i "/^METADATA_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8020\/metadata\/services/" consumer-wap/src/main/resources/config.properties
     sed -i "/^ORDER_WEB_SERVICE_DOMAIN/ s/=.*/=http:\/\/service_01:8010\/orders\/services/" consumer-wap/src/main/resources/config.properties
-    sed -i "/^CONSUMER_APP_URL/ s/=.*/=https:\/\/app.feezu.cn/" consumer-wap/src/main/resources/config.properties
+    sed -i "/^CONSUMER_APP_URL/ s/=.*/=https:\/\/app.eg.com/" consumer-wap/src/main/resources/config.properties
 
     # jedis.properties
     sed -i "/^redis.host/ s/=.*/=redis_01/" consumer-wap/src/main/resources/jedis.properties
@@ -791,7 +791,7 @@ function MODIFY_PROFILES() {
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.eg.com/" manage-metadata/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=orders_demo_1/" manage-orders/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=1/" manage-orders/src/main/resources/serverconfig.properties
@@ -818,7 +818,7 @@ function MODIFY_PROFILES() {
             sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
             sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
+            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.eg.com/" manage-metadata/src/main/resources/serverconfig.properties
 
             sed -i "/^serverId/ s/=.*/=orders_demo_2/" manage-orders/src/main/resources/serverconfig.properties
     		sed -i "/^groupServerId/ s/=.*/=2/" manage-orders/src/main/resources/serverconfig.properties
@@ -845,7 +845,7 @@ function MODIFY_PROFILES() {
 #            sed -i "/^RUNNING_ENVIRONMENT/ s/=.*/=prod/" manage-metadata/src/main/resources/serverconfig.properties
 #            sed -i "/^IOT_TENANT_ACCOUNT/ s/=.*/=tc_ywx/" manage-metadata/src/main/resources/serverconfig.properties
 #            sed -i "/^IOT_PASSWORD/ s/=.*/=13811145125/" manage-metadata/src/main/resources/serverconfig.properties
-#            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.feezu.cn/" manage-metadata/src/main/resources/serverconfig.properties
+#            sed -i "/^MAINT_ADDRESS/ s/=.*/=http:\/\/yunwei.eg.com/" manage-metadata/src/main/resources/serverconfig.properties
 
 #            sed -i "/^serverId/ s/=.*/=orders_demo_3/" manage-orders/src/main/resources/serverconfig.properties
 #    		sed -i "/^groupServerId/ s/=.*/=3/" manage-orders/src/main/resources/serverconfig.properties
@@ -912,7 +912,7 @@ function GET_READY_FOR_DM() {
         	REMOTE_ENV=prep
 			sed -i "/dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.172.164.152:2181?client=zkclient/" dubbo.properties
 			sed -i "/dubbo.protocol.port/ s/20018/20019/" dubbo.properties
-			sed -i "/jdbc.url/ s/dev.feezu.cn/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com/" gateway-deliver-config.properties
+			sed -i "/jdbc.url/ s/dev.eg.com/rds8ei10r74e6ey5j592.mysql.rds.aliyuncs.com/" gateway-deliver-config.properties
 			sed -i "/jdbc.username/ s/test/mainuser/" gateway-deliver-config.properties
 			sed -i "/jdbc.password/ s/test/OgVT2DokWhzm/" gateway-deliver-config.properties
 			sed -i "/redis.host/ s/127.0.0.1/redis_01/" gateway-deliver-config.properties
@@ -922,7 +922,7 @@ function GET_READY_FOR_DM() {
         	REMOTE_ENV=product
 			sed -i "/dubbo.registry.address/ s/=.*/=zookeeper:\/\/10.171.51.137:2181?backup=10.171.117.54:2181,10.44.52.77:2181/" dubbo.properties
 			sed -i "/dubbo.protocol.port/ s/20018/20019/" dubbo.properties
-			sed -i "/jdbc.url/ s/dev.feezu.cn/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com/" gateway-deliver-config.properties
+			sed -i "/jdbc.url/ s/dev.eg.com/rdsk03oijx73u4fa8305.mysql.rds.aliyuncs.com/" gateway-deliver-config.properties
 			sed -i "/jdbc.username/ s/test/device_clound/" gateway-deliver-config.properties
 			sed -i "/jdbc.password/ s/test/uAVUgmAdbW5Vw6N/" gateway-deliver-config.properties
 			sed -i "/redis.host/ s/127.0.0.1/10.165.119.188/" gateway-deliver-config.properties

@@ -5,7 +5,7 @@
 # Note：此脚本需要配置在被监控端
  
 NGINX_HOME=/Data/app/nginx
-LOG_NAME=access_log_$2.feezu.cn.https
+LOG_NAME=access_log_$2.eg.com.https
 TMP_FILE=/tmp/access_log
  
 # 定义函数

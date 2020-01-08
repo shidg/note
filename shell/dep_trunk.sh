@@ -9,7 +9,7 @@
 source ~/.bashrc
 SOURCEDIR=/Data/source/Platform/trunk/
 BUILDDIR=/Data/war/Platform/trunk
-SVN_SERVER=svn.feezu.cn
+SVN_SERVER=svn.eg.com
 REPOSITORY_NAME="repos/wzc/manage/source/trunk"
 SVN_USER=jira
 SVN_PASS=jira*12345
@@ -22,10 +22,9 @@ DEMO=123.56.86.141
 FINAL_WEB=10.10.8.34
 FINAL_SERVICE=10.10.8.35
 REMOTE_SERVER=$TEST
-FINAL1_SERVICE=123.56.76.78
+FINAL1_SERVICE=
 MODULE=war
 #MAIL_LIST=94586572@qq.com
-#ERROR_REPORT=94586572@qq.com,luokui@feezu.cn,songting@feezu.cn,wangliang@feezu.cn,maocc@feezu.cn,liuzhen@feezu.cn
 #ERROR_REPORT=94586572@qq.com
 START_TIME=`date "+%Y%m%d-%T"`
 
@@ -36,11 +35,11 @@ do
 done
 
 echo -e "选择适用的环境,多选无效"
-echo -e "1)dev.feezu.cn"
-echo -e "2)test.feezu.cn"
-echo -e "3)final1.feezu.cn"
-#echo -e "4)final.feezu.cn"
-#echo -e "5)demo.feezu.cn"
+echo -e "1)dev.eg.com"
+echo -e "2)test.eg.com"
+echo -e "3)final1.eg.com"
+#echo -e "4)final.eg.com"
+#echo -e "5)demo.eg.com"
 echo -ne "Enter your choice from [1-3]:"
 
 read need
@@ -176,7 +175,7 @@ END_TIME=`date "+%Y%m%d-%T"`
 #log
 cat > /tmp/upinfo <<EOF
 =========================
-server:demo.feezu.cn
+server:demo.eg.com
 Start at:${START_TIME}
 Finish at:${END_TIME}
 $SVN_MSG
@@ -196,7 +195,7 @@ END_TIME=`date "+%Y%m%d-%T"`
 #log
 cat > /tmp/upinfo <<EOF
 =========================
-server:bomb.feezu.cn
+server:bomb.eg.com
 Start at:${START_TIME}
 Finish at:${END_TIME}
 $SVN_MSG

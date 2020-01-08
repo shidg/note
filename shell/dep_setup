@@ -3,10 +3,10 @@
 ## dep_setup
 
 ## sourcecode ##
-# git@git.feezu.cn:wzc/setup.git 
+# git@git.eg.com:wzc/setup.git 
 
 ## Dependencies ##
-# git@git.feezu.cn:soft/platform.git
+# git@git.eg.com:soft/platform.git
 
 source ~/common.sh
 trap EXIT_CONFIRMATION SIGINT

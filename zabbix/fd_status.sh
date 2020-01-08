@@ -6,7 +6,7 @@ NETTY_PID=`ps -ef | grep gateway | grep -v "grep" |awk '{print $2}'`
 #function SEND_MAIL() {
 #	MAIL="/bin/mail"
 #	echo -e "Current fd: $FD_TOTAL\nsys.fd.max: $FD_MAX" > /tmp/fd.info
-#	$MAIL -s "!FD_WARNING!"  -c xiedan@feezu.cn -c fangyi@feezu.cn -c yijun@feezu.cn shidg@feezu.cn < /tmp/fd.info
+#	$MAIL -s "!FD_WARNING!"  shidg@eg.com < /tmp/fd.info
 #}
 
 #if [ $FD_TOTAL -ge $FD_MAX ]; then

@@ -54,22 +54,16 @@ filter:
 smtp_host: smtpdm.aliyun.com
 smtp_port: 80
 smtp_auth_file: /Data/app/elastalert/example_rules/smtp_auth_file.yaml
-#email_reply_to: notify@feezu.cn
+#email_reply_to: notify@eg.com
 from_addr: alarm@mail.yiweixing.com
 # The alert is use when a match is found
 alert:
 - "email"
-alert_text: "Ref Log http://elk.feezu.cn/app/kibana"
+alert_text: "Ref Log http://elk.eg.com/app/kibana"
 #- "command"
 
 # (required, email specific)
 # a list of email addresses to send alerts to
 email:
-- "yunwei@feezu.cn"
-- "wangliang@feezu.cn"
-- "maocc@feezu.cn"
-- "duwj@feezu.cn"
-- "xiedan@feezu.cn"
-- "fangyi@feezu.cn"
-- "94586572@qq.com"
+- "yunwei@eg.com"
 #command: ["/Data/scripts/t.sh"]

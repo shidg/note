@@ -10,7 +10,7 @@ source ~/.bashrc
 SOURCEDIR=/Data/source/trunk/
 BUILDDIR=/Data/war/trunk
 DEMOBUILDDIR=/Data/war/v0.6
-SVN_SERVER=svn.feezu.cn
+SVN_SERVER=svn.eg.com
 REPOSITORY_NAME="repos/wzc/manage/source/trunk"
 SVN_USER=jira
 SVN_PASS=jira*12345
@@ -24,7 +24,6 @@ REMOTE_SERVER=$TEST
 MODULE=webapps
 ARG1=$1
 #MAIL_LIST=94586572@qq.com
-ERROR_REPORT=94586572@qq.com,332819226@qq.com,luokui@feezu.cn,songting@feezu.cn,wangliang@feezu.cn,maocc@feezu.cn,liuzhen@feezu.cn
 #ERROR_REPORT=94586572@qq.com
 
 
@@ -54,10 +53,10 @@ elif [ "$1" = "dev" ];then
     REMOTE_SERVER=$DEV
 elif [ "$1" = "demo" ];then
     REMOTE_SERVER=$DEMO
-    sed -i 's/111.202.44.157/demo.feezu.cn/' ${SOURCEDIR}manage-orders/src/main/resources/acp_sdk.properties
-    sed -i 's/hbase.feezu.cn/10.162.196.41/' ${SOURCEDIR}manage-datawarehouse/src/main/resources/hbase-site.xml 
-    sed -i 's/image.feezu.cn/demo.feezu.cn/' ${SOURCEDIR}manage-metadata/src/main/resources/ftpconfig.properties
-    sed -i 's/image.feezu.cn/demo.feezu.cn/' ${SOURCEDIR}manage-web/src/main/resources/ftpconfig.properties
+    sed -i 's/111.202.44.157/demo.eg.com/' ${SOURCEDIR}manage-orders/src/main/resources/acp_sdk.properties
+    sed -i 's/hbase.eg.com/10.162.196.41/' ${SOURCEDIR}manage-datawarehouse/src/main/resources/hbase-site.xml 
+    sed -i 's/image.eg.com/demo.eg.com/' ${SOURCEDIR}manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i 's/image.eg.com/demo.eg.com/' ${SOURCEDIR}manage-web/src/main/resources/ftpconfig.properties
 fi
                                                 
 # begin
@@ -166,7 +165,7 @@ END_TIME=`date "+%Y%m%d-%T"`
  
       cat > /tmp/upinfo <<EOF
      =========================
-server:demo.feezu.cn
+server:demo.eg.com
 Start at:${START_TIME}
 Finish at:${END_TIME}
 Description:
@@ -177,10 +176,10 @@ EOF
 #log
     cat /tmp/upinfo >> /Data/logs/wzc/autodeploy.log
 ##银联回调地址恢复
-    sed -i 's/demo.feezu.cn/111.202.44.157/' ${SOURCEDIR}manage-orders/src/main/resources/acp_sdk.properties
-    sed -i 's/10.162.196.41/hbase.feezu.cn/' ${SOURCEDIR}manage-datawarehouse/src/main/resources/hbase-site.xml 
-    sed -i 's/demo.feezu.cn/image.feezu.cn/' ${SOURCEDIR}manage-metadata/src/main/resources/ftpconfig.properties
-    sed -i 's/demo.feezu.cn/image.feezu.cn/' ${SOURCEDIR}manage-web/src/main/resources/ftpconfig.properties
+    sed -i 's/demo.eg.com/111.202.xx.xx/' ${SOURCEDIR}manage-orders/src/main/resources/acp_sdk.properties
+    sed -i 's/10.162.196.41/hbase.eg.com/' ${SOURCEDIR}manage-datawarehouse/src/main/resources/hbase-site.xml 
+    sed -i 's/demo.eg.com/image.eg.com/' ${SOURCEDIR}manage-metadata/src/main/resources/ftpconfig.properties
+    sed -i 's/demo.eg.com/image.eg.com/' ${SOURCEDIR}manage-web/src/main/resources/ftpconfig.properties
 else    
     rsync -az --delete --exclude="app-download"  --exclude="ROOT" --exclude="host-manager" --exclude="manager" --password-file=/etc/rsync.pass ${BUILDDIR}/ ${SYNC_USER}@${REMOTE_SERVER}::$MODULE
 #restart tomcat on $(REMOTE_SERVER)

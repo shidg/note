@@ -82,7 +82,7 @@ import re
 
 
 #s = '123yGhHFAHPG'
-#t = 'baidu.com,http://sohu.com,fafafefeezu.cn/faefifa'
+#t = 'baidu.com,http://sohu.com,fafafeeg.com/faefifa'
 #res = re.findall('[0-9][a-z][A-Z]',s)
 #res = re.findall('[^23]',s) # 非2非3
 #res = re.findall('[^(2|3)]',s) # 非2非3

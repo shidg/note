@@ -135,4 +135,4 @@ git merge client
 
 
 # git 记住用户名密码
-git clone https://username:passwd@feezu.cn/group/example.git
+git clone https://username:passwd@eg.com/group/example.git

@@ -65,7 +65,7 @@ export KEY_COUNTRY="CN"
 export KEY_PROVINCE="BJ"
 export KEY_CITY="BeiJing"
 export KEY_ORG="WEIZUCHE"
-export KEY_EMAIL="shidg@feezu.cn"
+export KEY_EMAIL="shidg@eg.com"
 export KEY_OU="FEEZU"
 
 # X509 Subject Field

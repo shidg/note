@@ -43,9 +43,9 @@ for i in `ls ${WAR_SRC_DIR}`
 PAY_FILE1=${WAR_DST_DIR}/${SVN_VERSION}/orders/WEB-INF/classes/acp_sdk.properties
 PAY_FILE2=${WAR_DST_DIR}/${SVN_VERSION}/orders/WEB-INF/classes/refund.properties
 PAY_FILE3=${WAR_DST_DIR}/${SVN_VERSION}/report/WEB-INF/classes/acp_sdk.properties
-sed -i 's/111.202.44.157/demo.feezu.cn/' ${PAY_FILE1}
-sed -i 's/111.202.44.157/demo.feezu.cn/' ${PAY_FILE2}
-sed -i 's/111.202.44.157/demo.feezu.cn/' ${PAY_FILE3}
+sed -i 's/111.202.44.157/demo.eg.com/' ${PAY_FILE1}
+sed -i 's/111.202.44.157/demo.eg.com/' ${PAY_FILE2}
+sed -i 's/111.202.44.157/demo.eg.com/' ${PAY_FILE3}
 
 #ZK_FOR_DUBBO
 sed -i '/dubbo:registry/ s/127.0.0.1/10.171.51.137/' ${WAR_DST_DIR}/${SVN_VERSION}/manage/WEB-INF/classes/applicationContext-dubbo-consumer.xml

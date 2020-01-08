@@ -228,26 +228,6 @@ openssl x509 -req -sha256 -days 3650 -in dashboard.csr -out dashboard.crt -CA ca
 
 
 # https://github.com/kubernetes/dashboard
-# wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta8/aio/deploy/recommended.yaml
-# 做如下修改
-kind: Service
-apiVersion: v1
-metadata:
-  labels:
-    k8s-app: kubernetes-dashboard
-  name: kubernetes-dashboard
-  namespace: kubernetes-dashboard
-spec:
-  # 新增type行
-  type: NodePort
-  ports:
-    - port: 443
-      # 新增nodePort行
-      nodePort: 30009
-      targetPort: 8443
-  selector:
-    k8s-app: kubernetes-dashboard
-
 
 # 启动dashboard
 kubectl apply -f recommended.yaml

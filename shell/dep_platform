@@ -3,10 +3,10 @@
 # Modified by shidg,20170920
 
 ## sourcecode ##
-# git@git.feezu.cn:soft/platform.git
+# git@git.eg.com:soft/platform.git
 
 ## Dependencies ##
-# git@git.feezu.cn:wzc3.0/common.git
+# git@git.eg.com:wzc3.0/common.git
 
 #判断参数是否正确
 CMD=`echo $(basename $0)`

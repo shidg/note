@@ -14,13 +14,13 @@ curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.rp
 yum install -y gitlab-ce
 
 ## 修改配置文件，指定域名(/etc/gitlab/gitlab.rb )
-external_url 'http://gitlab.feezu.cn'
+external_url 'http://gitlab.eg.com'
 
 ## 加载配置文件，启动gitlab
 gitlab-ctl reconfigure
 
 ## 页面访问gitlab，初次访问会要求设置密码，用户名默认为root
-http://gitlab.feezu.cn
+http://gitlab.eg.com
 
 ## 启动LDAP,和AD域控集成 /etc/gitlab/gitlab.rb
 ### LDAP Settings
@@ -37,7 +37,7 @@ gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
      port: 389
      uid: 'sAMAccountName'
      bind_dn: 'gitlab'
-     password: 'Ywx**123456'
+     password: 'password'
      encryption: 'plain' # "start_tls" or "simple_tls" or "plain"
 #     verify_certificates: true
 #     smartcard_auth: false
@@ -45,7 +45,7 @@ gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
      allow_username_or_email_login: false
 #     lowercase_usernames: false
      block_auto_created_users: false
-     base: 'DC=feezu,DC=cn'
+     base: 'DC=eg,DC=com'
 EOS
 
 ## 重启gitlab

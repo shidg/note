@@ -1,9 +1,9 @@
 # crowd
 
 #connector#
-URL  ldap://domain-master.feezu.cn:389
-Base DN  dc=feezu,dc=cn
-Username  administrator@feezu.cn
+URL  ldap://domain-master.eg.com:389
+Base DN  dc=eg,dc=com
+Username  administrator@eg.com
 Password
 
 #Configuration
@@ -15,12 +15,12 @@ Group DN  cn=jira-users
 
 # JIRA
 
-Hostname  domain-master.feezu.cn
-Username  administrator@feezu.cn
+Hostname  domain-master.eg.com
+Username  administrator@eg.com
 
 Base DN   dc=feezu,dc=cn
 
-echo "10.10.8.8 feezu.cn" >> /etc/hosts
+echo "10.10.8.8 eg.com" >> /etc/hosts
 
 
 

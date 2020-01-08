@@ -6,14 +6,14 @@ nameserver  域控服务器ip
 
 
 #加入AD域
-realm join --user=administrator feezu.cn
+realm join --user=administrator eg.com
 Password for administrator:
 
 #查看已加入的域
 realm list
 
 #限制指定的组可以登录
-realm permit -g linux_server@feezu.cn;
+realm permit -g linux_server@eg.com;
 
 #/etc/sssd/sssd.conf
 use_fully_qualified_names = False

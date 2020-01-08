@@ -5,7 +5,7 @@
 #为服务器设置FQDN
 
 #vi /etc/hosts
-192.168.1.1 git.feezu.cn git
+192.168.1.1 git.eg.com git
 
 #vi /etc/hostname
 git
@@ -241,7 +241,7 @@ cp config/gitlab.yml.example config/gitlab.yml
 # 确保修改“localhost”为你的GitLab主机的FQDN
 
 
-host: git.feezu.cn
+host: git.eg.com
 https: true
 port: 443
 # 如果你从源代码安装了Git，修改git的bin_path为/usr/local/bin/git
@@ -306,7 +306,7 @@ git config --global core.autocrlf input
 git config --global gc.auto 0
 
 git config --global user.name "GitLab"
-git config --global user.email "git@feezu.cn"
+git config --global user.email "git@eg.com"
 
 
 cp config/resque.yml.example config/resque.yml
@@ -351,7 +351,7 @@ bundle exec rake gitlab:shell:install[v3.2.0] REDIS_URL=unix:/var/run/redis/redi
 
 # gitlab-shell的配置文件
 # /home/git/gitlab-shell/config.yml
-# gitlab_url: https://git.feezu.cn/  #
+# gitlab_url: https://git.eg.com/  #
 # 如果开启了https，这里必须是https://,否则git clone时会有GitLab: API is not accessible的错误
 
 #Initialize Database and Activate Advanced Features / 初始化数据库和激活高级功能
@@ -359,7 +359,7 @@ bundle exec rake gitlab:setup RAILS_ENV=production
 
 
 设置管理员密码通
-bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=1234qwer GITLAB_ROOT_EMAIL=git@feezu.cn
+bundle exec rake gitlab:setup RAILS_ENV=production GITLAB_ROOT_PASSWORD=1234qwer GITLAB_ROOT_EMAIL=git@eg.com
 
 
 
@@ -415,15 +415,15 @@ upstream gitlab-workhorse {
 #gitlab
 server {
         listen 80;
-        server_name git.feezu.cn;
-        rewrite ^/(.*) https://git.feezu.cn permanent;
+        server_name git.eg.com;
+        rewrite ^/(.*) https://git.eg.com permanent;
         access_log off;
 }
 
 #gitlab.https
 server {
         listen          443;
-        server_name     git.feezu.cn;
+        server_name     git.eg.com;
         root /home/git/gitlab/public;
 
         ### SSL log files ###
@@ -434,8 +434,8 @@ server {
         ssl on;
         ssl_session_cache shared:SSL:10m;
         ssl_session_timeout 10m;
-        ssl_certificate      ssl/feezu.cn_bundle.crt;
-        ssl_certificate_key  ssl/feezu.cn.key;
+        ssl_certificate      ssl/eg.com_bundle.crt;
+        ssl_certificate_key  ssl/eg.com.key;
 
         ###  Limiting Ciphers ########################
         keepalive_timeout    60;

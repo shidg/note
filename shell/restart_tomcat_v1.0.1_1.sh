@@ -76,8 +76,8 @@ SERVER_FILE=serverconfig.properties
   # ftp
   for D in orders app
   do
-    sed -i '/img.ftp.host/ s/image.feezu.cn/imgprep.feezu.cn/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
-    sed -i '/img.http.host/ s/image.feezu.cn/imgprep.feezu.cn/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
+    sed -i '/img.ftp.host/ s/image.eg.com/imgprep.eg.com/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
+    sed -i '/img.http.host/ s/image.eg.com/imgprep.eg.com/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
   done
   # mq
     sed -i "s/msg.brokerURL=.*/msg.brokerURL=failover:(tcp:\/\/10.171.57.30:61616,tcp:\/\/10.44.54.183:61616,tcp:\/\/10.162.198.246:61616)/" ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/orders/${FILE_PATH}/${MSG_FILE}
@@ -105,8 +105,8 @@ SERVER_FILE=serverconfig.properties
   # ftp 
   for D in metadata manage
   do
-    sed -i '/img.ftp.host/ s/image.feezu.cn/imgprep.feezu.cn/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
-    sed -i '/img.http.host/ s/image.feezu.cn/imgprep.feezu.cn/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
+    sed -i '/img.ftp.host/ s/image.eg.com/imgprep.eg.com/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
+    sed -i '/img.http.host/ s/image.eg.com/imgprep.eg.com/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
   done
     sed -i '/device.host/ s/123.127.240.42/101.200.165.247/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/metadata/${FILE_PATH}/${FTP_FILE}
   # mq
@@ -129,7 +129,7 @@ SERVER_FILE=serverconfig.properties
     sed -i '/IS_PRODUCT_ENVIRONMENT_VALID_CODE/ s/true/false/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/manage/${FILE_PATH}/config.properties
     sed -i 's/ALLOW_CHANGE_LOGIN_IDS=/ALLOW_CHANGE_LOGIN_IDS=cur_20003gjvn6vw/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/manage/${FILE_PATH}/config.properties
     sed -i '/mail_switch/ s/0/1/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/manage/${FILE_PATH}/config.properties
-    sed -i 's/bill_police_to_mail=/bill_police_to_mail=guoyy@feezu.cn/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/manage/${FILE_PATH}/config.properties
+    sed -i 's/bill_police_to_mail=/bill_police_to_mail=guoyy@eg.com/' ${WAR_DST_DIR}/tomcatB/${SVN_VERSION}/manage/${FILE_PATH}/config.properties
 
 ### tomcat C
   # mq
@@ -138,14 +138,14 @@ SERVER_FILE=serverconfig.properties
     sed -i "/^serverId/ s/serverId=.*/serverId=analysis_prep_2/" ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/analysis/${FILE_PATH}/${SERVER_FILE}
     sed -i "/^groupServerId/ s/groupServerId=.*/groupServerId=2/" ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/analysis/${FILE_PATH}/${SERVER_FILE}
   # hbase
-    sed -i 's/hbase.feezu.cn/10.162.198.246/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/analysis/${FILE_PATH}/${HBASE_FILE}
+    sed -i 's/hbase.eg.com/10.162.198.246/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/analysis/${FILE_PATH}/${HBASE_FILE}
   # wechat
     sed -i '/METADATA_WEB_SERVICE_DOMAIN/ s/localhost:8080/service_01:8020/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
     sed -i '/ORDER_WEB_SERVICE_DOMAIN/ s/localhost:8080/service_01:8010/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
     sed -i '/redis.host/ s/127.0.0.1/redis_01/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/jedis.properties
-    sed -i '/Request.ConsumerApp.Url/ s/test3.feezu.cn/prep.feezu.cn/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
-    sed -i '/YwxWeiXin.Url/ s/wx.feezu.cn/prepwx.feezu.cn/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
-    sed -i '/apiUrl:/ s/test3.feezu.cn/prep.feezu.cn/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/resources/js/base.js
+    sed -i '/Request.ConsumerApp.Url/ s/test3.eg.com/prep.eg.com/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
+    sed -i '/YwxWeiXin.Url/ s/wx.eg.com/prepwx.eg.com/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
+    sed -i '/apiUrl:/ s/test3.eg.com/prep.eg.com/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/resources/js/base.js
     sed -i '/YwxWeiXin.Url/ s/http/https/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
     sed -i '/Request.ConsumerApp.Url/ s/http/https/' ${WAR_DST_DIR}/tomcatC/${SVN_VERSION}/wechat/${FILE_PATH}/config.properties
   # api 
@@ -177,8 +177,8 @@ SERVER_FILE=serverconfig.properties
   for D in report thirdparty
   do
   # ftp
-    sed -i '/img.ftp.host/ s/image.feezu.cn/imgprep.feezu.cn/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
-    sed -i '/img.http.host/ s/image.feezu.cn/imgprep.feezu.cn/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
+    sed -i '/img.ftp.host/ s/image.eg.com/imgprep.eg.com/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
+    sed -i '/img.http.host/ s/image.eg.com/imgprep.eg.com/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/${D}/${FILE_PATH}/${FTP_FILE}
   # server_id
     sed -i "/^serverId/ s/serverId=.*/serverId=${D}_prep_2/" ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/${D}/${FILE_PATH}/${SERVER_FILE}
     sed -i "/^groupServerId/ s/groupServerId=.*/groupServerId=2/" ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/${D}/${FILE_PATH}/${SERVER_FILE}
@@ -193,7 +193,7 @@ SERVER_FILE=serverconfig.properties
   # dubbo
     sed -i '/dubbo.registry.address/ s/127.0.0.1/10.172.164.152/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/thirdparty/${FILE_PATH}/dubbo.properties
   # download
-    sed -i '/request_download_url/ s/app.feezu.cn/appprep.feezu.cn/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/download/${FILE_PATH}/server.properties
+    sed -i '/request_download_url/ s/app.eg.com/appprep.eg.com/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/download/${FILE_PATH}/server.properties
   # db key
     for D in  thirdparty report
     do
@@ -202,12 +202,12 @@ SERVER_FILE=serverconfig.properties
     done
   #
     sed -i '/mail_switch/ s/0/1/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/report/${FILE_PATH}/config.properties
-    sed -i 's/bill_police_to_mail=/bill_police_to_mail=guoyy@feezu.cn/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/report/${FILE_PATH}/config.properties
+    sed -i 's/bill_police_to_mail=/bill_police_to_mail=guoyy@eg.com/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/report/${FILE_PATH}/config.properties
  
 ### 银联回调
-        sed -i 's/123.127.240.42\/app/appprep.feezu.cn/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/orders/${FILE_PATH}/${PAY_FILE1}
-        sed -i 's/123.127.240.42\/app/appprep.feezu.cn/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/orders/${FILE_PATH}/${PAY_FILE2}
-        sed -i 's/123.127.240.42\/app/appprep.feezu.cn/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/report/${FILE_PATH}/${PAY_FILE1}
+        sed -i 's/123.127.240.42\/app/appprep.eg.com/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/orders/${FILE_PATH}/${PAY_FILE1}
+        sed -i 's/123.127.240.42\/app/appprep.eg.com/' ${WAR_DST_DIR}/tomcatA/${SVN_VERSION}/orders/${FILE_PATH}/${PAY_FILE2}
+        sed -i 's/123.127.240.42\/app/appprep.eg.com/' ${WAR_DST_DIR}/tomcatD/${SVN_VERSION}/report/${FILE_PATH}/${PAY_FILE1}
 
 ####-------------------------------------------------
 
