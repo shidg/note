@@ -5,9 +5,12 @@
 
 # 版本信息
 # CentOS 7.7
-# docker 19.03.5 # 最好选择18.09版本，19.03目前不在官方支持列表中
-# k8s 1.16.3
-# dashboard 2.0 beta6
+# docker 18.09 
+# docker 最好不要选择最新版本，目前k8s对docker的推荐版本如下：
+# https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
+# On each of your machines, install Docker. Version 19.03.4 is recommended, but 1.13.1, 17.03, 17.06, 17.09, 18.06 and 18.09 are known to work as well.
+# k8s 1.17.0
+# dashboard 2.0 beta8
 
 # 至少3master 3node
 # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
@@ -196,7 +199,7 @@ fi
 # docker源
 #yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-yum install -y docker-ce  docker-ce-cli containerd.io
+yum install -y docker-ce-18.09.9 docker-ce-cli-18.09.9 containerd.io
 
 # 启动docker
 systemctl start docker && systemctl enable docker
@@ -230,7 +233,7 @@ EOF
 yum clean all && yum makecache -y
 
 # 安装k8s
-yum install -y kubelet kubeadm kubectl
+yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 systemctl enable kubelet
 
 # kubelet 命令补全
@@ -242,7 +245,7 @@ echo "source <(kubectl completion bash)" >> ~/.bash_profile && source ~/.bash_pr
 ##  images.sh
 #!/bin/bash
 url=registry.cn-hangzhou.aliyuncs.com/google_containers
-version=v1.16.3  # kubectl version
+version=v1.17.0  # kubectl version
 images=(`kubeadm config images list --kubernetes-version=$version|awk -F '/' '{print $2}'`)
 for imagename in ${images[@]} ; do
   docker pull $url/$imagename
@@ -256,26 +259,26 @@ sh images.sh
 # 查看镜像拉取结果
 docker images
 #REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
-#k8s.gcr.io/kube-proxy                v1.16.3             9b65a0f78b09        2 weeks ago         86.1MB
-#k8s.gcr.io/kube-apiserver            v1.16.3             df60c7526a3d        2 weeks ago         217MB
-#k8s.gcr.io/kube-controller-manager   v1.16.3             bb16442bcd94        2 weeks ago         163MB
-#k8s.gcr.io/kube-scheduler            v1.16.3             98fecf43a54f        2 weeks ago         87.3MB
-#k8s.gcr.io/etcd                      3.3.15-0            b2756210eeab        2 months ago        247MB
-#k8s.gcr.io/coredns                   1.6.2               bf261d157914        3 months ago        44.1MB
-#k8s.gcr.io/pause
+#k8s.gcr.io/kube-proxy                v1.17.0             9b65a0f78b09        2 weeks ago         86.1MB
+#k8s.gcr.io/kube-apiserver            v1.17.0             df60c7526a3d        2 weeks ago         217MB
+#k8s.gcr.io/kube-controller-manager   v1.17.0             bb16442bcd94        2 weeks ago         163MB
+#k8s.gcr.io/kube-scheduler            v1.17.0             98fecf43a54f        2 weeks ago         87.3MB
+#k8s.gcr.io/etcd                      3.4.3-0             b2756210eeab        2 months ago        247MB
+#k8s.gcr.io/coredns                   1.6.5               bf261d157914        3 months ago        44.1MB
+#k8s.gcr.io/pause                     3.1                 da86e6ba6ca1        2 years ago         742kB
 
 ######  以下操作在master节点执行 ##########
 # 初始化第一台 master
 # api.k8s.com指向10.10.8.88(VIP)
-kubeadm init --kubernetes-version v1.16.3 --control-plane-endpoint "api.k8s.com:8443" --service-cidr=10.1.0.0/16  --pod-network-cidr=10.244.0.0/16 --upload-certs
+kubeadm init --kubernetes-version v1.17.0 --control-plane-endpoint "api.k8s.com:8443" --service-cidr=10.1.0.0/16  --pod-network-cidr=10.244.0.0/16 --upload-certs
 
 # 记录下如下信息
-# 添加control-plane nodes
+# 如何添加control-plane nodes:
 kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
     --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4 \
     --control-plane --certificate-key 3a4ee556eed947be4baf79273f17a20591ea8684c35d0276da0ab3c5e09ed245
 
-# 添加worker nodes
+# 如何添加worker nodes:
 kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
     --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4
 
@@ -504,7 +507,7 @@ kubectl top nodes
 kubeadm init \
 --apiserver-advertise-address=当前master机器的ip \
 --image-repository registry.aliyuncs.com/google_containers \
---kubernetes-version v1.16.2 \
+--kubernetes-version v1.17.0 \
 --service-cidr=10.1.0.0/16 \
 --pod-network-cidr=10.244.0.0/16 \
 --control-plane-endpoint 192.168.200.214:8443 \
