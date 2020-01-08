@@ -1,3 +1,5 @@
+# ##  该过程仅在测试环境验证
+# ##  升级过程并非完全平滑，会有pod的删除和重建（升级程序自动将pod在节点间进行迁移），服务会有中断
 ##### upgrade master nodes ####
 # 查看当前可用版本
 yum list --showduplicates kubeadm --disableexcludes=kubernetes
@@ -78,6 +80,7 @@ node/ip-172-31-85-18 drained
 
 
 # Upgrade the kubelet configuration
+# 同样要先保证相关docker镜像已经下载，否则无法升级
 kubeadm upgrade node
 
 
