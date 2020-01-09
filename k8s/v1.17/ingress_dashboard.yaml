@@ -4,18 +4,14 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     ingress.kubernetes.io/ssl-passthrough: "true"
-    kubernetes.io/ingress.allow-http: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
   name: ingress-dashboard
   namespace: kubernetes-dashboard
 spec:
-  tls:
-  - hosts:
-    - k8s.eg.com
-    secretName: secret-tls
   rules:
-  - host: k8s.eg.com
+  - host: k8s.ingress.com
     http:
       paths:
       - backend:
           serviceName: kubernetes-dashboard
-          servicePort: 8443
+          servicePort: 443

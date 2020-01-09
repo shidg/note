@@ -233,7 +233,7 @@ EOF
 yum clean all && yum makecache -y
 
 # 安装k8s
-yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+yum install -y kubelet-1.17.0 kubeadm-1.17.0 kubectl-1.17.0 --disableexcludes=kubernetes
 systemctl enable kubelet
 
 # kubelet 命令补全
@@ -274,13 +274,13 @@ kubeadm init --kubernetes-version v1.17.0 --control-plane-endpoint "api.k8s.com:
 
 # 记录下如下信息
 # 如何添加control-plane nodes:
-kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
-    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4 \
-    --control-plane --certificate-key 3a4ee556eed947be4baf79273f17a20591ea8684c35d0276da0ab3c5e09ed245
+kubeadm join api.k8s.com:8443 --token qk2l0f.6kx26ibh07jt70vt \
+    --discovery-token-ca-cert-hash sha256:ca02030871e3289f8e5086958010308839b641ed2f2d043b88fb9a7ee616e64f \
+    --control-plane --certificate-key 7b85308694e52adb80409a064172a8166dafdf0068da373e1968f4e1cf6aec7a
 
 # 如何添加worker nodes:
-kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
-    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4
+kubeadm join api.k8s.com:8443 --token qk2l0f.6kx26ibh07jt70vt \
+    --discovery-token-ca-cert-hash sha256:ca02030871e3289f8e5086958010308839b641ed2f2d043b88fb9a7ee616e64f
 
 # 查看token
 kubeadm token list
@@ -299,9 +299,9 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 ### 添加剩余master节点,在master-2  master-3执行
 # 添加control-plane nodes
-kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \ 
-    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4 \ 
-    --control-plane --certificate-key 3a4ee556eed947be4baf79273f17a20591ea8684c35d0276da0ab3c5e09ed245
+kubeadm join api.k8s.com:8443 --token qk2l0f.6kx26ibh07jt70vt \
+    --discovery-token-ca-cert-hash sha256:ca02030871e3289f8e5086958010308839b641ed2f2d043b88fb9a7ee616e64f \
+    --control-plane --certificate-key 7b85308694e52adb80409a064172a8166dafdf0068da373e1968f4e1cf6aec7a
 
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile && source ~/.bash_profile
 
@@ -312,8 +312,8 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 ######### 添加worker nodes  在node1~node3上执行 ###########
 # 添加worker nodes
-kubeadm join api.k8s.com:8443 --token 4fq74n.b545y7phnuon2wba \
-    --discovery-token-ca-cert-hash sha256:887479bce43455b07fd073cc93ad5c56da65b025707e5db51cc94a6dcf60cec4
+kubeadm join api.k8s.com:8443 --token qk2l0f.6kx26ibh07jt70vt \
+    --discovery-token-ca-cert-hash sha256:ca02030871e3289f8e5086958010308839b641ed2f2d043b88fb9a7ee616e64f
 
 # 如果不知道ca的hash值，可以使用--discovery-token-unsafe-skip-ca-verification参数跳过此项
 ### master上查看运行信息
@@ -402,17 +402,14 @@ kubectl delete pod kubernetes-dashboard-746dfd476-b2r5f -n kubernetes-dashboard
 
 # dashboard默认权限非常小，需要新增用户并设置权限
 # 为dashboard添加用户，类型为ServiceAccount,用户名admin-user
+# 并将admin-user用户绑定到cluster-admin角色
 # cat dashboard-adminuser.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: admin-user
   namespace: kubernetes-dashboard
-
-kubectl apply -f dashboard-adminuser.yaml
-
-# 将admin-user用户绑定到cluster-admin角色
-# cat dashboard-ClusterRoleBinding.yaml
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -426,8 +423,8 @@ subjects:
   name: admin-user
   namespace: kubernetes-dashboard
 
-kubectl apply -f dashboard-ClusterRoleBinding.yaml
 
+kubectl apply -f dashboard-adminuser.yaml
 
 # 查询admin-user用户的token
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
@@ -462,7 +459,7 @@ containers:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-        imagePullPolicy: IfNotPresent #修改
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: tmp-dir
           mountPath: /tmp
