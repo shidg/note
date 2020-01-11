@@ -438,7 +438,7 @@ docker tag mirrorgooglecontainers/metrics-server-amd64:v0.3.6 k8s.gcr.io/metrics
 
 
 # 在master上操作
-# https://github.com/kubernetes-sigs/metrics-server
+# https://github.com/kubernetes-sigs/metrics-server.git
 git clone https://github.com/kubernetes-incubator/metrics-server.git
 cd metrics-server/
 # vi deploy/1.8+/metrics-server-deployment.yaml

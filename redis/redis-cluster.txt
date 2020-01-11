@@ -1,9 +1,12 @@
 # redis 5.0之后将集群管理功能集中到了redis-cli命令中
 # 通过 --cluster参数调用各项功能
 
-# redis.conf
+## redis安装
+# 至少6个节点，三主三从，可以是同一台机器上的多个实例，使用端口区分
+# 安装完成后修改配置文件 redis.conf
 # cluster-enabled yes
 # cluster-config-file /etc/redis/nodes-6379.conf #该文件由redis自行管理，注意目录权限
+# 启动各个节点
 
 
 # 创建集群主节点
