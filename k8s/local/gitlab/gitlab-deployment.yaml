@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  labels:
+    app: gitlab
+spec:
+  type: ClusterIP
+  selector:
+    app: gitlab
+  ports:
+  - name: gitlab-http
+    port: 80
+    targetPort: gitlab-http
+  - name: gitlab-https
+    port: 443
+    targetPort: gitlab-https
+  - name: gitlab-ssh
+    port: 22
+    targetPort: gitlab-ssh
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      serviceAccount: gitlab
+      serviceAccountName: gitlab
+      containers:
+      - name: gitlab
+        image: gitlab/gitlab-ce:12.6.3-ce.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 22
+          name: gitlab-ssh
+          protocol: TCP
+        - containerPort: 80
+          name: gitlab-http
+          protocol: TCP
+        - containerPort: 443
+          name: gitlab-https
+          protocol: TCP
+        volumeMounts:
+        - name: gitlabhome
+          mountPath: /var/opt/gitlab
+        - name: gitlabconf
+          mountPath: /etc/gitlab
+      volumes:
+      - name: gitlabhome
+        hostPath:
+          path: /Users/shidegang/work/docker_volumes/gitlab
+      - name: gitlabconf
+        hostPath:
+          path: /Users/shidegang/work/docker_configurations/gitlab

@@ -1,0 +1,66 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  name: ingress-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  tls:
+  - hosts:
+    - local.feezu.cn
+    secretName: tls-dashboard
+  rules:
+  - host: local.feezu.cn
+    http:
+      paths:
+      - backend:
+          serviceName: kubernetes-dashboard
+          servicePort: 443
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-httpd
+  namespace: default
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - backend:
+          serviceName: httpd
+          servicePort: 80
+  - host: mymac
+    http:
+      paths:
+      - backend:
+          serviceName: httpd
+          servicePort: 80
+  - host: updates.jenkins-ci.org
+    http:
+      paths:
+      - backend:
+          serviceName: httpd
+          servicePort: 80
+  - host: mirrors.jenkins-ci.org
+    http:
+      paths:
+      - backend:
+          serviceName: httpd
+          servicePort: 80
+  - host: jenkins.ingress.com
+    http:
+      paths:
+      - backend:
+          serviceName: jenkins
+          servicePort: 8080
+  - host: gitlab.ingress.com
+    http:
+      paths:
+      - backend:
+          serviceName: gitlab
+          servicePort: 80
