@@ -23,3 +23,17 @@ pip uninstall xxx
 
 ##pip 是一个安装和管理 Python 包的工具 , 是 easy_install 的一个替换品
 
+
+pip国内镜像
+http://pypi.douban.com/ 豆瓣
+http://pypi.hustunique.com/ 华中理工大学
+http://pypi.sdutlinux.org/ 山东理工大学
+http://pypi.mirrors.ustc.edu.cn/ 中国科学技术大学
+http://mirrors.aliyun.com/pypi/simple/ 阿里云
+https://pypi.tuna.tsinghua.edu.cn/simple/ 清华大学
+
+# 临时指定镜像源
+pip -i http://pypi.douban.com/simple install dnspython
+
+# 设置默认镜像源
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cm-test3-pod
+spec:
+  containers:
+    - name: cm-test3
+      image: busybox
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh","-c","cat /etc/config/my.cnf"]
+      volumeMounts:
+      - name: config-volume
+        mountPath: /etc/config
+  volumes:
+    - name: config-volume
+      configMap:
+        name: special-config
+        items:
+        - key: special.how
+          path: my.cnf
+  restartPolicy: Never

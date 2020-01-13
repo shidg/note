@@ -106,7 +106,10 @@ yum install -y kubelet kubeadm kubectl
 systemctl enable kubelet
 
 # kubelet 命令补全
+# bash
 echo "source <(kubectl completion bash)" >> ~/.bash_profile && source ~/.bash_profile
+# zsh
+echo "source <(kubectl completion zsh)" >> ~/.zshrc && source ~/.zshrc
 
 # 下载镜像
 # 从阿里云镜像仓库下载镜像，拉取到本地以后改回默认的镜像tag

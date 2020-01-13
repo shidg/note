@@ -1,0 +1,26 @@
+# kubectl create cm special-config --from-literal=special.how=very --from-literal=special.type=charm
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cm-test1-pod
+spec:
+  containers:
+  - name: cm-test1
+    image: busybox
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh","-c","env"]
+    env:
+      - name: SPECIAL_LEVEL_KEY
+        valueFrom:
+          configMapKeyRef:
+            name: special-config
+            key: special.how
+      - name: SPECIAL_TYPE_KEY
+        valueFrom:
+          configMapKeyRef:
+            name: special-config
+            key: special.type
+    envFrom:
+      - configMapRef:
+          name: env-config
+  restartPolicy: Never
