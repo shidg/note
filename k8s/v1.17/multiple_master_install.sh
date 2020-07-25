@@ -120,24 +120,6 @@ systemctl start keepalived && systemctl enable keepalived
 
 
 ### docker & k8s #####
-#### 以下操作在所有节点执行 ####
-
-# 安装必要基础工具
-# chrony: 时间同步
-# yum-utils: yum扩展工具
-# bash-completion: systemctl命令补全
-# wget: 下载
-yum install chrony yum-utils bash-completion wget iptables-services -y
-
-
-# 修改服务器名为期望的名字
-# hostnamectl --static set-hostname xxx
-
-# hosts文件添加所有节点的记录
-
-# 关闭并禁用firewalld
-systemctl stop firewalld && systemctl disable firewalld
-
 
 #### 以下操作在所有节点执行 ####
 
