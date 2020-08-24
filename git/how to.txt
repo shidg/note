@@ -16,3 +16,13 @@ git ls-files -v | grep -e "^[hsmrck]"
 git rm --cached filename
 更新 .gitignore 忽略掉目标文件
 git commit -m "We really don't want Git to track this anymore!"
+
+
+# 拉取远程新分支到本地
+# 推荐
+git switch origin/dev -c dev
+# 其次
+git checkout origin/dev -b dev
+# 再次
+git fetch origin dev:dev
+git branch --set-upstream-to=origin/dev dev
