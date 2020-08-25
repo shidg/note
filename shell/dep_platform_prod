@@ -49,14 +49,20 @@ START_TIME=`date "+%Y%m%d-%T"`
 # 切换到源代码目录
 cd ${MANAGE_SOURCE_DIR}
 
-# 删除上次部署残留的配置文件
-DELETE_PROFILES
 
 # 切换分支,更新代码
-git pull && git checkout ${BRANCH_NAME}
-if NEW_COMMIT ${BRANCH_NAME};then
-    git pull
+if ! git branch | grep ${BRANCH_NAME};then
+    git checkout origin/${BRANCH_NAME} -b ${BRANCH_NAME}
+    #git switch origin/${BRANCH_NAME} -c ${BRANCH_NAME} (git version >= 2.23)
+else 
+    git checkout ${BRANCH_NAME}
+    if NEW_COMMIT ${BRANCH_NAME};then
+        git pull
+    fi
 fi
+
+# 删除上次部署残留的配置文件
+DELETE_PROFILES
 
 git log | head -2> /tmp/gitinfo
 git diff HEAD HEAD~ --stat >> /tmp/gitinfo
