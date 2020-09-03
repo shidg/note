@@ -51,7 +51,7 @@ mvn clean install -Dmaven.test.skip=true
 echo -e "构建依赖：deviceclound/device-manage [branch: ${DEPEND_BRANCH_DM}] ..."
 sleep 1
 
-cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources                                                                                                 
+cd ${DM_SOURCE_DIR}/device-manage-web/src/main/resources 
     if [ -f "dubbo.properties" ];then
         rm -f dubbo.properties
     fi  
@@ -126,7 +126,7 @@ mvn clean package -Dmaven.test.skip=true
 
 UNALIAS_CP
 
-cp -f ${API_SOURCE_DIR}/wzc-api/target/*api-*.jar ${BUILD_DIR}
+cp -f "${API_SOURCE_DIR}"/wzc-api/target/*api-*.jar "${BUILD_DIR}"
 
 END_TIME=`date "+%Y%m%d-%T"`
 

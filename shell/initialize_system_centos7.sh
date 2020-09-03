@@ -116,10 +116,22 @@ net.ipv4.tcp_max_orphans = 3276800
 
 net.ipv4.tcp_syncookies = 1
 
+#tcp重传
+#放弃回应一个TCP连接请求前﹐需要进行多少次重试（入站）
+net.ipv4.tcp_retries1 = 3
+
+# 在丢弃激活(已建立通讯状况)的TCP连接之前﹐需要进行多少次重试
+net.ipv4.tcp_retries2 = 9
+
 # tcp半连接队列最大长度(当syncookies=1时该参数无效) 
 net.ipv4.tcp_max_syn_backlog = 8192
-net.ipv4.tcp_synack_retries = 2
+
+# 对于一个新建连接，内核要发送多少个 SYN 连接请求才决定放弃(出站)
 net.ipv4.tcp_syn_retries = 2
+
+# 对于远端的连接请求SYN，内核在放弃连接之前所送出的 SYN+ACK 数目
+net.ipv4.tcp_synack_retries = 2
+
 
 ################# 以下选项谨慎开启!!! ########################
 ################# 很可能会导致处在NAT环境中的客户端与该服务器的连接出现不可预知的问题  ##########################################
@@ -140,9 +152,12 @@ net.ipv4.tcp_max_tw_buckets = 5000
 net.ipv4.tcp_fin_timeout = 30
 
 #减少TCP KeepAlive连接侦测的时间，使系统可以处理更多的连接
-net.ipv4.tcp_keepalive_time = 1800
+# 以下设置为5分钟断开 30 + 30*9 = 300
+net.ipv4.tcp_keepalive_time = 30
+# 重试间隔
 net.ipv4.tcp_keepalive_intvl = 30
-net.ipv4.tcp_keepalive_probes = 3
+# 重试次数
+net.ipv4.tcp_keepalive_probes = 9
 
 #对iptables的优化
 net.nf_conntrack_max = 25000000
