@@ -8,6 +8,10 @@ Created Time: 2019-08-28 10:43:17
 #pip的安装（新版本Python自带pip）
 #https://pypi.org/project/pip/
 
+# ModuleNotFoundError: No module named 'pip'
+python -m ensurepip
+python -m pip install --upgrade pip
+
 # 使用pip,将从 Python Packaging Index（https://pypi.org） 安装一个模块的最新版本及其依赖项
 python -m pip install SomePackage
 python -m pip install SomePackage==1.0.4    # specific version

@@ -111,6 +111,11 @@ net.core.netdev_max_backlog = 3000
 # tcp全连接队列最大长度[系统级]
 net.core.somaxconn = 81920
 
+# 放弃回应一个（未建立连接的）TCP 连接请求前﹐需要进行N次重试,default:3；
+net.ipv4.tcp_retries1 = 3
+#在丢弃激活(已建立通讯状况)的TCP连接之前﹐需要进行N次重试,default:15；
+net.ipv4.tcp_retries2 = 5
+
 #系统所能处理的不属于任何进程的TCP sockets最大数量，不能过分依靠它或者人为地减小这个值，更应该增加这个值(如果增加了内存之后) 每个孤儿套接字最多能够吃掉64K不可交换的内存
 net.ipv4.tcp_max_orphans = 3276800
 
