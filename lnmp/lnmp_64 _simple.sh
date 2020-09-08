@@ -146,6 +146,7 @@ success
 cd ..
 
 # add lua-nginx-module
+# https://github.com/openresty/lua-nginx-module#installation
 mkdir -p /Data/app/LuaJIT
 tar zxvf LuaJIT-2.0.4.tar.gz && cd LuaJIT-2.0.4
 make PREFIX=/Data/app/LuaJIT
@@ -174,6 +175,9 @@ sed -i "/#define NGINX_VERSION/ s/${N_VERSION}/2.2.1/" src/core/nginx.h
 sed -i 's/nginx\//Tengine/' src/core/nginx.h
 
 sed -i '/center>nginx/ s/nginx/Tengine/' src/http/ngx_http_special_response.c
+
+# https://github.com/vision5/ngx_devel_kit/tags
+# https://github.com/calio/form-input-nginx-module/tags
 
 ./configure --prefix=/Data/app/nginx-1.12.2  --with-pcre=../pcre-8.41 --with-openssl=../openssl-1.1.0g --with-http_sub_module --with-http_ssl_module --with-http_stub_status_module --with-http_realip_module --add-module=../nginx-sticky-module-ng --add-module=../ngx_devel_kit-0.3.0 --add-module=../form-input-nginx-module-master --add-module=../lua-nginx-module-master
 

@@ -50,7 +50,7 @@ spec:
       volumes:
       - name: wwwdata
         hostPath:
-          path: /Users/shidegang/Downloads
+          path: /Users/shidg/Downloads
       - name: wwwconf
         hostPath:
-          path: /Users/shidegang/work/docker_configurations/nginx
+          path: /Users/shidg/work/docker_configurations/nginx

@@ -13,9 +13,6 @@ spec:
       app: nfs-client-provisioner
   strategy:
     type: Recreate
-  selector:
-    matchLabels:
-      app: nfs-client-provisioner
   template:
     metadata:
       labels:
