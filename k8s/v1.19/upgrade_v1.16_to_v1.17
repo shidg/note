@@ -1,0 +1,107 @@
+# ##  该过程仅在测试环境验证
+# ##  升级过程并非完全平滑，会有pod的删除和重建（升级程序自动将pod在节点间进行迁移），服务会有中断
+##### upgrade master nodes ####
+# 查看当前可用版本
+yum list --showduplicates kubeadm --disableexcludes=kubernetes
+
+# On the first master(eg: master-3)
+# replace x in 1.17.x-0 with the latest patch version,eg:
+yum install -y kubeadm-1.17.0-0 --disableexcludes=kubernetes
+
+# 确认kubeadm 版本
+kubeadm version
+
+# drain this master （驱逐节点上的所有pod）
+kubectl drain master-3 --ignore-daemonsets
+
+# then, run: 
+kubeadm upgrade plan
+# 若执行成功，最终会输出如下信息：
+#You can now apply the upgrade by executing the following command:
+
+#    kubeadm upgrade apply v1.17.0
+# 这代表当前集群可以升级，以及可升级到的版本为v1.17.0 
+
+
+# 确认升级
+kubeadm upgrade apply v1.17.0
+# 注意在执行该步骤之前应该先手动下载相关docker镜像，就像手动部署集群时那样
+# 因为在upgrade的过程中若本地没有相关镜像则自动去k8s.gcr.io下载，不翻墙是下载不下来的，进而升级失败
+# 执行成功的提示：
+# [upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.17.0". Enjoy!
+
+# [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
+
+
+# 升级网络插件（可选）
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+# 升级完成
+kubectl uncordon master-3
+
+
+# other master nodes
+
+# replace x in 1.17.x-0 with the latest patch version,eg:
+yum install -y kubeadm-1.17.0-0 --disableexcludes=kubernetes
+
+# drain this master
+kubectl drain master-x --ignore-daemonsets
+
+# then, run: 
+kubeadm upgrade node
+
+kubectl uncordon master-x
+
+
+## Upgrade kubelet and kubectl
+## On all master nodes
+# replace x in 1.17.x-0 with the latest patch version, eg:
+yum install -y kubelet-1.17.0-0 kubectl-1.17.0-0 --disableexcludes=kubernetes
+
+# Restart the kubelet
+systemctl daemon-reload
+systemctl restart kubelet
+
+
+
+###### upgrade worker nodes #####
+# on all worker nodes
+#
+# upgrade kubeadm 
+# replace x in 1.17.x-0 with the latest patch version,eg:
+yum install -y kubeadm-1.17.0-0 --disableexcludes=kubernetes
+
+# Drain the node(master节点执行)
+kubectl drain node3 --ignore-daemonsets
+#node/ip-172-31-85-18 cordoned
+#WARNING: ignoring DaemonSet-managed Pods: kube-system/kube-proxy-dj7d7, kube-system/weave-net-z65qx
+node/ip-172-31-85-18 drained
+
+
+# Upgrade the kubelet configuration
+# 同样要先保证相关docker镜像已经下载，否则无法升级
+kubeadm upgrade node
+
+
+# Upgrade kubelet and kubectl
+# replace x in 1.17.x-0 with the latest patch version,eg:
+yum install -y kubelet-1.17.0-0 kubectl-1.17.0-0 --disableexcludes=kubernetes
+
+# restart kubelet
+systemctl daemon-reload
+systemctl restart kubelet
+
+# uncordon node (master节点执行)
+kubectl uncordon $NODE
+
+# check cluster status
+kubectl get nodes
+
+NAME       STATUS   ROLES    AGE   VERSION
+master-1   Ready    master   37d   v1.17.0
+master-2   Ready    master   37d   v1.17.0
+master-3   Ready    master   37d   v1.17.0
+node1      Ready    <none>   37d   v1.17.0
+node2      Ready    <none>   37d   v1.17.0
+node3      Ready    <none>   37d   v1.17.0
