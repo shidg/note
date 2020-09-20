@@ -268,6 +268,12 @@ kubeadm join api.k8s.com:8443 --token qk2l0f.6kx26ibh07jt70vt \
 kubeadm join api.k8s.com:8443 --token qk2l0f.6kx26ibh07jt70vt \
     --discovery-token-ca-cert-hash sha256:ca02030871e3289f8e5086958010308839b641ed2f2d043b88fb9a7ee616e64f
 
+# 生成join 命令 (--token 和 --discovery-token-ca-cert-hash)
+kubeadm token create --print-join-command
+
+# 生成join需要的cert key  (--certificate-key)
+kubeadm init phase upload-certs --upload-certs
+
 # 查看token
 kubeadm token list
 
