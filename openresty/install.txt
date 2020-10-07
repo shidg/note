@@ -1,0 +1,17 @@
+# requires
+
+# zlib
+# yum install zlib zlib-devel
+
+#  openssl  https://www.openssl.org/
+# wget https://www.openssl.org/source/openssl-1.1.1h.tar.gz
+
+# pcre  https://ftp.pcre.org/pub/pcre/
+# wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz
+
+
+# openresty  download
+# https://openresty.org/cn/download.html
+
+# configure
+# ./configure --prefix=/usr/local/openresty-1.17.8.2 --with-openssl=../openssl-1.1.1h --with-pcre=../pcre-8.44
