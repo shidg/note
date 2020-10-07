@@ -3,10 +3,10 @@
 # 方式一  realip 模块 --with-http_realip_module
 
 如何正确传递客户真实ip很重要，
-尤其是第一层代理，一定要正确地将用户真实ip传递到下一层代理或者业务服务器
-作为第一层代理，要将用户的握手ip赋值给X-real-ip向后传递，如下：
+尤其是第一层nginx代理，一定要正确地将用户真实ip传递到下一层代理或者业务服务器
+作为第一层nginx代理，要将用户的握手ip赋值给X-real-ip(nginx特有的变量)向后传递，如下：
 proxy_set_header    X-real-ip $remote_addr;
-之后的代理服务器这样来传递该握手ip:
+之后的nginx代理服务器这样来传递该握手ip:
 proxy_set_header    X-real-ip $http_x_real_ip;
 这样，到了最后一层代理直接取$http_x_real_ip的值就是用户的真实ip(比如配置访问日志记录用户真实ip)
 

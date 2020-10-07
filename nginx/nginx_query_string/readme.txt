@@ -1,4 +1,4 @@
-# 在url中包含?的时候，nginx的$query_tring变量的值就是?后边的内容，
+# 在url中包含?的时候，nginx的$query_string变量的值就是?后边的内容，
 # rewrite的正则是不匹配$query_string的，并且默认情况下，$query_string的值会自动追加到rewrite后的地址末尾。例如
 
 rewrite ^/read.php$ /api.php

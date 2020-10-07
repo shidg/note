@@ -28,7 +28,7 @@ Content-Type is not allowed by Access-Control-Allow-Headers in preflight respons
 发送"预检请求"时，需要用到方法 OPTIONS ,所以服务器需要允许该方法。
 
 三、 预检请求（preflight request）
-其实上面的配置涉及到了一个W3C标准：CROS,全称是跨域资源共享 (Cross-origin resource sharing)，它的提出就是为了解决跨域请求的。
+其实上面的配置涉及到了一个W3C标准：CORS,全称是跨域资源共享 (Cross-origin resource sharing)，它的提出就是为了解决跨域请求的。
 
 跨域资源共享(CORS)标准新增了一组 HTTP 首部字段，允许服务器声明哪些源站有权限访问哪些资源。另外，规范要求，对那些可能对服务器数据产生副作用的HTTP 请求方法（特别是 GET 以外的 HTTP 请求，或者搭配某些 MIME 类型的 POST 请求），浏览器必须首先使用 OPTIONS 方法发起一个预检请求（preflight request），从而获知服务端是否允许该跨域请求。服务器确认允许之后，才发起实际的 HTTP 请求。在预检请求的返回中，服务器端也可以通知客户端，是否需要携带身份凭证（包括 Cookies 和 HTTP 认证相关数据）。
 其实Content-Type字段的类型为application/json的请求就是上面所说的搭配某些 MIME 类型的 POST 请求,CORS规定，Content-Type不属于以下MIME类型的，都属于预检请求：
