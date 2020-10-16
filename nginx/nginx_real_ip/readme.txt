@@ -3,10 +3,10 @@
 # 方式一  realip 模块 --with-http_realip_module
 
 如何正确传递客户真实ip很重要，
-尤其是第一层代理，一定要正确地将用户真实ip传递到下一层代理或者业务服务器
-作为第一层代理，要将用户的握手ip赋值给X-real-ip向后传递，如下：
+尤其是第一层nginx代理，一定要正确地将用户真实ip传递到下一层代理或者业务服务器
+作为第一层nginx代理，要将用户的握手ip赋值给X-real-ip(nginx特有的变量)向后传递，如下：
 proxy_set_header    X-real-ip $remote_addr;
-之后的代理服务器这样来传递该握手ip:
+之后的nginx代理服务器这样来传递该握手ip:
 proxy_set_header    X-real-ip $http_x_real_ip;
 这样，到了最后一层代理直接取$http_x_real_ip的值就是用户的真实ip(比如配置访问日志记录用户真实ip)
 
@@ -47,23 +47,13 @@ nginx的两个变量：
 $http_x_forwarded_for：就是该服务器上的X-Forwarded-For的值。如果这是第一层代理，该值为空，否则该值为上层代理传递过来的XXF值。
 $proxy_add_x_forwarded_for：存储了上层传递过来的XXF和上层代理本身的ip,是一个累加值 [client,proxy1, proxy2,...]
 
-#proxy_set_header            X-Forwarded-For $http_x_forwarded_for;
-#proxy_set_header            X-Forwarded-For $proxy_add_x_forwarded_for;
 
 
-那么$proxy_add_x_forwarded_for又是什么？
-
-$proxy_add_x_forwarded_for变量包含客户端请求头中的"X-Forwarded-For"，与$remote_addr两部分，他们之间用逗号分开。
-
-举个例子，有一个web应用，在它之前通过了两个nginx转发，即用户访问该web通过两台nginx。
 
 在第一台nginx中,使用
 
+proxy_set_header            X-Forwarded-For $remote_addr;
+
+后边的nginx，使用
 proxy_set_header            X-Forwarded-For $proxy_add_x_forwarded_for;
-
-现在的$proxy_add_x_forwarded_for变量的"X-Forwarded-For"部分是空的，所以只有$remote_addr，而$remote_addr的值是用户的ip，于是赋值以后，X-Forwarded-For变量的值就是用户的真实的ip地址了。
-
-到了第二台nginx，使用
-proxy_set_header            X-Forwarded-For $proxy_add_x_forwarded_for;
-
-现在的$proxy_add_x_forwarded_for变量，X-Forwarded-For部分包含的是用户的真实ip，$remote_addr部分的值是上一台nginx的ip地址，于是通过这个赋值以后现在的X-Forwarded-For的值就变成了"用户的真实ip，第一台nginx的ip"
+这样，最后取到的ip列表就是[client, proxy1, proxy2, ……]
