@@ -26,3 +26,24 @@ git checkout origin/dev -b dev
 # 再次
 git fetch origin dev:dev
 git branch --set-upstream-to=origin/dev dev
+
+
+
+
+ ###  撤销提交
+ #新增一次提交，抵消掉上一次提交导致的所有变化。不会该表过去的历史，无代码丢失风险
+ git revert HEAD
+
+ # 如果要抵消掉多个提交：
+ git revert [倒数第一个提交] [倒数第二个提交]
+
+
+ # 撤掉提交，而且不产生提交记录
+ git revert HEAD --no-commit
+
+
+ # 修改上一次的提交信息
+ git commit --amend -m "Fixes bug #42"
+
+ # 删除暂存区内容（撤销git add）
+ git rm --cached <filename>
