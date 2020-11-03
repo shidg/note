@@ -10,7 +10,7 @@
 # https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
 # On each of your machines, install Docker. Version 19.03.11 is recommended, but 1.13.1, 17.03, 17.06, 17.09, 18.06 and 18.09 are 
 # known to work as well. Keep track of the latest verified Docker version in the Kubernetes release notes.
-# k8s 1.19.1-0
+# k8s 1.19.1
 # dashboard 2.0 beta8
 
 # 至少3master 3node
@@ -155,7 +155,7 @@ modprobe ip_vs
 modprobe ip_vs_rr
 modprobe ip_vs_wrr
 modprobe ip_vs_sh
-modprobe nf_conntrack_ipv4
+modprobe nf_conntrack
 EOF
 
 chmod +x /etc/sysconfig/modules/* && cat /etc/sysconfig/modules/* | bash
@@ -216,7 +216,7 @@ EOF
 yum clean all && yum makecache -y
 
 # 安装k8s
-yum install -y kubelet-1.19.1-0 kubeadm-1.19.1-0 kubectl-1.19.1-0 --disableexcludes=kubernetes
+yum install -y kubelet-1.19.1 kubeadm-1.19.1 kubectl-1.19.1 --disableexcludes=kubernetes
 systemctl enable kubelet
 
 # kubelet 命令补全
@@ -231,7 +231,7 @@ echo "source <(kubectl completion zsh)" >> ~/.zshrc && source ~/.zshrc
 ##  images.sh
 #!/bin/bash
 url=registry.cn-hangzhou.aliyuncs.com/google_containers
-version=v1.19.1-0  # kubectl version
+version=v1.19.1  # kubectl version
 images=(`kubeadm config images list --kubernetes-version=$version|awk -F '/' '{print $2}'`)
 for imagename in ${images[@]} ; do
   docker pull $url/$imagename
@@ -245,12 +245,12 @@ sh images.sh
 # 查看镜像拉取结果
 docker images
 #REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
-#k8s.gcr.io/kube-proxy                v1.19.1-0             9b65a0f78b09        2 weeks ago         86.1MB
-#k8s.gcr.io/kube-apiserver            v1.19.1.-0             df60c7526a3d        2 weeks ago         217MB
-#k8s.gcr.io/kube-controller-manager   v1.19.1-0             bb16442bcd94        2 weeks ago         163MB
-#k8s.gcr.io/kube-scheduler            v1.19.1-0             98fecf43a54f        2 weeks ago         87.3MB
+#k8s.gcr.io/kube-proxy                v1.19.1             9b65a0f78b09        2 weeks ago         86.1MB
+#k8s.gcr.io/kube-apiserver            v1.19.1             df60c7526a3d        2 weeks ago         217MB
+#k8s.gcr.io/kube-controller-manager   v1.19.1             bb16442bcd94        2 weeks ago         163MB
+#k8s.gcr.io/kube-scheduler            v1.19.1             98fecf43a54f        2 weeks ago         87.3MB
 #k8s.gcr.io/etcd                      3.4.3-0             b2756210eeab        2 months ago        247MB
-#k8s.gcr.io/coredns                   1.6.7               bf261d157914        3 months ago        44.1MB
+#k8s.gcr.io/coredns                   1.7.0               bf261d157914        3 months ago        44.1MB
 #k8s.gcr.io/pause                     3.2                 da86e6ba6ca1        2 years ago         742kB
 
 ######  以下操作在master节点执行 ##########

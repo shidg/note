@@ -1,8 +1,47 @@
 # redis 5.0之后将集群管理功能集中到了redis-cli命令中
 # 通过 --cluster参数调用各项功能
 
-## redis安装
-# 至少6个节点，三主三从，可以是同一台机器上的多个实例，使用端口区分
+## redis6.0.9 安装
+# gcc版本不低于5.3,所以要先升级gcc
+
+# 使用scl升级gcc
+# 安装centos-release-scl
+yum install centos-release-scl
+
+# 安装gcc9.3
+yum -y install devtoolset-9-gcc devtoolset-9-gcc-c++ devtoolset-9-binutils
+# 启用gcc9.3
+scl enable devtoolset-9 bash
+# 需要注意的是scl命令启用只是临时的，退出shell或重启就会恢复原系统gcc版本。
+# 如果要长期使用gcc 9.3的话：
+echo "source /opt/rh/devtoolset-9/enable" >>/etc/profile
+
+# 下载redis-6.0.9
+# 安装
+tar zxvf redis-6.0.9.tar.gz && cd redis-6.0.9 && make && make PREFIX=/usr/local/redis install
+
+echo madvise > /sys/kernel/mm/transparent_hugepage/enabled
+
+# 创建目录
+mkdir -p /usr/local/redis-cluster/{conf,data,log} \ 
+&& mkdir /usr/local/redis-cluster/data/{6379,6378,6377,6376,6375,6374}
+
+#配置文件，以6379.conf 为例
+
+# 启动redis 实例
+redis-server conf/6379.conf
+redis-server conf/6378.conf
+redis-server conf/6377.conf
+redis-server conf/6376.conf
+redis-server conf/6375.conf
+redis-server conf/6374.conf
+
+#创建集群
+redis-cli --cluster create 192.168.33.10:6379 192.168.33.10:6378 192.168.33.10:6377 \
+192.168.33.10:6376 192.168.33.10:6375 192.168.33.10:6374  --cluster-replicas 1 -a "123456"
+
+
+# cluster模式至少6个节点，三主三从，可以是同一台机器上的多个实例，使用端口区分
 # 安装完成后修改配置文件 redis.conf
 # cluster-enabled yes
 # cluster-config-file /etc/redis/nodes-6379.conf #该文件由redis自行管理，注意目录权限

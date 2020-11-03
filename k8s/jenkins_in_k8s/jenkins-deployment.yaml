@@ -43,7 +43,7 @@ spec:
       containers:
         - name: jenkins
           #image: jenkins:2.60.3
-          image: jenkinsci/blueocean:1.21.0 # 集成了docker
+          image: jenkinsci/blueocean:1.23.2
           securityContext:
             runAsUser: 0
           imagePullPolicy: IfNotPresent
