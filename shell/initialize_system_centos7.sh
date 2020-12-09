@@ -187,6 +187,10 @@ EOF
 port=5122
 sed  -i "/^#Port/ {s/^#//;s/22/$port/}" /etc/ssh/sshd_config
 
+# ssh密码错误3次账号锁定5分钟(不锁定root)
+#sed -i '/#%PAM/ a\auth required pam_tally2.so deny=3 unlock_time=300' even_deny_root root_unlock_time=120 /etc/pam.d/sshd
+sed -i '/#%PAM/ a\auth required pam_tally2.so deny=3 unlock_time=300' /etc/pam.d/sshd
+sed -i '/-auth/ a\account     required    pam_tally2.so' /etc/pam.d/sshd
 
 #history
 sed -i '/^HISTSIZE/ a \export HISTFILESIZE=10000000\
