@@ -34,3 +34,7 @@ kubectl drain nodename --delete-local-data --ignore-daemonsets --force
 # node上
 # kubeadm reset
 
+
+# 回滚
+kubectl rollout history deployment ${deployment_name}
+kubectl rollout undo deployment ${deployment_name} --to-revision=1

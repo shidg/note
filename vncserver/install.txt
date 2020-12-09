@@ -61,8 +61,9 @@ vncpasswd
 # 如：su Amos  切换到Amos用户再执行上vncpasswd设置密码
 
 # 启动服务，设置自启动
-systemctl start vncserver@:1
-systemctl enable vncserver@:1    # 设为开机启动
+systemctl daemon-reload
+systemctl start vncserver@\:1.service
+systemctl enable vncserver@\:1.service
 
 
 
@@ -77,10 +78,6 @@ systemctl enable vncserver@:1    # 设为开机启动
 
 
 
-vi /etc/sysconfig/vncservers
-
-VNCSERVERS="10:root"   #vncserver默认端口5900，如果指定桌面号为10，那么连接的时候就连接（5900+10）这个端口
-VNCSERVERARGS[10]="-geometry 800x600 -nolisten tcp"  #默认是只对localhost开放的，这里去掉了"-localhost"
 
 
 #vnc多用户登录
