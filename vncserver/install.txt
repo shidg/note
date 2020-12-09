@@ -55,7 +55,7 @@ WantedBy=multi-user.target
 
 
 #设置vncserver的连接密码：
-vncspasswd
+vncpasswd
 # 不添加只读账号密码
 # 每个不用的系统用户，设置密码时，需要切换到该用户下，执行此命令
 # 如：su Amos  切换到Amos用户再执行上vncpasswd设置密码
