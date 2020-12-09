@@ -1,41 +1,59 @@
-yum install kvm libvirt python-virtinst qemu-kvm virt-viewer
-
-#挂载光盘
-mount  /dev/cdrom   /mnt
-#修改yum源为本地光盘
-
 #在宿主机上安装kvm套件
-yum groupinstall kvm
+#yum groupinstall kvm
+yum -y install qemu-kvm qeum-kvm-tools libvirt virt-install bridge-utils  virt-manager
 
 #加载kvm模块
 modprobe kvm
 modprobe kvm_intel #需要cpu支持虚拟化并在bios中开启该支持
+
+# 宿主机关闭NetworkManager服务
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+
+# 启动libvirtd服务
+systemctl start libvirtd
+systemctl enable libvirtd
+
+
+
+# 创建网桥
+# 系统中还会有一个virbr0,是kvm自动管理的，是NAT模式会用到的网卡
+# 新建的网桥名称注意不要与virbr0冲突
+brctl addbr br0
+brctl addif br0 eth0(主网卡的名字)
+brctl stp br0 on
+
+vi /etc/sysconfig/network-script/ifc-br0 #添加的网桥
+
+DEVICE=br0
+TYPE=Bridge
+BOOTPROTO=static
+DEFROUTE=yes
+IPADDR=124.238.252.249
+NETMASK=255.255.255.0
+GATEWAY=xxxx
+DNS1=xxxx
+ONBOOT=yes
+
+#修改宿主机网卡设置
+vi  /etc/sysconfig/network-script/ifc-eth0  #现有的真实网卡
+BOOTPROTO=none
+BRIDGE=br0
+
+
+# 重启网卡
+systemctl restat network
+
+
+# 创建虚拟机
+# 虚拟机运行之后不要轻易重启宿主机网络服务，会导致虚拟机网络中断，可能需要宿主机重启才能恢复(本地测试时存在的问题)
+
 
 #创建40G大小的虚拟磁盘
 dd if=/dev/zero  of=/kvm/kvm01.img  bs=2M count=20480
 
 #生成10img，格式：qcow2，这种格式随容量大小变化，直到超过限定值。生成很快，文件也很小，拷贝很方便。 
 qemu-img create -f qcow2 centos.img  10G 
-
-#修改宿主机网卡设置，添加网桥
-vi  /etc/sysconfig/network-script/ifc-eth0  #现有的真实网卡
-
-DEVICE=eth0
-HWADDR=
-BOOTPROTO=no
-ONBOOT=yes
-TYPE=Ethernet
-BRIDGE=br0
-
-
-vi /etc/sysconfig/network-script/ifc-br0 #添加的网桥
-
-DEVICE=br0
-BOOTPROTO=static
-IPADDR=124.238.252.249
-NETMASK=255.255.255.0
-GATEWAY=
-TYPE=Bridge
 
 # 将光盘内容复制为本机上的iso文件
 dd  if=/dev/cdrom  of=/opt/rhel.iso  bs=2048

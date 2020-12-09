@@ -1,18 +1,87 @@
 #服务器安装了桌面环境，可以使用vnc远程连接到服务器的桌面环境进行操作，即使服务器运行在字符模式下。
+yum groupinstall -y "GNOME Desktop"
 
 #安装vnc-server
 yum install tigervnc-server
+
+
+# 设置为服务
+cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:1.service
+
+# 修改此服务配置
+# 以下为root用户的配置，每一个用户，都需要单独设置一个监听服务。且配置不同
+vim /etc/systemd/system/vncserver@\:1.service
+----------------------------------------------------------------------------------------------------------
+[Unit]
+Description=Remote desktop service (VNC)
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=root
+
+# Clean any existing files in /tmp/.X11-unix environment
+ExecStartPre=-/usr/bin/vncserver -kill %i
+ExecStart=/sbin/runuser -l root -c "/usr/bin/vncserver %i"
+PIDFile=/root/.vnc/%H%i.pid
+ExecStop=-/usr/bin/vncserver -kill %i
+
+[Install]
+WantedBy=multi-user.target
+
+
+# 对于普通用户，加入用户名为：Amos
+# 下面举例进行设置： 首先一样复制一个server配置。改名为vncserver@:2.service
+cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:2.service
+# 然后进行修改
+vim /etc/systemd/system/vncserver@\:2.service
+--------------------------------------------------------------------------------------------------------
+[Unit]
+Description=Remote desktop service (VNC)
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=root
+
+# Clean any existing files in /tmp/.X11-unix environment
+ExecStartPre=-/usr/bin/vncserver -kill %i
+ExecStart=/usr/bin/vncserver %i
+PIDFile=/home/Amos/.vnc/%H%i.pid
+ExecStop=-/usr/bin/vncserver -kill %i
+
+[Install]
+WantedBy=multi-user.target
+
+
+#设置vncserver的连接密码：
+vncspasswd
+# 不添加只读账号密码
+# 每个不用的系统用户，设置密码时，需要切换到该用户下，执行此命令
+# 如：su Amos  切换到Amos用户再执行上vncpasswd设置密码
+
+# 启动服务，设置自启动
+systemctl start vncserver@:1
+systemctl enable vncserver@:1    # 设为开机启动
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 vi /etc/sysconfig/vncservers
 
 VNCSERVERS="10:root"   #vncserver默认端口5900，如果指定桌面号为10，那么连接的时候就连接（5900+10）这个端口
 VNCSERVERARGS[10]="-geometry 800x600 -nolisten tcp"  #默认是只对localhost开放的，这里去掉了"-localhost"
 
-#设置vncserver的连接密码：
-
-vncspasswd
-
-service  vncserver start
 
 #vnc多用户登录
 
@@ -22,49 +91,3 @@ VNCSERVERS="10:root 20:tom 30:herry"
 VNCSERVERARGS[10]="-geometry 800x600 -nolisten tcp"
 VNCSERVERARGS[20]="-geometry 800x600 -nolisten tcp"
 VNCSERVERARGS[30]="-geometry 800x600 -nolisten tcp"
-
-# 为各用户设置vnc密码需要切换到各自的用户之后再执行vncpasswd
-
-# 设置tom的vnc密码
-su tom
-vncpasswd
-
-# 设置herry的vnc密码
-su herry
-vncpasswd
-
-
-
-
-
-#CentOS 7
-
-yum install tigervnc-server tigervnc-server-module
-
-cp  /lib/systemd/system/vncserver@.service   /lib/systemd/system/vncserver@:1.service
-
-### /lib/systemd/system/vncserver@:1.service ###
-[Unit]
-Description=Remote desktop service (VNC)
-After=syslog.target network.target
-
-[Service]
-Type=forking
-# Clean any existing files in /tmp/.X11-unix environment
-ExecStartPre=/bin/sh -c '/usr/bin/vncserver -kill %i > /dev/null 2>&1 || :'
-ExecStart=/sbin/runuser -l shidg -c "/usr/bin/vncserver %i -geometry 1280x1024"
-PIDFile=/home/shidg/.vnc/%H%i.pid
-ExecStop=/bin/sh -c '/usr/bin/vncserver -kill %i > /dev/null 2>&1 || :'
-[Install]
-WantedBy=multi-user.target
-
-#为用户设置vnc连接密码
-su - shidg
-vncserver
-
-#以root身份启动vncserver
-sudo su -
-systemctl start vncserver@:1.service
-systemctl enable vncserver@:1.service
-
-#如果同时有多个用户需要连接vnc,则将vncserver@:1复制，修改其中的用户名即可

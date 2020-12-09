@@ -121,13 +121,6 @@ net.ipv4.tcp_max_orphans = 3276800
 
 net.ipv4.tcp_syncookies = 1
 
-#tcp重传
-#放弃回应一个TCP连接请求前﹐需要进行多少次重试（入站）
-net.ipv4.tcp_retries1 = 3
-
-# 在丢弃激活(已建立通讯状况)的TCP连接之前﹐需要进行多少次重试
-net.ipv4.tcp_retries2 = 9
-
 # tcp半连接队列最大长度(当syncookies=1时该参数无效) 
 net.ipv4.tcp_max_syn_backlog = 8192
 
