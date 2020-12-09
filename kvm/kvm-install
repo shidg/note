@@ -1,6 +1,6 @@
 #在宿主机上安装kvm套件
 #yum groupinstall kvm
-yum -y install qemu-kvm qeum-kvm-tools libvirt virt-install bridge-utils  virt-manager
+yum -y install qemu-kvm libvirt virt-install bridge-utils  virt-manager
 
 #加载kvm模块
 modprobe kvm
