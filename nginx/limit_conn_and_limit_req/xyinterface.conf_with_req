@@ -1,0 +1,1153 @@
+upstream cloudxyapi{
+#         server 192.168.43.61:8080 weight=1;
+         server 192.168.58.161:8080 weight=1;
+         server 192.168.58.1:8080 weight=1;
+         server 192.168.50.198:8080 weight=1;
+         server 192.168.50.66:8080 weight=1;
+         server 192.168.51.175:8080 weight=1;
+}
+upstream xyapi{
+         server 192.168.50.147:8080 weight=1;
+         server 192.168.51.74:8080 weight=1;
+         server 192.168.48.188:8080 weight=1;
+         server 192.168.51.144:8080 weight=1;
+         server 192.168.50.57:8080 weight=1;
+         server 192.168.51.134:8080 weight=1;
+         server 192.168.51.210:8080 weight=1;
+         server 192.168.50.80:8080 weight=1;
+         server 192.168.48.69:8080 weight=1;
+         server 192.168.51.108:8080 weight=1;
+}
+
+server {
+        listen  80;
+        server_name     cloudxyapi.yunshicloud.com;
+        resolver 192.168.49.179;
+
+
+        location / #所有jsp的页面均交由tomcat处理
+        {
+           if ( $http_x_forwarded_for ~ 119\.29\.64\.84) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 47\.100\.211\.239) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.229\.9\.26) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 119\.188\.246\.240) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.79\.124\.73) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 112\.49\.246\.217) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.225\.72\.31) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 223\.81\.139\.222) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.79\.125\.98) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 116\.253\.113\.134) {
+                return 403;
+           }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_redirect            off;
+                proxy_set_header                Host $host;
+                proxy_set_header                X-Real-IP $remote_addr;  #获取真实ip
+                client_max_body_size    10m;
+                client_body_buffer_size 128k;
+                proxy_connect_timeout   90;
+                proxy_send_timeout        90;
+                proxy_read_timeout        90;
+                proxy_buffer_size          128k;
+                proxy_buffers              2 256k;
+                proxy_busy_buffers_size 256k;
+                proxy_temp_file_write_size 256k;
+                proxy_pass http://cloudxyapi;
+        }
+
+        location /interface/ #所有jsp的页面均交由tomcat处理
+        {
+           if ( $http_x_forwarded_for ~ 119\.29\.64\.84) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 47\.100\.211\.239) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.229\.9\.26) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 119\.188\.246\.240) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.79\.124\.73) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 112\.49\.246\.217) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.225\.72\.31) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 223\.81\.139\.222) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 111\.79\.125\.98) {
+                return 403;
+           }
+           if ( $http_x_forwarded_for ~ 116\.253\.113\.134) {
+                return 403;
+           }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_redirect            off;
+                proxy_set_header                Host $host;
+                proxy_set_header                X-Real-IP $remote_addr;  #获取真实ip
+                client_max_body_size    10m;
+                client_body_buffer_size 128k;
+                proxy_connect_timeout   90;
+                proxy_send_timeout        90;
+                proxy_read_timeout        90;
+                proxy_buffer_size          128k;
+                proxy_buffers              2 256k;
+                proxy_busy_buffers_size 256k;
+                proxy_temp_file_write_size 256k;
+                proxy_pass http://cloudxyapi/;
+        }
+
+
+        location ~ ^/api/xy/toc/(\w+)/v1/addActionLogByShare$  {
+                        add_header Access-Control-Allow-Origin *;
+                        add_header Access-Control-Allow-Headers Origin,X-Requested-With,Content-Type,Accept,Range;
+                        add_header Access-Control-Allow-Methods GET,POST,OPTIONS;
+                        content_by_lua_file /usr/local/dazzle-lua-project/lua/manage/start_manage.lua;
+        }
+
+
+
+        location ~ ^/api/xy/toc/(\w+)/v1/addActionLogByPv$  {
+                        if ($request_method = OPTIONS){
+                                return 200;
+                        }
+                        add_header Access-Control-Allow-Origin *;
+                        add_header Access-Control-Allow-Headers authentication,Origin,X-Requested-With,Content-Type,Accept,Range;
+                        add_header Access-Control-Allow-Methods GET,POST,OPTIONS;
+                        content_by_lua_file /usr/local/dazzle-lua-project/lua/manage/start_manage.lua;
+        }
+
+        location ~ ^/api/xy/toc/(\w+)/v1/addActionLogByShare$  {
+                        add_header Access-Control-Allow-Origin *;
+                        add_header Access-Control-Allow-Headers Origin,X-Requested-With,Content-Type,Accept,Range;
+                        add_header Access-Control-Allow-Methods GET,POST,OPTIONS;
+                        content_by_lua_file /usr/local/dazzle-lua-project/lua/manage/start_manage.lua;
+        }
+
+        location /api/xy/toc/v1/queryReleaseContentByZtid
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/live/v1/getLiveById
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?|$request_body";
+                proxy_cache_methods POST;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryConfig
+        {
+
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryTvPlus
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryTvSpecialDocs
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryTvSpecial
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryPages
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 120s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryContentByDocId
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryWordMarkDocList
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/listenRadio/queryPage
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryContentGlobal
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryReleaseContent
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                        proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryPvUvNumBatch
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v2/queryDatas
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v2/queryCompanyGroup
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/querySubscribersByOpenId
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/getAllSubscribeColumn
+        {
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$a&userId=1&$b?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+
+        location /api/xy/toc/v1/queryModules
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+        location /api/xy/appCode/v1/getAppCode
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/liveRoom/info/v1/getGlobalConfig
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/user/fans/v1/getFansStatsInfo
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/liveRoom/commodity/v1/queryCommodity
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/liveRoom/info/v1/getRoomNotice
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/liveRoom/info/v1/getPictureText
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/liveRoom/info/v1/getReview
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+        location /api/liveRoom/info/v1/getRoomDetails
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 3s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+        location /api/xy/toc/v1/queryLivePageList
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryPvUv
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 3s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryHidePage
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/content/v1/queryRecommend
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryAllCircle
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryLiveByGroup
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 3s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/v1/queryContentList
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://cloudxyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://cloudxyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+
+        location /api/xy/toc/activity/v1/getActivityById
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://xyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+        location /api/xy/toc/activity/v1/getActivitySubById
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://xyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+        location /api/xy/toc/activity/v1/getActivityTopList
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://xyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+        location /api/xy/toc/activity/v1/getActivitySub
+        {
+                if ($query_string       ~* "(.*)userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$b;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)(.*)") {
+                        set $a $1;
+                        set $b 1;
+                        set $c userId=1&$a;
+                        proxy_pass http://xyapi;
+                }
+                if ($query_string       ~* "(.*)\&userId=([A-Za-z0-9_-][A-Za-z0-9_-]+)\&(.*)") {
+                        set $a $1;
+                        set $b $3;
+                        set $c userId=1&$a&$b;
+                        proxy_pass http://xyapi;
+                }
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$c?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+#       location /api/xy/toc/activity/v1/createJoiners {
+#        default_type application/json;
+#
+#               return 200 '{"code":1,"data":{},"message":"系统繁忙，请稍候再试"}';
+#        }
+
+
+
+location /api/xy/toc/activity/v1/createJoiners {
+
+    # 定义好如下zone
+    # lua_shared_dict my_limit_req_store 100m
+
+   access_by_lua_block {
+        local limit_req = require "resty.limit.req"
+        local lim, err = limit_req.new("my_limit_req_store", 2, 60)
+        if not lim then
+            ngx.log(ngx.ERR, "failed to instantiate a resty.limit.req object: ", err)
+            return ngx.exit(500)
+        end
+
+        local key = ngx.var.binary_remote_addr
+        local delay, err = lim:incoming(key, true)
+        if not delay then
+            if err == "rejected" then
+                return ngx.exit(503)
+            end
+            ngx.log(ngx.ERR, "failed to limit req: ", err)
+            return ngx.exit(500)
+        end
+        
+        if delay >= 0.001 then
+            ngx.sleep(delay)
+        end
+    }
+    proxy_next_upstream error timeout http_503 http_504 http_502;
+    proxy_redirect            off;
+    proxy_set_header                Host $host;
+    proxy_set_header                X-Real-IP $remote_addr;  #获取真实ip
+    client_max_body_size    10m;
+    client_body_buffer_size 128k;
+    proxy_connect_timeout   60;
+    proxy_send_timeout        30;
+    proxy_read_timeout        30;
+    proxy_buffer_size          128k;
+    proxy_buffers              2 256k;
+    proxy_busy_buffers_size 256k;
+    proxy_temp_file_write_size 256k;
+    proxy_pass http://xyapi;
+}
+
+
+       location /api/xy/fans/v1/getFansPhoneCode {
+                           return 403;
+       }
+        location /api/xy/fans/v2/queryFansById
+        {
+                proxy_next_upstream error timeout http_503 http_504 http_502;
+                proxy_cache  cache;
+                proxy_cache_key "$uri?$query_string?";
+                proxy_cache_methods GET;
+                proxy_cache_valid 60s;
+                proxy_cache_use_stale updating;
+                proxy_pass http://cloudxyapi;
+                add_header Nginx-Cache "$upstream_cache_status";
+        }
+       location /api/xy/fans/v1/loginFansByWechat {
+        default_type application/json;
+
+               return 200 '{"code":1,"data":{},"message":"系统繁忙，请稍候再试"}';
+        }
+
+
+
+#       location /api/xy/fans/v1/loginFansByWechat {
+#    	access_by_lua_block {
+#        local limit_conn = require "resty.limit.conn"
+#        
+#        local lim, err = limit_conn.new("my_limit_conn_store", 10, 0, 0.5)              
+#        if not lim then
+#            ngx.log(ngx.ERR, "failed to instantiate a resty.limit.conn object: ", err)
+#            return ngx.exit(500)
+#        end
+#
+#        local key = ngx.var.binary_remote_addr
+#        local delay, err = lim:incoming(key, true)
+#        if not delay then
+#            if err == "rejected" then
+#                return ngx.exit(503)
+#            end
+#            ngx.log(ngx.ERR, "failed to limit req: ", err)
+#            return ngx.exit(500)
+#        end
+#
+#        if lim:is_committed() then
+#            local ctx = ngx.ctx
+#            ctx.limit_conn = lim
+#            ctx.limit_conn_key = key
+#            ctx.limit_conn_delay = delay
+#        end
+#
+#        local conn = err
+#        if delay >= 0.001 then
+#            ngx.sleep(delay)
+#    }
+
+#    log_by_lua_block {
+#        local ctx = ngx.ctx
+#        local lim = ctx.limit_conn
+#        if lim then
+#            local key = ctx.limit_conn_key
+#            local conn, err = lim:leaving(key, 0.5)
+#            if not conn then
+#                ngx.log(ngx.ERR,
+#                        "failed to record the connection leaving ",
+#                        "request: ", err)
+#                return
+#            end
+#        end
+#    }
+#     proxy_next_upstream error timeout http_503 http_504 http_502;
+#     proxy_redirect            off;
+#     proxy_set_header                Host $host;
+#     proxy_set_header                X-Real-IP $remote_addr;  #获取真实ip
+#     client_max_body_size    10m;
+#     client_body_buffer_size 128k;
+#     proxy_connect_timeout   90;
+#     proxy_send_timeout        90;
+#     proxy_read_timeout        90;
+#     proxy_buffer_size          128k;
+#     proxy_buffers              2 256k;
+#     proxy_busy_buffers_size 256k;
+#     proxy_temp_file_write_size 256k;
+#     proxy_pass http://xyapi;
+#}
+
+
+
+   access_log  /data/logs/nginx/xyinterface-elk.log  access;
+   access_log  /nginxlogs/xyinterface-149.log  access;
+   access_log  /data/logs/nginx/xyinterface-bigdata-json.log bigdata-json;
+}
+
