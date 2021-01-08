@@ -25,12 +25,12 @@ spawn lftp $ftp_user@$ftp_ip
 # expect {}，多行期望，匹配到哪条执行哪条. 切记expect与{之间有一个空格
 # 背景：有时执行shell后预期结果是不固定的，有可能是询问是yes/no，有可能是要求输入密码，可以用expect{}
 # exp_continue 继续执行后续动作
-# 上下两个提示符相同，使用exp_continue会导致第一个动作反复执行，不会按照预期向下执行下一个动作
 expect {
 "Password*" {send "$ftp_passwd\r";exp_continue}
 ">" {send "ls\r"}
 }
 
+# 上下两个提示符相同，使用exp_continue会导致第一个动作反复执行，不会按照预期向下执行下一个动作
 # 比如下边这两个动作，如果放到一个expect中，会发现get的动作反复执行，而不是像预期的那样，
 # 执行完get之后执行exit
 expect ">" {send "get $remote_path/$remote_file_name\r"}
@@ -38,4 +38,5 @@ expect ">" {send "exit\r"}
 
 expect eof
 EOF
-exit
+
+exit 0
