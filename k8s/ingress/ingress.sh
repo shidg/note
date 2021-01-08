@@ -4,8 +4,9 @@
 # Created Time: 2019-11-27 21:19:26
 
 # install ingress controller
+# https://github.com/kubernetes/ingress-nginx/tree/nginx-0.30.0/deploy/static
 # 使用镜像nginx-ingress-controller部署一个pod
-# 可以理解为使用deployment部署了一个nginx pod，该nginx将用来将请求转发到后端的service)
+# 可以理解为使用deployment部署了一个nginx pod，该nginx将用来将请求转发到后端的service
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
 
 # 将上一步骤中的nginx pod做为service暴露出去，使其可以接受外部流量

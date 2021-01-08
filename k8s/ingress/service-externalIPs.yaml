@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
 spec:
-  type: LoadBalancer
+  type: NodePort
   #  externalIPs:
   #- ${INGRESS_VIP} #一个和node同网段的自定义ip，并将业务域名解析到该ip
   ports:
