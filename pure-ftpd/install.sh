@@ -1,26 +1,17 @@
 #update openssl
 yum install zlib-devel -y
-tar zxvf openssl-1.0.2d.tar.gz && cd openssl-1.0.2d && ./config shared zlib && make && make install
-#mv /usr/bin/openssl /usr/bin/openssl.OFF
-#mv /usr/include/openssl /usr/include/openssl.OFF
-ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
-ln -s /usr/local/ssl/include/openssl /usr/include/openssl
+tar zxvf openssl-1.1.1i.tar.gz && cd openssl-1.1.1i && ./config --prefix=/usr shared zlib && make && make install
 #获取软件
-#wget http://download.pureftpd.org/pub/pure-ftpd/releases/pure-ftpd-1.0.42.tar.gz
+#wget http://download.pureftpd.org/pub/pure-ftpd/releases/pure-ftpd-1.0.49.tar.gz
 
 #安装pure-ftpd
 cd ..
-tar jxvf pure-ftpd-1.0.42.tar.bz2 && cd pure-ftpd-1.0.42 
-./configure --prefix=/Data/app/pure-ftpd --with-puredb --with-ftpwho --with-welcomemsg --with-virtualhosts --with-virtualchroot --with-quotas --with-peruserlimits  --with-diraliases --with-language=english --with-rfc2640 --with-tls  --with-certfile=/etc/ssl/private/pure-ftpd.pem
+tar jxvf pure-ftpd-1.0.49.tar.bz2 && cd pure-ftpd-1.0.49
 
 make && make install
 
-mkdir /Data/app/pure-ftpd/etc && touch /Data/app/pure-ftpd/etc/pureftpd.passwd
-cp configuration-file/pure-config.pl /Data/app/pure-ftpd/sbin/ && chmod +x /Data/app/pure-ftpd/sbin/pure-config.pl
 
-sed -i '/${exec_prefix/ a \\t/Data/app/pure-ftpd/sbin/pure-ftpd' /Data/app/pure-ftpd/sbin/pure-config.pl
-
-cat > /Data/app/pure-ftpd/etc/pure-ftpd.conf << EOF
+cat > /usr/local/pure-ftpd/etc/pure-ftpd.conf << EOF
 ############################################################
 #                                                          #
 #         Configuration file for pure-ftpd wrappers        #
@@ -31,7 +22,7 @@ cat > /Data/app/pure-ftpd/etc/pure-ftpd.conf << EOF
 # instead of command-line options, please run the
 # following command :
 #
-# /Data/app/pure-ftpd/sbin/pure-config.pl /Data/app/pure-ftpd/etc/pure-ftpd.conf
+# /usr/local/pure-ftpd/sbin/pure-ftpd /usr/local/pure-ftpd/etc/pure-ftpd.conf
 #
 # Please don't forget to have a look at documentation at
 # http://www.pureftpd.org/documentation.shtml for a complete list of
@@ -113,7 +104,7 @@ MaxIdleTime                 15
 
 # PureDB user database (see README.Virtual-Users)
 
-PureDB                        /Data/app/pure-ftpd/etc/pureftpd.pdb
+PureDB                        /usr/local/pure-ftpd/etc/pureftpd.pdb
 
 # Path to pure-authd socket (see README.Authentication-Modules)
 

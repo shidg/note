@@ -1,3 +1,5 @@
+yum install expect
+
 #! /bin/bash
 echo "这是一个关于shell中调用expect的测试"
 ftp_user="admin"
