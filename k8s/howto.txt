@@ -26,13 +26,46 @@ kubectl drain nodename --delete-local-data --ignore-daemonsets --force
 # Job创建的Pod，加了后还会删除'裸奔的pod'(没有绑定到任何replication controller)
 
 
-# 增加节点
-
+# 增加node节点
 # master上
 # kubeadm token create --print-join-command
 
 # node上
 # kubeadm reset
+#   kubeadm join 172.31.182.156:8443  --token ortvag.ra0654faci8y8903 \
+    --discovery-token-ca-cert-hash sha256:04755ff1aa88e7db283c85589bee31fabb7d32186612778e53a536a297fc9010
+
+# 增加master节点
+# 原master上
+# kubeadm token create --print-join-command
+# kubeadm init phase upload-certs --upload-certs
+
+# 新master上
+# kubeadm reset
+#   kubeadm join 172.31.182.156:8443  --token ortvag.ra0654faci8y8903 \
+    --discovery-token-ca-cert-hash sha256:04755ff1aa88e7db283c85589bee31fabb7d32186612778e53a536a297fc9010 \
+    --experimental-control-plane --certificate-key f8d1c027c01baef6985ddf24266641b7c64f9fd922b15a32fce40b6b4b21e47d
+
+######## 如果是集群中原有的某台master因故退出了集群，想要重新加入到集群中并且仍作为master
+# 需要在集群中首先清理掉该master在集群中的信息（集群的etcd和configmap中仍记录着该master的信息）
+# 清理方法如下：
+# kubectl  exec -it -n kube-system etcd-k8s-masterxx --sh
+$ export ETCDCTL_API=3
+$ alias etcdctl='etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key'
+$ etcdctl member list
+## 删除要删除的etcd 集群成员
+$ etcdctl member remove 63bfe05c4646fb08
+$ exit
+
+# 清理cm中的相关信息
+# kubectl -n kube-system get cm kubeadm-config -o yaml > tmp-kubeadm-config.yaml
+# manually edit tmp-kubeadm-config.yaml to remove the old server
+# kubectl -n kube-system apply -f tmp-kubeadm-config.yaml
+# 然后再执行加入集群的命令即可
+# kubeadm reset
+#   kubeadm join 172.31.182.156:8443  --token ortvag.ra0654faci8y8903 \
+    --discovery-token-ca-cert-hash sha256:04755ff1aa88e7db283c85589bee31fabb7d32186612778e53a536a297fc9010 \
+    --experimental-control-plane --certificate-key f8d1c027c01baef6985ddf24266641b7c64f9fd922b15a32fce40b6b4b21e47d
 
 
 # 回滚
