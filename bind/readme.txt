@@ -130,7 +130,7 @@ wget --user=ftp --password=ftp ftp://ftp.rs.internic.net/domain/db.cache -O /var
 
 
 ##named.lxy.kk
-vi /var/named/chroot/var/named.lxy.kk     #正解析的zone，如果想让dns可以解析外网，就不要包含.com等合法域，不然在试图解析合法域名的时候服务器会在本地寻找记录，当然是找					   不到的，它会告诉你找不到，而不会去向forward请求。
+vi /var/named/chroot/var/named.lxy.kk     #正解析的zone，如果想让dns可以解析外网，就不要包含.com等合法域，不然在试图解析合法域名的时候服务器会在本地寻找记录，当然是找不到的，它会告诉你找不到，而不会去向forward请求。
 
 $TTL    86400
 @    IN    SOA    lxy.kk. root.lxy.kk. (
