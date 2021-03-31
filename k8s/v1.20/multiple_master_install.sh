@@ -216,7 +216,7 @@ EOF
 yum clean all && yum makecache -y
 
 # 安装k8s
-yum install -y kubelet-1.20.4 kubeadm-1.20.4 kubectl-1.20.4 --disableexcludes=kubernetes
+yum install -y kubelet-1.20.5 kubeadm-1.20.5 kubectl-1.20.5 --disableexcludes=kubernetes
 systemctl enable kubelet
 
 # kubelet 命令补全
@@ -231,7 +231,7 @@ echo "source <(kubectl completion zsh)" >> ~/.zshrc && source ~/.zshrc
 ##  images.sh
 #!/bin/bash
 url=registry.cn-hangzhou.aliyuncs.com/google_containers
-version=v1.20.4  # kubectl version
+version=v1.20.5  # kubectl version
 images=(`kubeadm config images list --kubernetes-version=$version|awk -F '/' '{print $2}'`)
 for imagename in ${images[@]} ; do
   docker pull $url/$imagename
@@ -245,10 +245,10 @@ sh images.sh
 # 查看镜像拉取结果
 docker images
 #REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
-#k8s.gcr.io/kube-proxy                v1.20.0             9b65a0f78b09        2 weeks ago         86.1MB
-#k8s.gcr.io/kube-apiserver            v1.20.0             df60c7526a3d        2 weeks ago         217MB
-#k8s.gcr.io/kube-controller-manager   v1.20.0             bb16442bcd94        2 weeks ago         163MB
-#k8s.gcr.io/kube-scheduler            v1.20.0             98fecf43a54f        2 weeks ago         87.3MB
+#k8s.gcr.io/kube-proxy                v1.20.5             9b65a0f78b09        2 weeks ago         86.1MB
+#k8s.gcr.io/kube-apiserver            v1.20.5             df60c7526a3d        2 weeks ago         217MB
+#k8s.gcr.io/kube-controller-manager   v1.20.5             bb16442bcd94        2 weeks ago         163MB
+#k8s.gcr.io/kube-scheduler            v1.20.5             98fecf43a54f        2 weeks ago         87.3MB
 #k8s.gcr.io/etcd                      3.4.13-0             b2756210eeab        2 months ago        247MB
 #k8s.gcr.io/coredns                   1.7.0               bf261d157914        3 months ago        44.1MB
 #k8s.gcr.io/pause                     3.2                 da86e6ba6ca1        2 years ago         742kB
@@ -320,7 +320,7 @@ kubectl edit cm kube-proxy -n kube-system
 kubectl get pod -n kube-system |grep kube-proxy |awk '{system("kubectl delete pod "$1" -n kube-system")}'
 
 # 确认新的pod运行正常
-kubectl get pods | grep kube-proxy
+kubectl get pods -n kube-system | grep kube-proxy
 
 # 查看日志，有 `Using ipvs Proxier.` 说明kube-proxy的ipvs 开启成功
 kubectl logs kube-proxy-54qnw -n kube-system
