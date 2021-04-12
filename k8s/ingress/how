@@ -6,3 +6,17 @@
 
 3 hostnetwork (让ingress controller直接使用宿主机的网络，宿主机无其他服务占用80/443端口最佳)
 Deployment.spec.template.spec.hostNetwork: true
+
+
+
+# 开启日志
+metadata:
+  name: ingress-flink
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: 20480m
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      access_log /var/log/nginx/flink.sun.com.log upstreaminfo if=$loggable;
