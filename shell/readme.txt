@@ -159,3 +159,13 @@ $ echo $((var++))
 5 
 $ echo $var 
 6 
+
+# set -eux
+# set -o pipefail
+# shell脚本开头建议添加这两行
+# set -e: 遇到非零的返回值则立即退出整个脚本
+# set -u: 遇到未定义的变量则退出脚本
+# set -x: 调试模式，打印执行的具体命令
+# set -o pipefail: set -e在管道模式下会失效，因为只要管道中最后一条命令执行成功则返回零
+# set -o pipefail就是为了解决这个问题，只要管道中有一条命令执行失败则退出脚本
+
