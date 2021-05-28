@@ -1,0 +1,33 @@
+# 单机模式启动 --port可选，默认27017
+mongod -port 10001 --dbpath /data/mongodb/shard1/data --logpath /data/mongodb/shard1/logs --storageEnginer wiredTiger 
+
+# 登陆mongo
+mongo
+
+# 添加用户
+db.createUser( { "user" : "admin","pwd" : "cdvcloudadmin","customData" : { employeeId:1 },"roles" : [ { role: "root",db:"admin" } ]} )
+
+# 认证
+db.auth('admin','cdvcloudadmin');
+
+# 创建集群
+config = { _id:"shard1", members:[
+                     {_id:0,host:"10.170.235.123:20011",priority:1},
+                     {_id:1,host:"10.171.55.133:20011",priority:2},
+                     {_id:2,host:"10.44.150.122:20011",priority:3}
+                ]
+         }
+
+rs.initiate(config);
+
+# 生成keyfile
+openssl rand -base64 753 > /data/mongodb/keyfile && chmod 600 /data/mongodb/keyfile
+
+
+
+###
+对重要数据库所在机器操作前一定要提前backup一下，把万万没想到的损失降到最低；还有，除非真的不care数据的高可用性，不要随便关journal；单台机器上有多个库的话最好在配置文件中设置下directoryPerDB:true，让每个库有一个单独文件夹；有富余机器的话尽量做一下复制集
+
+
+# wiredtiger 修复
+yum install autoconf libtool 
