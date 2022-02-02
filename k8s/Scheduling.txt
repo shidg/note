@@ -29,7 +29,10 @@ spec:
 
 # 污点的作用是排斥pod,只有配置了toleration的pod才能分配到设置了污点的节点 e.g.
 # 假设有节点node1,设置了如下taint：
-kubectl taint nodes node1 key1=value1:NoSchedule
+kubectl taint nodes node1 key1=value1:NoExecute
+
+# 去除污点
+# kubectl taint nodes node1 key1:NoExecute-
 
 # pod 设置toleration
 tolerations:
