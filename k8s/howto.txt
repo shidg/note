@@ -71,3 +71,8 @@ $ exit
 # 回滚
 kubectl rollout history deployment ${deployment_name}
 kubectl rollout undo deployment ${deployment_name} --to-revision=1
+
+
+# 如何查看可用的镜像版本
+# ${docker_img}为镜像名
+curl https://registry.hub.docker.com/v1/repositories/${docker_img}/tags | python3 -m json.tool | more

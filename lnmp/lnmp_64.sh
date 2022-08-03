@@ -184,6 +184,10 @@ dots &
 exec 1>&2
 tar zxvf php-5.5.8.tar.gz && cd php-5.5.8 && ./configure --prefix=${app_dir}php5.5.8  --with-config-file-path=${app_dir}php5.5.8/etc --with-libxml-dir --with-iconv-dir --with-png-dir --with-jpeg-dir=${app_dir}jpeg --with-zlib --with-gd=${app_dir}gd --with-freetype-dir=${app_dir}freetype --with-mcrypt=/usr --with-mhash --enable-gd-native-ttf  --with-curl --with-bz2 --enable-mysqlnd --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-openssl-dir --without-pear --enable-fpm --enable-mbstring --enable-soap --enable-xml --enable-pdo --enable-ftp  --enable-zip --enable-bcmath --enable-sockets --enable-opcache && make && make install
 ln -s ${app_dir}php-5.5.8  ${app_dir}php
+
+
+# php7.4
+#./configure --prefix=/usr/local/php-7.4 --with-config-file-path=/usr/local/php-7.4/etc --with-fpm-user=www --with-fpm-group=www --with-curl --with-freetype --enable-gd --with-gettext --with-iconv-dir --with-kerberos --with-libdir=lib64 --with-mysqli --with-openssl --with-pdo-mysql --with-pdo-sqlite --with-pear --with-jpeg --with-xmlrpc --with-xsl --with-zlib --with-bz2 --with-zip --with-mhash --enable-fpm --enable-bcmath --enable-inline-optimization --enable-mbregex --enable-mbstring --enable-opcache --enable-pcntl --enable-shmop --enable-soap --enable-sockets --enable-sysvsem --enable-sysvshm --enable-xml --enable-fpm
 exec 1>&6
 success
 

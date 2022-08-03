@@ -4,8 +4,14 @@
 # Created Time: 2019-11-27 21:19:26
 
 # install ingress controller
-# https://github.com/kubernetes/ingress-nginx/tree/nginx-0.30.0/deploy/static
+# https://github.com/kubernetes/ingress-nginx/blob/main/deploy/static/provider/baremetal/deploy.yaml
+#docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/nginx-ingress-controller:v1.1.0
+#docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-webhook-certgen:v1.1.1
+
+
+
 # 使用镜像nginx-ingress-controller部署一个pod
+
 # 可以理解为使用deployment部署了一个nginx pod，该nginx将用来将请求转发到后端的service
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
 

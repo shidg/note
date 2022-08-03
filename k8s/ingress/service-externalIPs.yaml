@@ -7,9 +7,9 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
 spec:
-  type: NodePort
-  #  externalIPs:
-  #- ${INGRESS_VIP} #一个和node同网段的自定义ip，并将业务域名解析到该ip
+  type: LoadBalancer
+  #externalIPs:
+      #  - 192.168.0.200 #一个和node同网段的自定义ip，并将业务域名解析到该ip
   ports:
     - name: http
       port: 80
@@ -22,6 +22,10 @@ spec:
     - name: proxy-tcp-22 # 四层代理,与tcp-services(ConfigMap)中的配置相对应
       port: 22
       targetPort: 22
+      protocol: TCP
+    - name: proxy-tcp-3306 # 四层代理,与tcp-services(ConfigMap)中的配置相对应
+      port: 3306
+      targetPort: 3306
       protocol: TCP
   selector:
     app.kubernetes.io/name: ingress-nginx
