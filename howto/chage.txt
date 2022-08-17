@@ -1,4 +1,4 @@
-chage -m 0 -M 90 -d 2014-12-15 -W 30 -I 15 username
+chage -m 7 -M 90 -d 2014-12-15 -W 30 -I 15 username
 
 -m  两次修改密码的最短间隔，0，即随时可修改密码 passwd -n 0 username等效
 -M  两次修改密码的最长间隔，即密码有效期 passwd -x 90 username等效
