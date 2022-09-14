@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  replicas: 1
+  serviceName: mongodb
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:4.2.1
+        command:
+        - sh
+        - -c
+        - "exec mongod -f /data/middleware-data/mongodb/conf/mongodb.conf"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 27017
+          name: mongodb
+          protocol: TCP
+        volumeMounts:
+        - name: mongodb-conf
+          mountPath: /data/middleware-data/mongodb/conf/
+        - name: mongodb-data
+          mountPath: /data/middleware-data/mongodb/
+      volumes:
+      - name: mongodb-conf
+        configMap:
+          name: mongodb-conf
+      - name: mongodb-data
+        hostPath:
+          path: /Users/shidegang/work/docker_volumes/mongodb/
+
