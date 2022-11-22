@@ -193,7 +193,7 @@ systemctl start docker && systemctl enable docker
 cat >> /etc/docker/daemon.json <<EOF
 {
   "registry-mirrors": [
-    "https://v16stybc.mirror.aliyuncs.com"，
+    "https://8av7qk0l.mirror.aliyuncs.com"，
     "http://hub-mirror.c.163.com",
     "https://docker.mirrors.ustc.edu.cn"
     ],

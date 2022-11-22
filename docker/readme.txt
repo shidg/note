@@ -24,7 +24,7 @@
 
 8 # /etc/docker/daemon.json
 {
-    "registry-mirrors": ["https://v16stybc.mirror.aliyuncs.com"],
+    "registry-mirrors": ["https://8av7qk0l.mirror.aliyuncs.com"],
     "exec-opts": ["native.cgroupdriver=systemd"]
 }
 
