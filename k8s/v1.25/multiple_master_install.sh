@@ -4,14 +4,9 @@
 # Created Time: 2019-11-29 21:07:10
 
 # 版本信息
-# CentOS 7.7
-# docker 19.03.11
-# docker 最好不要选择最新版本，目前k8s对docker的推荐版本如下：
-# https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
-# On each of your machines, install Docker. Version 19.03.11 is recommended, but 1.13.1, 17.03, 17.06, 17.09, 18.06 and 18.09 are 
-# known to work as well. Keep track of the latest verified Docker version in the Kubernetes release notes.
-# k8s 1.20.4
-# dashboard 
+# CentOS 7.9
+# containerd
+# k8s 1.25.4
 
 # 至少3master 3node
 # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
@@ -141,11 +136,10 @@ yum install chrony yum-utils bash-completion wget iptables-services -y
 systemctl stop firewalld && systemctl disable firewalld
 
 # 自动加载必要模块
-# br_netfilter
-cat >> /etc/sysconfig/modules/br_netfilter << EOF
-#! /bin/bash
-modinfo -F filename br_netfilter >/dev/null 2>&1
-[[ $? -eq 0  ]] && modprobe br_netfilter
+# overlay br_netfilter
+cat >> /etc/modules-load.d/k8s.conf << EOF
+overlay
+br_netfilter
 EOF
 
 # ip_vs
@@ -178,33 +172,35 @@ if grep 'swap' /etc/fstab;then
     sed -i '/swap/ s/^/#/g' /etc/fstab
 fi
 
-# 安装docker
-# docker源
+
+
+# 移除系统中可能安装的docker
+yum remove docker \
+  docker-client \
+  docker-client-latest \
+  docker-common \
+  docker-latest \
+  docker-latest-logrotate \
+  docker-logrotate \
+  docker-engine
+
+# 安装containerd
 #yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
 yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-yum install -y docker-ce-19.03.11 docker-ce-cli-19.03.11 containerd.io
 
-# 启动docker
-systemctl start docker && systemctl enable docker
+yum install containerd.io -y
 
-# 配置阿里镜像源
-# https://cr.console.aliyun.com
+# 启动containerd并设置开机自启
+systemctl enable containerd && systemctl start containerd
 
-cat >> /etc/docker/daemon.json <<EOF
-{
-  "registry-mirrors": [
-    "https://v16stybc.mirror.aliyuncs.com"，
-    "http://hub-mirror.c.163.com",
-    "https://docker.mirrors.ustc.edu.cn"
-    ],
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "bip":"10.10.0.1/24" #自定义docker网段
-}
-EOF
+# 修改 containerd 使用 systemd
+containerd  config default > /etc/containerd/config.toml
+sed -i 's#k8s.gcr.io#registry.aliyuncs.com/google_containers#g' /etc/containerd/config.toml
+sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
 
-# 重启docker
-systemctl daemon-reload && systemctl restart docker
-
+# 重启containerd
+systemctl daemon-reload
+systemctl restart containerd
 
 # 添加k8s源
 cat  > /etc/yum.repos.d/kubernetes.repo <<EOF
@@ -221,7 +217,7 @@ EOF
 yum clean all && yum makecache -y
 
 # 安装k8s
-yum install -y kubelet-1.20.5 kubeadm-1.20.5 kubectl-1.20.5 --disableexcludes=kubernetes
+yum install -y kubelet-1.25.4 kubeadm-1.25.4 kubectl-1.25.4 --disableexcludes=kubernetes
 systemctl enable kubelet
 
 # kubelet 命令补全
@@ -230,37 +226,19 @@ echo "source <(kubectl completion bash)" >> ~/.bash_profile && source ~/.bash_pr
 # zsh
 echo "source <(kubectl completion zsh)" >> ~/.zshrc && source ~/.zshrc
 
-# 下载镜像
-# 从阿里云镜像仓库下载镜像，拉取到本地以后改回默认的镜像tag
-# 脚本中的url为阿里云镜像仓库地址，version为安装的kubernetes版本
-##  images.sh
-#!/bin/bash
-url=registry.cn-hangzhou.aliyuncs.com/google_containers
-version=v1.20.5  # kubectl version
-images=(`kubeadm config images list --kubernetes-version=$version|awk -F '/' '{print $2}'`)
-for imagename in ${images[@]} ; do
-  docker pull $url/$imagename
-  docker tag $url/$imagename k8s.gcr.io/$imagename
-  docker rmi -f $url/$imagename
-done
 
-# 拉取镜像
-sh images.sh
+# 安装crictl
+VERSION="v1.23.0"
+curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
+tar zxvf crictl-${VERSION}-linux-amd64.tar.gz -C /usr/local/bin
 
-# 查看镜像拉取结果
-docker images
-#REPOSITORY                           TAG                 IMAGE ID            CREATED             SIZE
-#k8s.gcr.io/kube-proxy                v1.20.5             9b65a0f78b09        2 weeks ago         86.1MB
-#k8s.gcr.io/kube-apiserver            v1.20.5             df60c7526a3d        2 weeks ago         217MB
-#k8s.gcr.io/kube-controller-manager   v1.20.5             bb16442bcd94        2 weeks ago         163MB
-#k8s.gcr.io/kube-scheduler            v1.20.5             98fecf43a54f        2 weeks ago         87.3MB
-#k8s.gcr.io/etcd                      3.4.13-0             b2756210eeab        2 months ago        247MB
-#k8s.gcr.io/coredns                   1.7.0               bf261d157914        3 months ago        44.1MB
-#k8s.gcr.io/pause                     3.2                 da86e6ba6ca1        2 years ago         742kB
+# 设置crictl
+crictl config --set runtime-endpoint=unix:///run/containerd/containerd.sock
 
 
 # Master01节点初始化，初始化以后会在/etc/kubernetes目录下生成对应的证书和配置文件，之后其他Master节点加入Master01即可：
-kubeadm init --config /root/new.yaml  --upload-certs
+# 这里 apiserver-advertise-address 的值是 master 的主机的 ip
+kubeadm init  --apiserver-advertise-address=10.6.215.50 --image-repository registry.aliyuncs.com/google_containers
 
 # 记录下如下信息
 # 如何添加control-plane nodes:

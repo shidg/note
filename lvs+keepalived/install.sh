@@ -10,41 +10,70 @@
 # DS和RS在同一局域网,同一VLAN下
 # RS的默认网关必须局域网真正的默认网关
 
-##开启arp抑制
-# DS(Director Server) RS(Real Server) 都需要
-net.ipv4.conf.lo.arp_ignore = 1
-net.ipv4.conf.lo.arp_announce = 2
-net.ipv4.conf.all.arp_ignore = 1
-net.ipv4.conf.all.arp_announce = 2
-
-
-# DS开启ip转发 
-net.ipv4.ip_forward = 1
-
-# DS 安装ipvsadm
-yum install ipvsadm -y
-
-
-# http://www.linuxvirtualserver.org/software/ipvs.html
-# tar zxvf ipvsadm-1.26.tar.gz && cd ipvsadm-1.26
-# make && make install
 
 #####  DS 安装keepalived ######
 
-yum install -y libnfnetlink-devel openssl-devel libnl-devel libnl3-devel
-yum install keepalived -y
+yum install -y gcc  openssl-devel libnl-devel libnl3-devel libnfnetlink-devel
+# libnl libnl3 --ipv6支持
+# libnfnetlink -- 
 
-# https://www.keepalived.org/software/keepalived-2.0.19.tar.gz
-#tar zxvf keepalived-2.0.19.tar.gz && cd keepalived-2.0.19
-#./configure && make && make install
 
-# /etc/keepalived/keepalived.conf
+yum install keepalived ipvsadm -y
 
-# DS上 启动keepalived
-systemctl start keepalived
+# https://www.keepalived.org/software/keepalived-2.2.7.tar.gz
+tar zxvf keepalived-2.2.7.tar.gz && cd keepalived-2.2.7
+./configure --prefix=/usr/local/keepalived && make && make install
 
-# RS上添加VIP
-ip addr add 10.10.8.88/32 dev lo label lo:1
+cp /usr/local/keepalived/etc/keepalived/keepalived.conf /etc/keepalived/keepalived.conf
+
+# keepalived 日志配置
+vi  /usr/local/keepalived/etc/sysconfig/keepalived
+KEEPALIVED_OPTIONS="-D -d -S 0"
+
+vi /etc/rsyslog.conf
+添加以下配置
+local0.*                  /var/log/keepalived.log
+
+systemctl restart keepalived 
+systemctl restart rsyslog
+
+
+#### DS 配置
+
+# 修改系统参数
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.d/keepalived.conf
+sysctl -p /etc/sysctl.d/keepalived.conf
+
+# 启动keepalived服务
+systemctl enable keepalived && systemctl start keepalived
+
+
+
+
+#### RS
+
+# 修改系统参数
+echo > /etc/sysctl.d/keepalived.conf << EOF
+net.ipv4.conf.all.arp_ignore = 1
+net.ipv4.conf.all.arp_announce = 2
+net.ipv4.conf.lo.arp_ignore = 1
+net.ipv4.conf.lo.arp_announce = 2
+EOF
+
+# 添加VIP
+echo "TYPE=Loopback" >> /etc/sysconfig/network-scripts/ifcfg-lo
+# add ifcfg-lo:0
+cat > /etc/sysconfig/network-scripts/ifcfg-lo:0 << EOF
+DEVICE=lo:0
+IPADDR=10.65.32.28
+NETMASK=255.255.255.255
+ONBOOT=yes
+EOF
+
+systemctl restart network
+
+
+
 
 
 
