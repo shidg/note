@@ -29,12 +29,12 @@ echo "$a" #保留空白、换行，即维持原格式
 
 这条命令的作用是把/usr/local/src下的所有内容转移到/mnt下，也就是在源目录将文件打包后重定向到stdout,然后到目标目录将打包的内容作为stdin进行解包的操作。省略了真实生成打包文件，然后再对这个真实打包文件进行解包的过程。()代表一个命令组
 
-8 if [ -z $1 ]  if [ -n $1 ]
+8 if [ -z "$1" ]  if [ -n "$1" ]
 shell脚本中判断参数是否传递,z，变量的为空，n，不为空
 
 9 shift 将shell脚本的参数向左移动一位，原来的$2变$1,$3变$2……
 
-until [ -z $1 ]  #打印所有参数，直到不在存在$1,即所有参数均已用光。
+until [ -z "$1" ]  #打印所有参数，直到不在存在$1,即所有参数均已用光。
 do 
 echo -n $1
 shift          #shift的作用在这里
@@ -114,7 +114,7 @@ echo ${stringZ: -3}   567  一定要注意-3和冒号之间有一个空格隔开
 例子：
 stringZ=abcABC123ABCabc
 echo ${stringZ#a*C}   最近匹配，去掉从左边起第一个能匹配a*C模式的子串，结果是123ABCabc
-echo $｛stringZ##a*C｝ 最远匹配，去掉左边其最后一个能匹配a*C模式的子串，结果是abc
+echo $stringZ##a*C｝ 最远匹配，去掉左边其最后一个能匹配a*C模式的子串，结果是abc
 
 echo ${stringZ%b*c} 最近匹配，从右边开始匹配，结果是abcABC123ABCa
 
@@ -138,8 +138,8 @@ $(cmd)
 `cmd`
 ${var:-string} #如果$var为空则用string替换${var:-string},$var仍为空
 ${var:=string} #如果$var为空则用string替换${var:-string},$var被赋值为string
-${var:+string} #如果$var不为空则用string替换${var:-string},如果$var为空则不替换
-${var:?string} #如果$var不为空则用$var的值替换${var:-string},$var为空的话string被输出到标准输出
+${var:+string} #如果$var不为空则用string替换${var:+string},如果$var为空则不替换
+${var:?string} #如果$var不为空则用$var的值替换${var:?string},$var为空的话string被输出到标准输出
 
 19 $(()) 结构
 
