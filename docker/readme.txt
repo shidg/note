@@ -25,7 +25,12 @@
 8 # /etc/docker/daemon.json
 {
     "registry-mirrors": ["https://8av7qk0l.mirror.aliyuncs.com"],
-    "exec-opts": ["native.cgroupdriver=systemd"]
+    "exec-opts": ["native.cgroupdriver=systemd"]，
+    "default-address-pools" : [
+    {
+      "base" : "172.31.0.0/16",
+      "size" : 24
+    }
 }
 
 
