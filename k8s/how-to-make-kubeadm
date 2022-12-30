@@ -1,45 +1,60 @@
-git clone https://github.com/kubernetes/kubernetes.git
+curl -fLO https://storage.googleapis.com/kubernetes-release/release/v1.22.9/kubernetes-src.tar.gz
+mkdir -p /root/kubernetes
+tar zxvf kubernetes-src.tar.gz -C /root/kubernetes
 
 
-# 涉及到两个函数
-cd kubernetes
-
-# 第一个函数
-vi staging/src/k8s.io/client-go/util/cert/cert.go
-# 该文件下的NewSelfSignedCACert函数，k8s在1.14之后已经将该函数中的默认有效时间修改为10年，但是这个函数并不是对所有证书有效，另一部分证书受下一个函数影响
-# NotAfter:              now.Add(duration365d * 10).UTC()
-
-
-# 第二个函数
-vi cmd/kubeadm/app/util/pkiutil/pki_helpers.go
-NewSignedCert函数中的NotAfter:     time.Now().Add(kubeadmconstants.CertificateValidity).UTC()，
-有效期使用CertificateValidity变量指定，这个变量定义在以下文件中：
-vim cmd/kubeadm/app/constants/constants.go
-CertificateValidity = time.Hour * 24 * 365 改为 time.Hour * 24 * 365 * 10
+修改时间
+#替换命令
+sed -i "s/365/365 * 50/" /root/kubernetes/cmd/kubeadm/app/constants/constants.go
+sed -i "s/* 10/* 50/p" /root/kubernetes/staging/src/k8s.io/client-go/util/cert/cert.go
+查看
+cat /root/kubernetes/cmd/kubeadm/app/constants/constants.go|grep "CertificateValidity ="
+CertificateValidity = time.Hour * 24 * 365 * 50
 
 
+查看 kube-cross 的 TAG 版本号 
 
-# 修改完之后进行编译
-docker run --rm -v 你修改后的代码目录:/go/src/k8s.io/kubernetes -it icyboy/k8s_build:v1.11.5 bash
+cat /root/kubernetes/build/build-image/cross/VERSION
+v1.22.0-go1.16.15-buster.0
+ 
 
-cd /go/src/k8s.io/kubernetes
+本地安装go环境
+
+# 安装依赖
+yum install gcc make -y
+yum install rsync jq -y
+
+# 下载go安装包
+wget https://dl.google.com/go/go1.16.15.linux-amd64.tar.gz
+或者
+wget https://golang.google.cn/dl/go1.16.15.linux-amd64.tar.gz
+
+# 解压
+tar zxvf go1.16.15.linux-amd64.tar.gz  -C /usr/local
+
+# 设置环境变量
+export GOROOT=/usr/local/go
+export GOPATH=/usr/local/gopath
+export PATH=$PATH:$GOROOT/bin
+
+# 环境变量永久生效
+source /etc/profile
+
+
+编译
+
+# 进入源码目录
+cd /root/kubernetes
+
 # 编译kubeadm, 这里主要编译kubeadm 即可
 make all WHAT=cmd/kubeadm GOFLAGS=-v
 
-# 编译kubelet
-make all WHAT=cmd/kubelet GOFLAGS=-v
+# 文件位置
+cd /root/kubernetes/_output/local/bin/linux/amd64
 
-# 编译kubectl
-make all WHAT=cmd/kubectl GOFLAGS=-v
+# 集群初试化之前替换掉kubeadm
 
-#编译完产物在容器的/go/src/k8s.io/kubernetes/_output/bin/kubeadm 目录下,
-#对应宿主机的kubernetes/_output/local/bin/linux/amd64目录
-#用新编译的kubeadm替换系统中的kubeadm
-chmod +x kubeadm && cp -f kubeadm /usr/bin
-
-##### 问题 ######
-如何找到对应k8s最新版本的k8s_build镜像？
-# https://hub.docker.com/r/icyboy/k8s_build/tags?page=1&ordering=last_updated
-
-
-
+# 查询需要的镜像版本
+kubeadm config images list
+# 查询证书有效期
+kubeadm certs check-expiration

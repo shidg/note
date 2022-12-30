@@ -24,15 +24,19 @@
 
 8 # /etc/docker/daemon.json
 {
-    "registry-mirrors": ["https://8av7qk0l.mirror.aliyuncs.com"],
-    "exec-opts": ["native.cgroupdriver=systemd"]，
-    "default-address-pools" : [
+  "registry-mirrors": [
+    "https://8av7qk0l.mirror.aliyuncs.com",
+    "http://hub-mirror.c.163.com",
+    "https://docker.mirrors.ustc.edu.cn"
+    ],
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "default-address-pools": [
     {
       "base" : "172.31.0.0/16",
       "size" : 24
     }
+    ]
 }
-
 
 
 # docker-compose  install

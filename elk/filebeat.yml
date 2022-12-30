@@ -1,0 +1,22 @@
+filebeat.inputs:
+- type: filestream
+  id: my-filestream-id
+  enabled: true
+  paths:
+    - /var/log/messages
+  fields:
+    type: syslog
+  encoding: utf-8
+  # 多行日志开始的那一行匹配的pattern
+  #multiline.pattern: ^{
+  # 是否需要对pattern条件转置使用，不翻转设为true，反转设置为false。  【建议设置为true】
+  #multiline.negate: true
+  # 匹配pattern后，与前面（before）还是后面（after）的内容合并为一条日志
+  #multiline.match: after
+
+output.elasticsearch:
+  hosts: ["172.27.3.246:9200","172.27.3.247:9200","172.27.3.248:9200"]
+  indices:
+    - index: "systemlog-%{+yyyy.MM.dd}"
+#      when.contains:
+#        type: syslog
