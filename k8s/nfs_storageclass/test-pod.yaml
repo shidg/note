@@ -1,0 +1,20 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-pod-nginx
+spec:
+  containers:
+    - name: test-pod-nginx-containers
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+          name: "http-server"
+          hostPort: 80
+      volumeMounts:
+        - name: test-pod-nginx-storage
+          mountPath: "/usr/share/nginx/html"
+  restartPolicy: "Never"
+  volumes:
+    - name: test-pod-nginx-storage
+      persistentVolumeClaim:
+        claimName: test-claim

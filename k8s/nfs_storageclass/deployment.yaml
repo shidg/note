@@ -8,11 +8,11 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: nfs-client-provisioner
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -21,19 +21,19 @@ spec:
       serviceAccountName: nfs-client-provisioner
       containers:
         - name: nfs-client-provisioner
-          image: quay.io/external_storage/nfs-client-provisioner:v3.1.0-k8s1.11
+          image: quay.io/external_storage/nfs-client-provisioner:latest
           volumeMounts:
             - name: nfs-client-root
               mountPath: /persistentvolumes
           env:
             - name: PROVISIONER_NAME
-              value: fuseim.pri/ifs
+              value: nfs-diy # StorageClass 三个重要字段之一 Provisioner，名字自己指定
             - name: NFS_SERVER
-              value: 10.10.10.60
+              value: 172.27.3.249 # nfs 服务器地址
             - name: NFS_PATH
-              value: /ifs/kubernetes
+              value: /data/k8s # nfs 共享文件夹
       volumes:
         - name: nfs-client-root
           nfs:
-            server: 10.10.10.60
-            path: /ifs/kubernetes
+            server: 172.27.3.249 # nfs 服务器地址
+            path: /data/k8s # nfs 共享文件夹

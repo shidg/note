@@ -1,3 +1,10 @@
+# k8s 1.20 之后默认关闭了Selflink
+# 需要在/etc/kubernetes/manifests/kube-apiserver.yaml文件中添加以下选项，
+# 之后重启kubelet
+- --feature-gates=RemoveSelfLink=false
+
+
+
 # 1. 部署nfs服务
 # 2. node节点安装nfs客户端
 
@@ -32,3 +39,6 @@ kubectl apply -f test-claim.yaml
 
 kubectl get pvc
 kubectl get pv
+
+
+

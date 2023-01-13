@@ -30,6 +30,8 @@
     "https://docker.mirrors.ustc.edu.cn"
     ],
   "exec-opts": ["native.cgroupdriver=systemd"],
+  "graph": "/data/docker",
+  "insecure-registries":["172.27.3.249"],
   "default-address-pools": [
     {
       "base" : "172.31.0.0/16",

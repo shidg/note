@@ -2,34 +2,36 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nginx
-  labels:
-    app: nginx
 spec:
-  ports:
-  - port: 80
-    name: web
-  clusterIP: None
   selector:
-    app: nginx
+    app: nfs-web
+  ports:
+    - name: nginx
+      protocol: TCP
+      port: 80
+  clusterIP: None
+  
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: web
+  name: nfs-web
 spec:
   serviceName: "nginx"
   replicas: 2
   selector:
     matchLabels:
-      app: nginx
+      app: nfs-web
   template:
     metadata:
       labels:
-        app: nginx
+        app: nfs-web
     spec:
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: nfs-client-provisioner
       containers:
       - name: nginx
-        image: nginx
+        image: nginx:1.7.9
         ports:
         - containerPort: 80
           name: web
@@ -40,8 +42,8 @@ spec:
   - metadata:
       name: www
     spec:
+      storageClassName: "nfs-storage"
       accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "managed-nfs-storage"
       resources:
         requests:
-          storage: 10Mi
+          storage: 100Mi

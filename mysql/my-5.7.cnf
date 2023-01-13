@@ -1,16 +1,15 @@
 [client]
 port = 3306
-socket = /tmp/mysql.sock
+socket = /var/lib/mysql/mysql.sock
 default-character-set=utf8mb4
  
 [mysqld]
 ########basic settings########
 user = mysql
 port = 3306
-socket = /tmp/mysql.sock
-basedir = /Data/app/mysql
-datadir = /Data/app/mysql/data
-pid-file = /Data/app/mysql/data/mysqld.pid
+socket = /var/lib/mysql/mysql.sock
+datadir = /var/lib/mysql
+pid-file = /var/lib/mysql/mysqld.pid
 character_set_server=utf8mb4
 autocommit = 1
 skip_name_resolve = 1
@@ -47,9 +46,9 @@ read_rnd_buffer_size = 8M
 bulk_insert_buffer_size = 16M
 
 ########log settings########
-log_error = /Data/app/mysql/log/error.log
-slow_query_log = 0
-slow_query_log_file = /Data/app/mysql/log/slow.log
+log_error = /var/log/mysqld.log
+slow_query_log = 1
+slow_query_log_file = /var/lib/mysql/slow.log
 log_queries_not_using_indexes = 1
 log_slow_admin_statements = 1
 log_slow_slave_statements = 1
@@ -64,13 +63,13 @@ min_examined_row_limit = 100
 server-id = 1
 master_info_repository = TABLE
 relay_log_info_repository = TABLE
-log_bin = bin.log
+log_bin = mysql-bin
 sync_binlog = 1
 gtid_mode = on
 enforce_gtid_consistency = 1
 log_slave_updates
 binlog_format = row
-relay_log = relay.log
+relay_log = mysql-relay-bin
 relay_log_recovery = 1
 binlog_gtid_simple_recovery = 1
 slave_skip_errors = ddl_exist_errors
@@ -80,15 +79,12 @@ slave_skip_errors = ddl_exist_errors
 default-storage-engine = InnoDB
 #innodb_buffer_pool_size 可设置为物理内存的50%-70%
 innodb_buffer_pool_size = 1G
-innodb_use_sys_malloc
 #innodb_data_file_path default 256M，提升为1G，(占用磁盘空间，与内存无关)承受高并发事务
 innodb_data_file_path = ibdata1:1G:autoextend
 #innodb_file_per_table 使用独立表空间，强烈建议开启
 innodb_file_per_table = 1
 #如果使用了file_per_table，以下参数将不影响独立表空间文件
 innodb_autoextend_increment     = 10
-#innodb_file_io_threads 只在windows下可设置，LINUX下只为4
-innodb_file_io_threads = 4
 #innodb_thread_concurrency从5.5开始设置为0
 innodb_thread_concurrency = 0
 #innodb_flush_log_at_trx_commit和sync_binlog，如果要求数据不能丢失则全部设置为1，如果允许少量丢失则分别为2和0，如果不在意数据丢失问题（如从库）则可都设置为0. 0最有利于性能。
@@ -111,7 +107,7 @@ query_cache_type = 0
 
 
 ########semi sync replication settings########
-plugin_dir=/Data/app/mysql/lib/plugin
+plugin_dir=/usr/local/mysql/lib/plugin
 plugin_load = "rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so"
 loose_rpl_semi_sync_master_enabled = 1
 loose_rpl_semi_sync_slave_enabled = 1
