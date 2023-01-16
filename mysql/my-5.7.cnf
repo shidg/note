@@ -9,7 +9,7 @@ user = mysql
 port = 3306
 socket = /var/lib/mysql/mysql.sock
 datadir = /var/lib/mysql
-pid-file = /var/lib/mysql/mysqld.pid
+pid-file = pid-file=/var/run/mysqld/mysqld.pid
 character_set_server=utf8mb4
 autocommit = 1
 skip_name_resolve = 1
@@ -17,6 +17,8 @@ skip-external-locking
 slave-skip-errors = 1032,1062,126,1114,1146,1048,1396
 explicit_defaults_for_timestamp
 transaction_isolation = READ-COMMITTED
+validate_password=off
+default_password_lifetime=0
 
 #该参数与能够导入多大体积的备份数据(.sql)有关
 max_allowed_packet = 256M
@@ -107,7 +109,7 @@ query_cache_type = 0
 
 
 ########semi sync replication settings########
-plugin_dir=/usr/local/mysql/lib/plugin
+plugin_dir=/usr/lib64/mysql/plugin
 plugin_load = "rpl_semi_sync_master=semisync_master.so;rpl_semi_sync_slave=semisync_slave.so"
 loose_rpl_semi_sync_master_enabled = 1
 loose_rpl_semi_sync_slave_enabled = 1

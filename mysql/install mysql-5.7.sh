@@ -1,7 +1,15 @@
+# 卸载mariadb
 rpm -qa | grep mariadb
-
 rpm -e mariadb --nodeps
 
+##### yum 安装 ######
+wget http://dev.mysql.com/get/mysql57-community-release-el7-8.noarch.rpm
+yum localinstall mysql57-community-release-el7-8.noarch.rpm
+yum install mysql-community-server -y
+
+
+
+#### 源码安装 #######
 tar zxvf mysql-5.7.18-linux-glibc2.5-x86_64.tar.gz -C /Data/app
 
 cd /Data/app/mysql-5.7.18-linux-glibc2.5-x86_64
