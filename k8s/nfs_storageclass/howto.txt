@@ -1,6 +1,6 @@
 # k8s 1.20 之后默认关闭了Selflink
 # 需要在/etc/kubernetes/manifests/kube-apiserver.yaml文件中添加以下选项，
-# 之后重启kubelet
+# 之后重启apiserver
 - --feature-gates=RemoveSelfLink=false
 
 
