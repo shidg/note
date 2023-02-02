@@ -5,8 +5,14 @@
 
 # install ingress controller
 # https://github.com/kubernetes/ingress-nginx/blob/main/deploy/static/provider/baremetal/deploy.yaml
+# https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml
 #docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/nginx-ingress-controller:v1.1.0
 #docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-webhook-certgen:v1.1.1
+
+#docker pull anjia0532/google-containers.ingress-nginx.controller:v1.5.1
+#docker pull anjia0532/google-containers.ingress-nginx.kube-webhook-certgen:v1.3.0
+
+
 
 
 

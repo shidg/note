@@ -8,20 +8,10 @@
 # docker 20.10.22
 # k8s 1.22.9
 
-# 至少3master 3node
+# 服务器资源
 # 172.27.3.246 k8s-master
 # 172.27.3.247 k8s-node1
 # 172.27.3.248 k8s-node2
-
-
-if [ $# -ne 1 ];then
-    echo "Usage: $0 <master|node1|node2|node3...>"
-    exit 1
-else
-    k8s_hostname="k8s-$1"
-fi
-
-## /etc/hosts
 
 
 
@@ -29,6 +19,11 @@ fi
 ### docker & k8s #####
 
 #### 以下操作在所有节点执行 ####
+
+## /etc/hosts
+172.27.3.246 k8s-master
+172.27.3.247 k8s-node1
+172.27.3.248 k8s-node2
 
 # 升级内核版本
 rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
@@ -148,11 +143,16 @@ yum clean all && yum makecache -y
 yum install -y kubelet-1.22.9-0 kubeadm-1.22.9-0 kubectl-1.22.9-0 --disableexcludes=kubernetes
 systemctl enable kubelet
 
+
+
+# k8s master节点上执行以下操作
 # kubelet 命令补全
 yum install bash-completion -y
 source /usr/share/bash-completion/bash_completion
 echo "source <(kubectl completion bash)" >> ~/.bash_profile && source ~/.bash_profile
 
+
+# 生成并修改初始化配置文件
 kubeadm config print init-defaults --component-configs KubeletConfiguration > /root/kubeadm.yaml
 sed -i '/imageRepository/ s/k8s.gcr.io/registry.aliyuncs.com\/google_containers/p' kubeadm.yaml
 sed -i '/advertiseAddress/ s/1.2.3.4/172.27.3.246/' kubeadm.yaml
@@ -168,7 +168,9 @@ mode: ipvs
 EOF
 
 
+# 拉取镜像
 kubeadm config images pull --config kubeadm.yaml
+# 执行初始化
 kubeadm init --config kubeadm.yaml
 
 
@@ -177,10 +179,16 @@ cat /etc/kubernetes/admin.conf > ~/.kube/config
 
 
 
-
-# calico
+#  最后 ，安装网络插件 calico或者flannel二选一即可
+# 安装网络插件calico,在master上执行以下两句
 curl -O https://docs.projectcalico.org/manifests/calico.yaml
 kubectl apply -f calico.yaml
+
+# 安装网络插件flannel，在master上执行以下两句
+curl -O https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+kubectl apply -f kube-flannel.yml
+
+
 
 
 
@@ -194,71 +202,21 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-
-
-# metrics-server
-# 在各worker nodes上操作
-# 下载镜像并重新打tag
-docker pull mirrorgooglecontainers/metrics-server-amd64:v0.3.6
-docker tag mirrorgooglecontainers/metrics-server-amd64:v0.3.6 k8s.gcr.io/metrics-server-amd64:v0.3.6
-
-
+####  metrics-server
 # 在master上操作
-# https://github.com/kubernetes-sigs/metrics-server.git
-git clone https://github.com/kubernetes-incubator/metrics-server.git
-cd metrics-server/
-# vi deploy/1.8+/metrics-server-deployment.yaml
-containers:
-      - name: metrics-server
-        image: k8s.gcr.io/metrics-server-amd64:v0.3.6
-        args:
-          - --cert-dir=/tmp
-          - --secure-port=4443
-          # 以下两行增加
-          - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
-          - --kubelet-insecure-tls
-        ports:
-        - name: main-port
-          containerPort: 4443
-          protocol: TCP
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-        imagePullPolicy: IfNotPresent
-        volumeMounts:
-        - name: tmp-dir
-          mountPath: /tmp
-        #以下两行新增
-        command:
-        - /metrics-server
+wget https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.0/components.yaml
+
+# 修改components.yaml
+第139行之后新增一行:       - --kubelet-insecure-tls
+第141行，修改为:          image: bitnami/metrics-server:0.6.0
 
 # 启动
-kubectl apply  -f 1.8+/
+kubectl apply  -f  components.yaml
 
 #检查安装是否成功
 kubectl get apiservices | grep metrics
 #v1beta1.metrics.k8s.io                 kube-system/metrics-server   True 29m
 
+
 # 几分钟后验证效果
 kubectl top nodes
-
-
-kubeadm init \
---apiserver-advertise-address=当前master机器的ip \
---image-repository registry.aliyuncs.com/google_containers \
---kubernetes-version v1.20.0-0 \
---service-cidr=10.1.0.0/16 \
---pod-network-cidr=10.244.0.0/16 \
---control-plane-endpoint 192.168.200.214:8443 \
---upload-certs
-
-
-参数描述
-–apiserver-advertise-address：用于指定kube-apiserver监听的ip地址,就是 master本机IP地址。
-–image-repository: 指定阿里云镜像仓库地址
-–kubernetes-version: 用于指定k8s版本；
-–pod-network-cidr：用于指定Pod的网络范围；10.244.0.0/16
-–service-cidr：用于指定SVC的网络范围；
-–control-plane-endpoint：指定keepalived的虚拟ip
-–upload-certs：上传证书
