@@ -19,6 +19,7 @@ metadata:
     nginx.ingress.kubernetes.io/enable-access-log: "true"
     nginx.ingress.kubernetes.io/configuration-snippet: |
       access_log /var/log/nginx/flink.sun.com.log upstreaminfo if=$loggable;
+      error_log  /var/log/nginx/test.example.com.error.log;
 
 
 # 允许跨域
