@@ -76,3 +76,12 @@ kubectl rollout undo deployment ${deployment_name} --to-revision=1
 # 如何查看可用的镜像版本
 # ${docker_img}为镜像名
 curl https://registry.hub.docker.com/v1/repositories/${docker_img}/tags | python3 -m json.tool | more
+
+
+
+# 强制删除namespace 
+# kubectl get ns -o json > 1.json
+# 将1.json中的spec中的内容清空
+# kubectl proxy
+curl -k -H "Content-Type: application/json" -X PUT --data-binary @1.json http://127.0.0.1:8001/api/v1/namespaces/<name>/finalize
+
