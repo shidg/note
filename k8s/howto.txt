@@ -85,3 +85,17 @@ curl https://registry.hub.docker.com/v1/repositories/${docker_img}/tags | python
 # kubectl proxy
 curl -k -H "Content-Type: application/json" -X PUT --data-binary @1.json http://127.0.0.1:8001/api/v1/namespaces/<name>/finalize
 
+
+## docker设置socks代理
+mkdir -p /etc/systemd/system/docker.service.d && touch /etc/systemd/system/docker.service.d/http-proxy.conf
+cat > /etc/systemd/system/docker.service.d/http-proxy.conf << EOF
+[Service]
+Environment="HTTP_PROXY=socks5://127.0.0.1:1080" "HTTPS_PROXY=socks5://127.0.0.1:1080" "NO_PROXY=localhost,127.0.0.1,"
+EOF
+
+systemctl daemon-reload && systemctl restart docker
+
+#验证是否配置成功
+systemctl show --property=Environment docker
+
+#另外如果需要使用http代理，只需要将socks5替换成http。
