@@ -71,7 +71,9 @@ wget https://github.com/kubernetes/kubernetes/archive/refs/tags/v1.22.9.tar.gz
 tar zxvf v1.22.9.tar.gz && mv kubernetes-1.22.9 kubernetes
 
 # step 3 修改源码，调整证书有效期
-cd kubernetes && sed -i '/CertificateValidity/s/* 365/* 365 * 100/' cmd/kubeadm/app/constants/constants.go
+cd kubernetes 
+sed -i '/CertificateValidity/s/* 365/* 365 * 100/' cmd/kubeadm/app/constants/constants.go
+sed -i '/NotAfter/s/* 10/* 100/' staging/src/k8s.io/client-go/util/cert/cert.go
 
 # step 4 构建kubeadm
 ./build/run.sh make kubeadm KUBE_BUILD_PLATFORMS=linux/amd64
