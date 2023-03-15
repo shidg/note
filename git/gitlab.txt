@@ -542,5 +542,39 @@ bundle exec rake cache:clear RAILS_ENV=production
 
 su - git
 cd ~/gitlab
-bundle exec rake gitlab:backup:create RAILS_ENV=production
-#备份文件存储位置在gitlab.yml中配置
+gitlab-rake gitlab:backup:create
+#bundle exec rake gitlab:backup:create RAILS_ENV=production
+#备份文件存储位置在gitlab.yml中配置，备份文件名称格式如下：
+1631510243_2021_09_13_13.2.10_gitlab_backup.tar
+
+
+#数据恢复
+gitlab-rake gitlab:backup:restore BACKUP=1631510243_2021_09_13_13.2.10
+
+# 数据恢复中遇到以下报错：
+ERROR:  must be owner of extension btree_gist
+ERROR:  must be owner of extension btree_gist
+ERROR:  must be owner of extension pg_trgm
+
+
+
+$ vim /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses = '*'
+
+$ vim /var/opt/gitlab/postgresql/data/pg_hba.conf
+# 最下面新增两行
+local   all         all                               trust
+host    all         all                               127.0.0.1/32 trust
+
+
+gitlab-ctl restart
+
+
+su - gitlab-psql
+/opt/gitlab/embedded/bin/psql -h 127.0.0.1 gitlabhq_production
+psql (9.2.8)
+Type "help" for help.
+
+gitlabhq_production=# ALTER USER gitlab WITH SUPERUSER;
+ALTER ROLE
+gitlabhq_production=# \q

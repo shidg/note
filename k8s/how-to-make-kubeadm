@@ -1,3 +1,4 @@
+#### method 1
 curl -fLO https://storage.googleapis.com/kubernetes-release/release/v1.22.9/kubernetes-src.tar.gz
 mkdir -p /root/kubernetes
 tar zxvf kubernetes-src.tar.gz -C /root/kubernetes
@@ -58,3 +59,27 @@ cd /root/kubernetes/_output/local/bin/linux/amd64
 kubeadm config images list
 # 查询证书有效期
 kubeadm certs check-expiration
+
+
+#### method 2
+# 环境要求 Docker 19.03+
+
+# setp 1 下载对应版本的k8s源码
+wget https://github.com/kubernetes/kubernetes/archive/refs/tags/v1.22.9.tar.gz
+
+# setp 2 解压并重命名
+tar zxvf v1.22.9.tar.gz && mv kubernetes-1.22.9 kubernetes
+
+# step 3 修改源码，调整证书有效期
+cd kubernetes && sed -i '/CertificateValidity/s/* 365/* 365 * 100/' cmd/kubeadm/app/constants/constants.go
+
+# step 4 构建kubeadm
+./build/run.sh make kubeadm KUBE_BUILD_PLATFORMS=linux/amd64
+
+## 脚本在执行过程中会下载一个k8s.gcr.io/build-image/kube-cross镜像，镜像版本号为文件build/build-image/cross/VERSION的内容，该镜像在国内无法下载，需科学上网
+$ docker pull k8s.gcr.io/build-image/kube-cross:v1.22.0-go1.16.15-bullseye.0
+
+# step 5 使用构建好的kubeadm替换原来的kubeadm
+\cp _output/dockerized/bin/linux/amd64/kubeadm /usr/bin/ 
+
+
