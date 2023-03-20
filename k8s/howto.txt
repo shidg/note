@@ -100,9 +100,7 @@ systemctl show --property=Environment docker
 
 #另外如果需要使用http代理，只需要将socks5替换成http。
 
-
-
-#  etcd数据备份与恢复
+# etcd 数据备份与恢复
 # save
 ETCDCTL_API=3 etcdctl --endpoints="https://172.27.3.246:2379"  --cert="/etc/kubernetes/pki/etcd/server.crt"  --key="/etc/kubernetes/pki/etcd/server.key"  --cacert="/etc/kubernetes/pki/etcd/ca.crt"   snapshot save /home/shidegang/backup/etcd/snap-$(date +%Y%m%d%H%M).db
 
