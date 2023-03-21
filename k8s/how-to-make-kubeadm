@@ -65,7 +65,7 @@ kubeadm certs check-expiration
 # 环境要求 Docker 19.03+
 
 # setp 1 下载对应版本的k8s源码
-wget https://github.com/kubernetes/kubernetes/archive/refs/tags/v1.22.9.tar.gz
+wget https://github.com/kubernetes/kubernetes/archive/refs/tags/v1.22.17.tar.gz
 
 # setp 2 解压并重命名
 tar zxvf v1.22.9.tar.gz && mv kubernetes-1.22.9 kubernetes
