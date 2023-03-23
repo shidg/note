@@ -43,8 +43,10 @@
 
 # docker-compose  install
 
-curl -SL https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+curl -SL
+https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-x86_64
+&& mv docker-compose-linux-x86_64 /usr/bin/docker-compose
 
-chmox +x /usr/local/bin/docker-compose
+chmox +x /usr/bin/docker-compose
 
 docker-compose -v

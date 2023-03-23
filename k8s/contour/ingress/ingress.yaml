@@ -1,0 +1,14 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: op-contour
+spec:
+  ingressClassName: contour    
+  virtualhost:
+    fqdn: harbor.baway.org.cn        
+  routes:
+  - conditions:               
+    - prefix: /            
+    services:                 
+    - name: harbor
+      port: 8001
