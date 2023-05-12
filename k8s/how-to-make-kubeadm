@@ -1,74 +1,12 @@
-#### method 1
-curl -fLO https://storage.googleapis.com/kubernetes-release/release/v1.22.9/kubernetes-src.tar.gz
-mkdir -p /root/kubernetes
-tar zxvf kubernetes-src.tar.gz -C /root/kubernetes
 
-
-修改时间
-#替换命令
-sed -i "s/365/365 * 50/" /root/kubernetes/cmd/kubeadm/app/constants/constants.go
-sed -i "s/* 10/* 50/p" /root/kubernetes/staging/src/k8s.io/client-go/util/cert/cert.go
-查看
-cat /root/kubernetes/cmd/kubeadm/app/constants/constants.go|grep "CertificateValidity ="
-CertificateValidity = time.Hour * 24 * 365 * 50
-
-
-查看 kube-cross 的 TAG 版本号 
-
-cat /root/kubernetes/build/build-image/cross/VERSION
-v1.22.0-go1.16.15-buster.0
- 
-
-本地安装go环境
-
-# 安装依赖
-yum install gcc make -y
-yum install rsync jq -y
-
-# 下载go安装包
-wget https://dl.google.com/go/go1.16.15.linux-amd64.tar.gz
-或者
-wget https://golang.google.cn/dl/go1.16.15.linux-amd64.tar.gz
-
-# 解压
-tar zxvf go1.16.15.linux-amd64.tar.gz  -C /usr/local
-
-# 设置环境变量
-export GOROOT=/usr/local/go
-export GOPATH=/usr/local/gopath
-export PATH=$PATH:$GOROOT/bin
-
-# 环境变量永久生效
-source /etc/profile
-
-
-编译
-
-# 进入源码目录
-cd /root/kubernetes
-
-# 编译kubeadm, 这里主要编译kubeadm 即可
-make all WHAT=cmd/kubeadm GOFLAGS=-v
-
-# 文件位置
-cd /root/kubernetes/_output/local/bin/linux/amd64
-
-# 集群初试化之前替换掉kubeadm
-
-# 查询需要的镜像版本
-kubeadm config images list
-# 查询证书有效期
-kubeadm certs check-expiration
-
-
-#### method 2
+####
 # 环境要求 Docker 19.03+
 
 # setp 1 下载对应版本的k8s源码
-wget https://github.com/kubernetes/kubernetes/archive/refs/tags/v1.22.17.tar.gz
+wget https://github.com/kubernetes/kubernetes/archive/refs/tags/v1.27.1.tar.gz
 
 # setp 2 解压并重命名
-tar zxvf v1.22.9.tar.gz && mv kubernetes-1.22.9 kubernetes
+tar zxvf v1.27.1.tar.gz && mv kubernetes-1.27.1 kubernetes
 
 # step 3 修改源码，调整证书有效期
 cd kubernetes 
@@ -79,7 +17,7 @@ sed -i '/NotAfter/s/* 10/* 100/' staging/src/k8s.io/client-go/util/cert/cert.go
 ./build/run.sh make kubeadm KUBE_BUILD_PLATFORMS=linux/amd64
 
 ## 脚本在执行过程中会下载一个k8s.gcr.io/build-image/kube-cross镜像，镜像版本号为文件build/build-image/cross/VERSION的内容，该镜像在国内无法下载，需科学上网
-$ docker pull k8s.gcr.io/build-image/kube-cross:v1.22.0-go1.16.15-bullseye.0
+$ docker pull k8s.gcr.io/build-image/kube-cross:v1.27.0-go1.20.3-bullseye.0
 
 # step 5 使用构建好的kubeadm替换原来的kubeadm
 \cp _output/dockerized/bin/linux/amd64/kubeadm /usr/bin/ 
