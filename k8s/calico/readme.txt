@@ -1,1 +1,1 @@
-# https://docs.tigera.io/calico/latest/getting-started/kubernetes/self-managed-onprem/onpremises
+# https://projectcalico.docs.tigera.io/manifests/calico.yaml

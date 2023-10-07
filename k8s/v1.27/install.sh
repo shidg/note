@@ -236,6 +236,7 @@ echo "source <(kubectl completion bash)" >> ~/.bash_profile
 
 #  最后 ，安装网络插件 calico或者flannel二选一即可
 # 安装网络插件calico,在master上执行以下两句
+# https://projectcalico.docs.tigera.io/manifests/calico.yaml
 curl -O https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
 kubectl apply -f calico.yaml
 
