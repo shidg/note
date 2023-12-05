@@ -1,130 +1,58 @@
 #!/bin/bash
-# File Name: -- multiple_master_install.sh --
+# File Name: -- one_master_install.sh --
 # author: -- shidegang --
-# Created Time: 2019-11-29 21:07:10
+# Created Time: 2023-03-20 19:37:10
 
 # 版本信息
 # CentOS Linux release 7.9.2009 (Core)
-# docker 20.10.22
-# k8s 1.22.17
+# containerd 1.7.1
+# k8s 1.27.2-0
+
+# 3 master 3 node
+# 172.27.3.246 k8s-master1
+# 172.27.3.247 k8s-master2
+# 172.27.3.248 k8s-master3
+# 172.27.3.249 k8s-node1
+# 172.27.3.250 k8s-node1
+# 172.27.3.251 k8s-node1
 
 
-# 至少3master 3node
-# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
-# 10.10.8.73 haproxy-1
-# 10.10.8.78 haproxy-2
-# 10.10.8.88 VIP
-# 10.10.8.32 master-1
-# 10.10.8.33 master-2
-# 10.10.8.34 master-3
-# 10.10.12.35 node1
-# 10.10.12.36 node2
-# 10.10.12.37 node3
+
+#######  定义变量   ########
+# 各节点主机名
+host_name_of_master=k8s-master1
+host_name_of_master=k8s-master2
+host_name_of_master=k8s-master3
+host_name_of_node1=k8s-node1
+host_name_of_node2=k8s-node2
+host_name_of_node3=k8s-node3
+
+# 各节点ip地址，根据自己的实际情况修改
+host_ip_of_master1=172.27.3.246
+host_ip_of_master2=172.27.3.247
+host_ip_of_master3=172.27.3.248
+host_ip_of_node1=172.27.3.249
+host_ip_of_node2=172.27.3.250
+host_ip_of_node2=172.27.3.251
 
 
-# Haproxy 两台机器同样操作
-# https://github.com/haproxy/haproxy
-yum install haproxy
-# /etc/haproxy/haproxy.cfg
-# 仅显示改动部分
-defaults
-    mode                    tcp
-    log                     global
-    option                  tcplog
-frontend  k8s *:8443
-    mode tcp    ## 必须
-    acl url_static       path_beg       -i /static /images /javascript /stylesheets
-    acl url_static       path_end       -i .jpg .gif .png .css .js
-
-#    use_backend static          if url_static
-    default_backend             k8s
-
-#---------------------------------------------------------------------
-# static backend for serving up images, stylesheets and such
-#---------------------------------------------------------------------
-#backend static
-#    balance     roundrobin
-#    server      static 127.0.0.1:4331 check
-
-#---------------------------------------------------------------------
-# round robin balancing between the various backends
-#---------------------------------------------------------------------
-backend k8s
-    mode tcp
-    balance     roundrobin
-    server  master-1 10.10.8.32:6443 check
-    server  master-2 10.10.8.33:6443 check
-    server  master-3 10.10.8.34:6443 check
-
-systemctl start haproxy && systemctl enable haproxy
+# 修改主机名
+# 如果脚本是在master上跑，注释掉2、3行
+# 如果脚本是在node1上跑，注释掉1、3行
+# 如果脚本是在node2上跑，注释掉1、2行
+hostnamectl --static set-hostname ${host_name_of_master}
+#hostnamectl --static set-hostname ${host_name_of_node1}
+#hostnamectl --static set-hostname ${host_name_of_node2}
 
 
-# keepalived (两台haproxy服务器)
-yum install -y libnfnetlink-devel openssl-devel libnl-devel libnl3-devel
-yum install -y keepalived
-# /etc/keepalived/keepalived.conf
-! Configuration File for keepalived
 
-global_defs {
-   router_id haproxy-2
-   vrrp_skip_check_adv_addr
-   vrrp_garp_interval 0
-   vrrp_gna_interval 0
-}
-
-vrrp_script chk_haproxy {
-   script "/Data/scripts/chk_haproxy.sh" # 该脚本要给执行权限
-   interval 2 # 单位分钟
-}
-
-vrrp_instance VI_1 {
-    state BACKUP
-    interface eno16777985
-    virtual_router_id 51
-    nopreempt
-    priority 90
-    advert_int 1
-    authentication {
-        auth_type PASS
-        auth_pass 1111
-    }
-    track_script {
-        chk_haproxy
-    }
-    virtual_ipaddress {
-        10.10.8.88/24
-    }
-}
-
-##  chk_haproxy.sh
-#!/bin/bash
-
-A=`ps -C haproxy --no-header | wc -l`
-
-if [ $A -eq 0 ];then
-    systemctl start haproxy.service
-    sleep 3
-    if [ `ps -C haproxy --no-header | wc -l ` -eq 0 ];then
-        systemctl stop keepalived.service
-    fi
-fi
-
-chmod +x chk_haproxy.sh
-
-systemctl start keepalived && systemctl enable keepalived
-
-### docker & k8s #####
-
-#### 以下操作在所有节点执行 ####
-
-## /etc/hosts
-10.10.8.32 master-1
-10.10.8.33 master-2
-10.10.8.34 master-3
-10.10.12.35 node1
-10.10.12.36 node2
-10.10.12.37  node3
-
+#####  主机名及对应ip写入hosts文件 ######
+cat >> /etc/hosts << EOF
+${host_ip_of_master}  ${host_name_of_master}
+${host_ip_of_node1}  ${host_name_of_node1}
+${host_ip_of_node2}  ${host_name_of_node2}
+${host_ip_of_node3}  ${host_name_of_node3}
+EOF
 
 # 升级内核版本
 rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
@@ -132,36 +60,37 @@ yum -y install https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm
 # yum --disablerepo="*" --enablerepo="elrepo-kernel" list available
 yum --enablerepo=elrepo-kernel install kernel-lt -y
 
-#
+# 
 grub2-set-default 0
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
-# 使用新内核启动
-reboot
 
 # 安装必要基础工具
 # chrony: 时间同步
 # yum-utils: yum扩展工具
 # bash-completion: systemctl命令补全
 # wget: 下载
-yum install chrony yum-utils bash-completion wget iptables-services -y
+yum install chrony yum-utils wget -y
 
 
-# 修改服务器名为期望的名字
-
-hostnamectl --static set-hostname ${k8s_hostname}
-
-# hosts文件添加所有节点的记录
 
 # 关闭并禁用firewalld
 systemctl stop firewalld && systemctl disable firewalld
 
 # 关闭并禁用Selinux
-systemctl stop firewalld && systemctl disable firewalld
+setenforce 0
+sed -i '/^SELINUX=/ c\SELINUX=disabled' /etc/selinux/config
+
+# 关闭并禁用swap
+swapoff -a
+if grep 'swap' /etc/fstab;then
+    sed -i '/swap/ s/^/#/g' /etc/fstab
+fi
 
 # 自动加载必要模块
 cat >> /etc/sysconfig/modules/k8s.modules << EOF
 #! /bin/bash
+modprobe overlay
 modprobe br_netfilter
 modprobe ip_vs
 modprobe ip_vs_rr
@@ -178,51 +107,70 @@ net.ipv4.ip_forward=1
 net.bridge.bridge-nf-call-ip6tables=1
 net.bridge.bridge-nf-call-iptables=1
 net.netfilter.nf_conntrack_max=1048576
-net.nf_conntrack_max=1048576
-overcommit_memory=1
+vm.overcommit_memory=1
 vm.swappiness=0
 fs.file-max=52706963
 fs.nr_open=52706963
+user.max_user_namespaces=28633
 EOF
 
 sysctl -p /etc/sysctl.d/k8s.conf
 
-# 禁用swap
-swapoff -a
 
-if grep 'swap' /etc/fstab;then
-    sed -i '/swap/ s/^/#/g' /etc/fstab
-fi
+### containerd & k8s #####
+## 安装containerd
+# 下载解压缩
+wget https://github.com/containerd/containerd/releases/download/v1.7.1/containerd-1.7.1-linux-amd64.tar.gz
+tar zxvf containerd-1.7.1-linux-amd64.tar.gz -C /usr/local/
 
-# 安装docker
-# docker源
-#yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
-yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-yum install -y docker-ce docker-ce-cli containerd.io
+# 生成初始配置文件
+mkdir /etc/containerd
+containerd config default > /etc/containerd/config.toml
 
-# 配置阿里镜像源
-# https://cr.console.aliyun.com
-[ ! -d /etc/docker ] && mkdir -p /etc/docker
+# 配置文件修改
+sed -i '/SystemdCgroup/ s/false/true/'  /etc/containerd/config.toml
+sed -i '/sandbox_image/ s/registry.k8s.io\/pause:3.8/registry.aliyuncs.com\/google_containers\/pause:3.9/' /etc/containerd/config.toml
+# 使用systemd管理服务
+wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service  -P /usr/lib/systemd/system
 
-cat >> /etc/docker/daemon.json <<EOF
-{
-  "registry-mirrors": [
-    "https://8av7qk0l.mirror.aliyuncs.com",
-    "http://hub-mirror.c.163.com",
-    "https://docker.mirrors.ustc.edu.cn"
-    ],
-    "default-address-pools" : [
-    {
-      "base" : "172.31.0.0/16",
-      "size" : 24
-    }
-    ],
-  "exec-opts": ["native.cgroupdriver=systemd"]
-}
-EOF
+# 启动containerd
+systemctl daemon-reload && systemctl enable --now containerd
 
-# 重启docker
-systemctl daemon-reload && systemctl enable docker
+
+##安装RunC
+# 升级依赖(libseccomp>=2.4)
+# 卸载自带libseccomp
+rpm -e chrony-3.4-1.el7.x86_64
+rpm -e libseccomp-2.3.1-4.el7.x86_64
+# 下载安装高版本libseccomp
+wget https://github.com/opencontainers/runc/releases/download/v1.1.7/libseccomp-2.5.4.tar.gz
+yum install gperf
+tar zxvf libseccomp-2.5.4.tar.gz && cd libseccomp-2.5.4
+make && make install
+
+
+# 重新安装chrony
+yum install chrony -y && systemctl enable -- now chronyd
+
+# 安装RunC
+# https://github.com/opencontainers/runc
+wget https://github.com/opencontainers/runc/releases/download/v1.1.7/runc.amd64
+install -m 755 runc.amd64 /usr/local/sbin/runc
+# 验证runc
+runc -v
+
+## 安装cni
+wget https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
+mkdir -p /opt/cni/bin
+tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.3.0.tgz
+
+## 安装crictl
+wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.27.0/crictl-v1.27.0-linux-amd64.tar.gz
+tar zxvf crictl-v1.27.0-linux-amd64.tar.gz -C /usr/local/bin/
+crictl config runtime-endpoint unix:///run/containerd/containerd.sock
+# 验证
+critl ps
+
 
 
 # 添加k8s源
@@ -233,7 +181,7 @@ baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
 enabled=1
 gpgcheck=1
 repo_gpgcheck=1
-gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
+gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
 
 # 更新缓存
@@ -241,22 +189,29 @@ yum clean all && yum makecache -y
 
 # 安装k8s
 # yum --showduplicates list kubelet
-yum install -y kubelet-1.22.17-0 kubeadm-1.22.17-0 kubectl-1.22.17-0 --disableexcludes=kubernetes
+yum install -y kubelet-1.27.2-0 kubeadm-1.27.2-0 kubectl-1.27.2-0 --disableexcludes=kubernetes
 systemctl enable kubelet
 
-
-# k8s master-1节点上执行以下操作
 # kubelet 命令补全
 yum install bash-completion -y
 source /usr/share/bash-completion/bash_completion
+echo "source <(kubectl completion bash)" >> ~/.bash_profile
 
-# bash
-echo "source <(kubectl completion bash)" >> ~/.bash_profile && source ~/.bash_profile
-# zsh
-echo "source <(kubectl completion zsh)" >> ~/.zshrc && source ~/.zshrc
+# 使用新内核启动
+echo  "K8S部署完成，系统将在10秒钟后使用新内核启动"
+for i in $(seq 10| tac)
+do
+    echo -ne "\aThe system will reboot after $i seconds...\r"
+    sleep 1
+done
+echo
+shutdown -r now
 
-# 开始初始化k8s集群
-# 生成并修改初始化配置文件
+
+
+# 以下为手动执行部分 
+# master1节点执行
+# 生成k8s集群配置文件
 kubeadm config print init-defaults --component-configs KubeletConfiguration > /root/kubeadm.yaml
 # 修改后的kubeadm.yaml
 cat > /root/kubeadm.yaml <<EOF
@@ -289,9 +244,9 @@ etcd:
 #etcd:
 #  external:
 #    endpoints:
-#      - https://172.27.11.247:2379
-#      - https://172.27.11.248:2379
-#      - https://172.27.11.249:2379
+#      - https://172.27.11.260:2379
+#      - https://172.27.11.261:2379
+#      - https://172.27.11.262:2379
 #    caFile: /opt/etcd/ssl/ca.pem
 #    certFile: /opt/etcd/ssl/server.pem
 #    keyFile: /opt/etcd/ssl/server-key.pem
@@ -300,16 +255,16 @@ etcd:
 imageRepository: registry.aliyuncs.com/google_containers
 kind: ClusterConfiguration
 # 要安装的k8s版本
-kubernetesVersion: 1.22.17
+kubernetesVersion: 1.27.2
 # 多master模式下，指定apiserver的地址，一般为VIP地址
-controlPlaneEndpoint: 10.10.8.88:8443 
+controlPlaneEndpoint: 172.27.11.188:8443 
 # 这里列出所有master的ip地址
 apiServer:
   timeoutForControlPlane: 4m0s
   certSANs:
-  - 10.10.8.32
-  - 10.10.8.33
-  - 10.10.8.34
+  - 172.27.11.246
+  - 172.27.11.247
+  - 172.27.11.248
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
@@ -361,14 +316,20 @@ mode: ipvs
 EOF
 
 # 拉取镜像 （该步骤非必要，直接执行kubeadm init会自动拉取镜像）
-kubeadm config images pull --config kubeadm.yaml
+kubeadm config images pull --config kubeadm.yaml && \
+
 # 初始化第一台master
 kubeadm init --config kubeadm.yaml
 
+# 设置k8s环境变量，使kubectl可以管理集群
+mkdir ~/.kube/config
+cat /etc/kubernetes/admin.conf > ~/.kube/config
 
-# 添加其他master节点
+
+# 添加剩余master
+
 # 将证书拷贝到其他master节点
-for node in ${ip_of_master-2} ${ip_of_master-3}; do
+for node in ${host_ip_of_master2} ${host_ip_of_master2}; do
   ssh $node "mkdir -p /etc/kubernetes/pki/etcd; mkdir -p ~/.kube/"
   scp /etc/kubernetes/pki/ca.crt $node:/etc/kubernetes/pki/ca.crt
   scp /etc/kubernetes/pki/ca.key $node:/etc/kubernetes/pki/ca.key
@@ -382,22 +343,24 @@ for node in ${ip_of_master-2} ${ip_of_master-3}; do
   scp /etc/kubernetes/admin.conf $node:~/.kube/config
 
 # master-2、master-3加入集群
-kubeadm join 10.10.8.88:8443 --token abcdef.0123456789abcdef \
+kubeadm join 172.27.11.188:8443 --token abcdef.0123456789abcdef \
         --discovery-token-ca-cert-hash sha256:83370f58a593b43539175844f4d8d895d4a2be4345ae76528e92b2ee52eaba1d \
         --control-plane
 
-# node节点加入集群
-kubeadm join 10.10.8.88:8443 --token abcdef.0123456789abcdef \
-        --discovery-token-ca-cert-hash sha256:83370f58a593b43539175844f4d8d895d4a2be4345ae76528e92b2ee52eaba1d
+## 添加从节点，在从节点执行
+kubeadm join 172.27.11.188:8443 --token abcdef.0123456789abcdef \
+        --discovery-token-ca-cert-hash sha256:83370f58a593b43539175844f4d8d895d4a2be4345ae76528e92b2ee52eaba1d \
+
 
 
 #  最后 ，安装网络插件 calico或者flannel二选一即可
 
 # 安装网络插件calico,在master上执行以下两句
-curl -O https://raw.githubusercontent.com/projectcalico/calico/v3.24.6/manifests/calico.yaml
+curl -O https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
 kubectl apply -f calico.yaml
-#注意k8s和calico的版本对应关系
+# 注意k8s和calico的版本对应关系
 # https://docs.tigera.io/calico/3.24/getting-started/kubernetes/requirements
+
 
 # 安装网络插件flannel，在master上执行以下两句
 curl -O https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
@@ -405,10 +368,22 @@ kubectl apply -f kube-flannel.yml
 
 
 
-################################# 其他 #########################
 
-# 查询admin-user用户的token
-kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
+
+
+
+
+
+
+#### 以下为一些常用操作，作为笔记使用,不需要执行 ####
+# 生成join 命令 (--token 和 --discovery-token-ca-cert-hash)
+kubeadm token create --print-join-command
+
+# 其他非root用户想使用kubectl命令执行以下操作
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
 
 
 ####  metrics-server
@@ -426,20 +401,15 @@ kubectl apply  -f  components.yaml
 kubectl get apiservices | grep metrics
 #v1beta1.metrics.k8s.io                 kube-system/metrics-server   True 29m
 
-
-
 # 几分钟后验证效果
 kubectl top nodes
 
 
-
-#####################
-
-# 生成join 命令 (--token 和 --discovery-token-ca-cert-hash)
-kubeadm token create --print-join-command
-
-# 生成join需要的cert key  (--certificate-key)
-kubeadm init phase upload-certs --upload-certs
-
-# 查看token
-kubeadm token list
+####### 从calico切换到flannel  #########
+kubectl delete -f calico.yaml #master节点
+modprobe -r ipip #所有节点
+rm -rf /var/lib/calico && rm -f /etc/cni/net.d/*  # 所有节点
+systemctl  restart kubelet  # 所有节点
+kubectl apply -f kube-flannel.yml  # master节点
+# https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+kubectl  restart kubelet  #所有节点
