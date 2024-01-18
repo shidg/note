@@ -106,3 +106,7 @@ ETCDCTL_API=3 etcdctl --endpoints="https://172.27.3.246:2379"  --cert="/etc/kube
 
 # restore
 #ETCDCTL_API=3 etcdctl --endpoints="https://127.0.0.1:2379"  --cert="/etc/kubernetes/pki/etcd/server.crt"  --key="/etc/kubernetes/pki/etcd/server.key"  --cacert="/etc/kubernetes/pki/etcd/ca.crt"   snapshot restore /root/snap-202303192100.db --data-dir=/var/lib/etcd
+
+
+# 强制删除crd
+kubectl patch crd/<crdname> -p '{"metadata":{"finalizers":[]}}' --type=merge
