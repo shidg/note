@@ -137,7 +137,7 @@ echo ${stringZ/%abc/xyz} 替换结尾的abc
 $(cmd)
 `cmd`
 ${var:-string} #如果$var为空则用string替换${var:-string},$var仍为空
-${var:=string} #如果$var为空则用string替换${var:-string},$var被赋值为string
+${var:=string} #如果$var为空则用string替换${var:=string},$var被赋值为string
 ${var:+string} #如果$var不为空则用string替换${var:+string},如果$var为空则不替换
 ${var:?string} #如果$var不为空则用$var的值替换${var:?string},$var为空的话string被输出到标准输出
 
@@ -147,7 +147,7 @@ $ echo $((3+2))
 5 
 $ echo $((3>2)) 
 1 
-$ echo $((25<3 ? 2:3)) 
+$ echo $((25<3 ? 2:3)) # 三元表达式，条件?表达式1:表达式2，如果条件成立则运行表达式1，否则运行表达式2
 3 
 $ echo $var
 
