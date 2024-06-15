@@ -1,1 +1,1 @@
-# https://projectcalico.docs.tigera.io/manifests/calico.yaml
+# https://docs.tigera.io/
