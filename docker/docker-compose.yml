@@ -1,0 +1,125 @@
+version: '3.5'
+services:
+ zabbix-server:
+  image: zabbix/zabbix-server-mysql:centos-6.2-latest
+  container_name: zabbix-server
+  ports:
+   - "10051:10051"
+  volumes:
+   - "/etc/timezone:/etc/timezone"
+   - "/root/alertscripts:/usr/lib/zabbix/alertscripts"
+   - "/root/externalscripts:/usr/lib/zabbix/externalscripts"
+  environment:
+   DB_SERVER_HOST: mysql-server
+   MYSQL_DATABASE: zabbix
+   MYSQL_USER: zabbix
+   MYSQL_PASSWORD: 123456
+   MYSQL_ROOT_PASSWORD: 123456
+   ZBX_JAVAGATEWAY: zabbix-java-gateway
+   ZBX_JAVAGATEWAY_ENABLE: "true"
+  depends_on:
+   - mysql-server
+  networks:
+   - zbx_net_backend
+  sysctls:
+   - net.ipv4.ip_local_port_range=1024 65000
+   - net.ipv4.conf.all.accept_redirects=0
+   - net.ipv4.conf.all.secure_redirects=0
+   - net.ipv4.conf.all.send_redirects=0
+  labels:
+   com.zabbix.description: "Zabbix server with MySQL database support"
+   com.zabbix.company: "Zabbix LLC"
+   com.zabbix.component: "zabbix-server"
+   com.zabbix.dbtype: "mysql"
+   com.zabbix.os: "centos"
+
+ zabbix-web-nginx-mysql:
+  image: zabbix/zabbix-web-nginx-mysql:centos-6.2-latest
+  container_name: zabbix-web-nginx
+  environment:
+   DB_SERVER_HOST: mysql-server
+   MYSQL_DATABASE: zabbix
+   MYSQL_USER: zabbix
+   MYSQL_PASSWORD: 123456
+   MYSQL_ROOT_PASSWORD: 123456
+   ZBX_SERVER_HOST: zabbix-server
+   PHP_TZ: "Asia/Shanghai"
+  ports:
+   - "80:8080"
+   - "443:8443"
+  volumes:
+   - "/etc/localtime:/etc/localtime"
+  depends_on:
+   - mysql-server
+   - zabbix-server
+  networks:
+   - zbx_net_backend
+  labels:
+   com.zabbix.description: "Zabbix frontend on Nginx web-server with MySQL database support"
+   com.zabbix.company: "Zabbix LLC"
+   com.zabbix.component: "zabbix-frontend"
+   com.zabbix.webserver: "nginx"
+   com.zabbix.dbtype: "mysql"
+   com.zabbix.os: "centos"
+
+ zabbix-agent:
+  image: zabbix/zabbix-agent:centos-6.2-latest
+  container_name: zabbix-agent
+  ports:
+   - "10050:10050"
+  volumes:
+   - "/etc/localtime:/etc/localtime"
+  privileged: true
+  pid: "host"
+  networks:
+   - zbx_net_backend
+  labels:
+   com.zabbix.description: "Zabbix agent"
+   com.zabbix.company: "Zabbix LLC"
+   com.zabbix.component: "zabbix-agentd"
+   com.zabbix.os: "centos"
+
+ zabbix-java-gateway:
+  image: zabbix/zabbix-java-gateway:centos-6.2-latest
+  container_name: zabbix-java-gateway
+  volumes:
+   - "/etc/localtime:/etc/localtime"
+  ports:
+   - "10052:10052"
+  networks:
+   - zbx_net_backend
+  labels:
+   com.zabbix.description: "Zabbix Java Gateway"
+   com.zabbix.company: "Zabbix LLC"
+   com.zabbix.component: "java-gateway"
+   com.zabbix.os: "centos"
+
+ mysql-server:
+  image: mysql:8.0-oracle
+  container_name: mysql-server
+  command:
+   - --character-set-server=utf8
+   - --collation-server=utf8_bin
+   - --default-authentication-plugin=mysql_native_password
+  volumes:
+   - "/root/mysqldata:/var/lib/mysql"
+   - "/etc/localtime:/etc/localtime"
+  environment:
+   MYSQL_DATABASE: zabbix
+   MYSQL_USER: zabbix
+   MYSQL_PASSWORD: 123456
+   MYSQL_ROOT_PASSWORD: 123456
+  networks:
+   - zbx_net_backend
+
+networks:
+  zbx_net_frontend:
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.238.0/24
+  zbx_net_backend:
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.239.0/24
