@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config-in-pod-to-kafka
+  namespace: private
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+    - type: log
+      enabled: true
+      paths:
+        - /logs/*.log
+    output.kafka:
+      hosts: ["kafka-0.kafka-headless.elk:9092","kafka-1.kafka-headless.elk:9092","kafka-2.kafka-headless.elk:9092"]
+      topic: nginx-logs-in-pod-%{+YYYY.MM.dd}
+      partition.round_robin:
+        reachable_only: true
+      required_acks: 1
+      compression: gzip
+      max_message_bytes: 1000000

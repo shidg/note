@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-ecshop
+  namespace: default
+spec:
+  rules:
+  - host: ecshop.baway.org.cn
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ecshop-svcn2
+            port:
+              number: 8008
+  - host: zabbix.baway.org.cn
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: zabbix-web
+            port:
+              number: 8080
+  ingressClassName: nginx

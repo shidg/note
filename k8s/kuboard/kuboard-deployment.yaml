@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kuboard
+  name: kuboard
+  namespace: private
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuboard
+  template:
+    metadata:
+      labels:
+        app: kuboard
+    spec:
+      dnsPolicy: "ClusterFirstWithHostNet"
+      nodeName: k8s-node3
+      containers:
+      - name: kuboard
+      # image: eipwork/kuboard:v3.5.2.6
+        image: eipwork/kuboard:v3.5.2.7
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: KUBOARD_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: kuboard
+              key: KUBOARD_ENDPOINT
+        - name: KUBOARD_AGENT_SERVER_UDP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: kuboard
+              key: KUBOARD_AGENT_SERVER_UDP_PORT
+        - name: KUBOARD_AGENT_SERVER_TCP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: kuboard
+              key: KUBOARD_AGENT_SERVER_TCP_PORT
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+          hostPort: 8080
+        - containerPort: 10081
+          name: tcp-api
+          protocol: TCP
+        - containerPort: 10081
+          name: udp-api
+          protocol: UDP
+        volumeMounts:
+          - name: kuboard-data
+            mountPath: /data
+      volumes:
+      - name: kuboard-data
+        hostPath:
+          path: /home/shidegang/kuboard_data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuboard
+  namespace: private
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: kuboard
+  type: ClusterIP

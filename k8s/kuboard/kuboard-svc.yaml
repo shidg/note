@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuboard
+  namespace: private
+spec:
+  selector:
+      app: kuboard
+  ports:
+  - port: 80
+    name: http
+    protocol: TCP
+    targetPort: 80

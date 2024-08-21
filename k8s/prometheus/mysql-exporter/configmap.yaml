@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-exporter-my-cnf
+  namespace: prometheus
+
+data:
+  my.cnf: | 
+    [client]
+    user=root
+    password=root

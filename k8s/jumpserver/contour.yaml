@@ -1,0 +1,17 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: jumpserver-ingress
+  namespace: jumpserver
+  annotations:
+    projectcontour.io/websocket-routes: "true"
+spec:
+  ingressClassName: contour    
+  virtualhost:
+    fqdn: jumpserver.baway.org.cn        
+  routes:
+  - conditions:               
+    - prefix: /            
+    services:                 
+    - name: jumpserver-proxy-svc
+      port: 8008

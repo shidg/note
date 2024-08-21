@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    app: redis-exporter
+  name: redis-exporter
+  namespace: prometheus
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: redis-exporter
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: redis-exporter
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/shidg/redis_exporter:v1.62.0
+        imagePullPolicy: IfNotPresent
+        name: redis-exporter
+        terminationMessagePolicy: File

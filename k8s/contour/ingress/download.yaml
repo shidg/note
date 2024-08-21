@@ -1,0 +1,15 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: download-ingress
+  namespace: private
+spec:
+  ingressClassName: contour    
+  virtualhost:
+    fqdn: download.baway.org.cn        
+  routes:
+  - conditions:               
+    - prefix: /            
+    services:                 
+    - name: jenkins-proxy-svc
+      port: 8008

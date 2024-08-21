@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gitlab-backup-job
+  namespace: private
+spec:
+  template:
+    spec:
+      serviceAccount: gitlab-private
+      serviceAccountName: gitlab-private
+      dnsConfig:
+        options:
+        - name: single-request-reopen
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: gitlab-backup
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/kubectl:v1
+        imagePullPolicy: Always
+        command:
+        - /bin/sh
+        - -c
+        - |-
+          #!/bin/bash
+          POD_NAME=$(kubectl -n private get pods -l app=gitlab -o jsonpath='{.items[*].metadata.name}')
+          kubectl -n private exec ${POD_NAME} -- gitlab-rake gitlab:backup:create
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+      restartPolicy: OnFailure
+      volumes:
+      - name: timezone
+        hostPath:
+          path: /etc/localtime
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      terminationGracePeriodSeconds: 30

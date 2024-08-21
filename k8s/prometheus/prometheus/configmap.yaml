@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: istio-system
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval:     15s
+      evaluation_interval: 15s
+    alerting:
+      alertmanagers:
+        - static_configs:
+          - targets: ["alertmanager:9093"]
+    rule_files:
+      - /etc/prometheus/rules.yml
+    scrape_configs:
+    - job_name: 'k8s-cadvisor'
+      kubernetes_sd_configs:
+      - role: node
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      metrics_path: /metrics/cadvisor
+      relabel_configs:
+      - action: labelmap
+        separator: ;
+        regex: __meta_kubernetes_node_label_(.+)
+        replacement: $1
+
+    - job_name: 'kubernetes-node'
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:9100'
+        target_label: __address__
+        action: replace
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+
+    - job_name: 'kube-state-metrics'
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+          - kube-system
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+        regex: kube-state-metrics
+        replacement: $1
+        action: keep
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: k8s_namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        action: replace
+        target_label: k8s_sname
+
+    - job_name: kubernetes-apiservers
+      honor_timestamps: true
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: https
+      kubernetes_sd_configs:
+      - role: endpoints
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        separator: ;
+        regex: default;kubernetes;https
+        replacement: $1
+        action: keep
+
+    - job_name: kubernetes-coredns
+      honor_timestamps: true
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: http
+      static_configs:
+        - targets:
+            - kube-dns.kube-system:9153
+    - job_name: kubernetes-ControllerManager
+      honor_timestamps: true
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: https
+      static_configs:
+        - targets:
+            - kube-controller-manager.kube-system:10257
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+    - job_name: kubernetes-scheduler
+      honor_timestamps: true
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: https
+      static_configs:
+        - targets:
+            - kube-scheduler.kube-system:10259
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+
+    - job_name: kubernetes-etcd
+      honor_timestamps: true
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: http
+      static_configs:
+        - targets:
+            - kube-etcd.kube-system:2381
+    - job_name: mysql
+      params:
+      static_configs:
+        - targets:
+          - mysql.mall-swarm:3306
+          - mysql8.default:3306
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: mysql-exporter.prometheus:9104
+    - job_name: rook-ceph
+      params:
+      static_configs:
+        - targets:
+          - rook-ceph-exporter.rook-ceph:9926
+          labels:
+            cluster: ceph-cluster
+    - job_name: nginx-vts-exporter
+      scrape_interval: 30s
+      static_configs:
+        - targets:
+          - jenkins-proxy-svc.private:9913
+    - job_name: nginx-prometheus-exporter
+      scrape_interval: 30s
+      static_configs:
+        - targets:
+          - jenkins-proxy-svc.private:9113
+    - job_name: 'istiod'
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+          - istio-system
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: istiod;http-monitoring
+    - job_name: 'envoy-stats'
+      metrics_path: /stats/prometheus
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        action: keep
+        regex: '.*-envoy-prom' 
+
+    - job_name: 'redis_exporter_targets'
+      static_configs:
+        - targets:
+          - redis://10.203.43.151:6379
+          - redis://10.203.43.151:6380
+          - redis://10.203.43.152:6379
+          - redis://10.203.43.152:6380
+          - redis://10.203.43.153:6379
+          - redis://10.203.43.153:6380
+      metrics_path: /scrape
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: redis-exporter.prometheus:9121
+
+    - job_name: 'redis_exporter'
+      static_configs:
+        - targets:
+          - redis-exporter.prometheus:9121
+
+
+  rules.yml: |
+    groups:
+    - name: test-node-mem
+      rules:
+      - alert: NodeMemoryUsage
+        expr: (node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)) / node_memory_MemTotal_bytes * 100 > 80
+        for: 2m
+        labels:
+          team: node
+        annotations:
+          summary: "{{$labels.instance}}: High Memory usage detected"
+          description: "{{$labels.instance}}: Memory usage is above 80% (current value is: {{ $value }}"

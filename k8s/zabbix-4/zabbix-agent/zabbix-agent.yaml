@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    daemonset: zabbix-agent
+  name: zabbix-agent
+spec:
+  selector:
+    matchLabels:
+      daemonset: zabbix-agent
+  template:
+    metadata:
+      labels:
+        daemonset: zabbix-agent
+    spec:
+      containers:
+      - name: zabbix-agent
+        env:
+        - name: ZBX_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ZBX_SERVER_HOST
+          value: "172.17.88.238,127.0.0.1"
+        - name: ZBX_TIMEOUT
+          value: "30"
+        image: zabbix/zabbix-agent:centos-4.4.10
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 10050
+          hostPort: 10050
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet

@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: jenkins
+  namespace: istio-system
+spec:
+  hosts:
+  - jenkins.baway.org.cn
+  gateways:
+    - baway-gateway-http
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 8080
+        host: jenkins.kube-jenkins.svc.cluster.local

@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginxv1
+  name: nginxv1
+  namespace: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: nginx
+        version: v1
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: nginxv1
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx:1.26.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: web-root
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: web-root
+        persistentVolumeClaim:
+          claimName: gray-nginx-1

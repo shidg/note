@@ -1,0 +1,46 @@
+# 权限控制
+# 创建gitlab使用的ServiceAccount
+# gitlab内置了prometheus,会通过k8s API获取相关信息
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitlab-private
+  namespace: private
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gitlab
+  namespace: private
+rules:
+  - apiGroups: [""]
+    resources:
+    - nodes
+    - nodes/proxy
+    - services
+    - endpoints
+    - pods
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+    - extensions
+    resources:
+    - ingresses
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gitlab
+  namespace: private
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gitlab
+subjects:
+  - kind: ServiceAccount
+    name: gitlab-private
+    namespace: private

@@ -340,6 +340,9 @@ metadata:
   name: ingress-nginx-controller
   namespace: ingress-nginx
 data:
+  compute-full-forwarded-for: "true"
+  forwarded-for-header: "X-Forwarded-For"
+  use-forwarded-headers: "true"
   22: "private/gitlab:22"
   3306: "default/mysql:3306"
 ---
@@ -538,6 +541,17 @@ spec:
         - mountPath: /usr/local/certificates/
           name: webhook-cert
           readOnly: true
+        - mountPath: /var/log/nginx
+          name: app-logs
+
+      - image: filebeat:v2
+        imagePullPolicy: IfNotPresent
+        name: filebeat
+        volumeMounts:
+        - name: app-logs
+          mountPath: /logs
+        - name: filebeat-config
+          mountPath: /etc/filebeat/
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: ingress-nginx
@@ -546,8 +560,14 @@ spec:
       - name: webhook-cert
         secret:
           secretName: ingress-nginx-admission
+      - name: ingress-log
+        persistentVolumeClaim:
+          claimName: ingress-log-pvc
       - name: app-logs
         emptyDir: {}
+      - name: filebeat-config
+        configMap:
+          name: filebeat-config-in-pod-to-kafka
 ---
 apiVersion: batch/v1
 kind: Job

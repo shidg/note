@@ -1,0 +1,116 @@
+# Deployment 方式部署jenkins，并以Service形式向外暴露端口
+# Deployment.spec.template.spec下添加了两条hostAliases，目的在于解决插件安装问题
+# 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: kube-jenkins
+  labels:
+    app: jenkins
+spec:
+  type: ClusterIP
+  selector:
+    app: jenkins
+  ports:
+  - name: jenkins-web
+    port: 8080
+    targetPort: jenkins-web
+  - name: jenkins-agent
+    port: 50000
+    targetPort: jenkins-agent
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: kube-jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: jenkins
+      serviceAccount: jenkins
+      nodeName: k8s-node2
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+#        - name: dind
+#          image: 'docker:stable-dind'
+#          command:
+#            - dockerd
+#            - --host=unix:///var/run/docker.sock
+#            - --host=tcp://0.0.0.0:8000
+#          securityContext:
+#            privileged: true
+#          volumeMounts:
+#          - mountPath: /var/run
+#            name: cache-dir
+        - name: jenkins
+         #image: jenkins/jenkins:2.440.3-lts
+         #image: jenkins/jenkins:2.452.3-lts
+          image: registry.cn-hangzhou.aliyuncs.com/shidg/jenkins:2.462.1-lts
+          securityContext:
+            runAsUser: 0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: jenkins-web
+              protocol: TCP
+            - containerPort: 50000
+              name: jenkins-agent
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 2
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 12
+          volumeMounts:
+            - name: jenkinshome
+              mountPath: /var/jenkins_home
+            - name: jenkinsssh
+              mountPath: /root/.ssh
+      hostAliases:
+      - ip: 10.203.43.101
+        hostnames:
+      #  - updates.jenkins-ci.org
+      #  - mirrors.jenkins-ci.org
+        - git.baway.org.cn
+      - ip: 127.0.0.1
+        hostnames:
+        - www.google.com
+        - google.com
+
+      volumes:
+        - name: cache-dir
+          emptyDir: {}
+        - name: jenkinshome
+          persistentVolumeClaim:
+            claimName: jenkins-claim
+        - name: jenkinsssh
+          persistentVolumeClaim:
+            claimName: jenkins-claim-ssh

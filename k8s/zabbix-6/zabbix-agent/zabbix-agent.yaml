@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    daemonset: zabbix-agent2
+  name: zabbix-agent2
+spec:
+  selector:
+    matchLabels:
+      daemonset: zabbix-agent2
+  template:
+    metadata:
+      labels:
+        daemonset: zabbix-agent2
+    spec:
+      containers:
+      - name: zabbix-agent2
+        env:
+        - name: ZBX_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ZBX_SERVER_HOST
+          value: "172.27.11.249,127.0.0.1"
+        - name: ZBX_TIMEOUT
+          value: "30"
+        image: zabbix/zabbix-agent2:centos-6.4-latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 10050
+          hostPort: 10050
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime 
+        - name: agent2-data
+          mountPath: /var/lib/zabbix
+        - name: agent2-conf
+          mountPath: /etc/zabbix
+      volumes:
+      - name: timezone
+        hostPath:
+          path: /usr/share/zoneinfo/Asia/Shanghai
+      - name: agent2-data
+        hostPath:
+          path: /data/volume/zabbix_agent2/data
+      - name: agent2-conf
+        hostPath:
+          path: /data/volume/zabbix_agent2/conf
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet

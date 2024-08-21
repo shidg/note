@@ -1,0 +1,32 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: rook-ceph-block
+provisioner: rook-ceph.rbd.csi.ceph.com
+parameters:
+  # clusterID 是 rook 集群运行的命名空间
+  clusterID: rook-ceph
+
+  # 指定存储池
+  pool: baway
+
+  # RBD image (实际的存储介质) 格式. 默认为 "2".
+  imageFormat: "2"
+
+  # RBD image 特性. CSI RBD 现在只支持 `layering` .
+  imageFeatures: layering
+
+  # Ceph 管理员认证信息，这些都是在 clusterID 命名空间下面自动生成的
+  csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+  csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+  csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+  csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+  # 指定 volume 的文件系统格式，如果不指定, csi-provisioner 会默认设置为 `ext4`
+  csi.storage.k8s.io/fstype: xfs
+# uncomment the following to use rbd-nbd as mounter on supported nodes
+# **IMPORTANT**: If you are using rbd-nbd as the mounter, during upgrade you will be hit a ceph-csi
+# issue that causes the mount to be disconnected. You will need to follow special upgrade steps
+# to restart your application pods. Therefore, this option is not recommended.
+#mounter: rbd-nbd
+reclaimPolicy: Delete
+allowVolumeExpansion: true

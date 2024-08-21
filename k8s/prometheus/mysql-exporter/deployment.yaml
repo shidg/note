@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    app: mysql-exporter
+  name: mysql-exporter
+  namespace: prometheus
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: mysql-exporter
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: mysql-exporter
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/shidg/mysqld-exporter
+        imagePullPolicy: IfNotPresent
+        name: mysqld-exporter
+        terminationMessagePolicy: File
+        command: ["mysqld_exporter"]
+        args: ["--config.my-cnf=/etc/my.cnf"]
+        volumeMounts:
+        - name: my-cnf
+          mountPath: /etc/my.cnf
+          subPath: my.cnf
+      volumes:
+      - name: my-cnf
+        configMap:
+          name: mysql-exporter-my-cnf

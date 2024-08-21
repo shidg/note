@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecshop-dp
+  name: ecshop-dpn2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecshop-pon2
+  template:
+    metadata:
+      labels:
+        app: ecshop-pon2
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-node2
+      containers:
+      - name: ecshop
+        image: webdevops/php-nginx:7.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: ecshop
+            mountPath: /app
+      - name: zabbix-agent
+        image: zabbix/zabbix-agent:centos-4.4.10
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ZBX_HOSTNAME
+          value: "Zabbix server"
+        - name: ZBX_SERVER_HOST
+          value: "zabbix-server"
+        - name: ZBX_STARTAGENTS
+          value: "3"
+        - name: ZBX_UNSAFEUSERPARAMETERS
+          value: "1"
+        - name: ZBX_TIMEOUT
+          value: "10"
+        ports:
+        - containerPort: 10050
+          name: zabbix-agent
+          protocol: TCP
+      volumes:
+      - name: ecshop
+        persistentVolumeClaim:
+          claimName: ecshop-claim
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecshop-svcn2
+spec:
+  ports:
+  - port: 8008 
+    targetPort: 80
+    protocol: TCP
+    name: nginx
+  - port: 10051 
+    targetPort: 10051
+    protocol: TCP
+    name: zabbix-agent
+  selector:
+    app: ecshop-pon2
+  type: ClusterIP

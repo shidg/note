@@ -1,0 +1,8 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-storage
+provisioner: nfs-diy # 和 deployment.yaml 中 env.PROVISIONER_NAME 保持一致
+reclaimPolicy: Retain
+parameters:
+  archiveOnDelete: "false"

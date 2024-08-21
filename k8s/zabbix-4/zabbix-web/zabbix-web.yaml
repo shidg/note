@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-web
+  namespace: default
+  labels:
+    app: zabbix-web
+spec:
+  selector:
+    app: zabbix-web
+  ports:
+  - name: zabbix-web
+    port: 8080
+    targetPort: zabbix-web
+    protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-web
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-web
+  template:
+    metadata:
+      labels:
+        app: zabbix-web
+    spec:
+      containers:
+      - name: zabbix-web
+        image: zabbix/zabbix-web-nginx-mysql:centos-4.4.10
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DB_SERVER_HOST
+          value: mysql-0.mysql
+        - name: MYSQL_DATABASE
+          value: zabbix
+        - name: MYSQL_USER
+          value: zabbix
+        - name: MYSQL_PASSWORD
+          value: zabbix
+        - name: MYSQL_ROOT_PASSWORD
+          value: 
+        - name: ZBX_SERVER_HOST
+          value: zabbix-server
+        - name: PHP_TZ
+          value: "Asia/Shanghai"
+        ports:
+        - containerPort: 8080
+          name: zabbix-web
+          protocol: TCP

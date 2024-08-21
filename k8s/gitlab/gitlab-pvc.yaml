@@ -1,0 +1,45 @@
+# 创建pvc,持久化gitlab数据
+# 该pvc将在gitlab-deployment.yaml中引用
+# 创建该pvc资源的前提在于创建nfs storageClass
+# kubectl get sc
+# NAME                  PROVISIONER      AGE
+# managed-nfs-storage   fuseim.pri/ifs   25h
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: gitlab-claim-data-private
+  namespace: private
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: "nfs-storage"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: gitlab-claim-main-conf-private
+  namespace: private
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+  storageClassName: "nfs-storage"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: gitlab-claim-nginx-conf-private
+  namespace: private
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+  storageClassName: "nfs-storage"

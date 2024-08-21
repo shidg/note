@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gitlab-backup-schedule
+  namespace: private
+spec:
+  schedule: "00 04 * * *"
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  suspend: false
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccount: gitlab-private
+          serviceAccountName: gitlab-private
+          dnsConfig:
+            options:
+            - name: single-request-reopen
+          imagePullSecrets:
+          - name: shidg-ali-registry
+          containers:
+          - name: gitlab-backup
+            image: registry.cn-hangzhou.aliyuncs.com/shidg/kubectl:v1
+            imagePullPolicy: Always
+            command:
+            - /bin/sh
+            - -c
+            - |-
+              #!/bin/bash
+              POD_NAME=$(kubectl -n private get pods -l app=gitlab -o jsonpath='{.items[*].metadata.name}')
+              kubectl -n private exec ${POD_NAME} -- gitlab-rake gitlab:backup:create
+            volumeMounts:
+            - name: timezone
+              mountPath: /etc/localtime
+          volumes:
+          - name: timezone
+            hostPath:
+              path: /etc/localtime
+          restartPolicy: OnFailure
+          dnsPolicy: ClusterFirst
+          securityContext: {}
+          terminationGracePeriodSeconds: 30

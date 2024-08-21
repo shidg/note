@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: nacos
+  namespace: istio-system
+spec:
+  hosts:
+  - nacos.baway.org.cn
+  gateways:
+  - baway-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 8848
+        host: nacos-headless.mall-swarm.svc.cluster.local

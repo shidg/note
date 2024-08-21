@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: gitlab-tcp
+  namespace: istio-system
+spec:
+  hosts:
+  - git.baway.org.cn
+  gateways:
+    - baway-gateway-tcp
+  tcp:
+  - match:
+    - port: 31579
+    route:
+    - destination:
+        port:
+          number: 22
+        host: gitlab.private.svc.cluster.local

@@ -1,0 +1,84 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jenkins-proxy
+  name: jenkins-proxy
+  namespace: private
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: nginx
+        version: v1
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: jenkins-proxy
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx-with-vts:1.26.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: jenkins-proxy-nginx-config
+            mountPath: /etc/nginx
+          - name: jenkins-proxy-nginx-data
+            mountPath: /usr/share/nginx/html
+          - name: nginx-logs
+            mountPath: /var/log/nginx
+      - name: vts-exporter
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx-vts-exporter:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9913
+        env:
+        - name: NGINX_STATUS 
+          value: "http://localhost/status/format/json"
+      - name: nginx-exporter
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx-prometheus-exporter:1.3.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9113
+        args:
+        - '--nginx.scrape-uri=http://localhost/stub_status'
+
+      volumes:
+      - name: jenkins-proxy-nginx-config
+        persistentVolumeClaim:
+          claimName: jenkins-proxy-nginx-config-claim
+      - name: jenkins-proxy-nginx-data
+        persistentVolumeClaim:
+          claimName: jenkins-proxy-nginx-data-claim
+      - name: nginx-logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-proxy-svc
+  namespace: private
+spec:
+  ports:
+  - port: 8008 
+    targetPort: 80
+    protocol: TCP
+    name: http-8008
+  - port: 9913
+    targetPort: 9913
+    protocol: TCP
+    name: http-9913
+  - port: 9113
+    targetPort: 9113
+    protocol: TCP
+    name: http-9113
+  selector:
+    app: nginx
+  type: ClusterIP
+

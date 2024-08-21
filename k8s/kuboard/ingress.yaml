@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-kuboard
+  namespace: private
+  annotations:
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      access_log /var/log/nginx/access.log upstreaminfo if=$loggable;
+spec:
+  rules:
+  - host: kuboard.baway.org.cn
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kuboard
+            port:
+              number: 80
+  ingressClassName: nginx

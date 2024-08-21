@@ -1,0 +1,1 @@
+docker run -d --privileged --name rancher --restart=unless-stopped -v /mnt/rancher:/var/lib/rancher -p 80:80 -p 443:443  rancher/rancher:stable

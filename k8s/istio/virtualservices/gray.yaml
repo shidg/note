@@ -1,0 +1,36 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: gray
+  namespace: istio-system
+spec:
+  hosts:
+  - gray.baway.org.cn
+  gateways:
+    - baway-gateway-http
+  http:
+  - match:
+    - headers:
+        user-agent: 
+          regex: ".*Chrome.*"
+    route:
+    - destination:
+        port:
+          number: 8008
+        host: gray.public.svc.cluster.local
+        subset: v1
+  - route:
+    - destination:
+        port:
+          number: 8008
+        host: gray.public.svc.cluster.local 
+        subset: v2
+      weight: 10
+
+    - destination:
+        host: gray.public.svc.cluster.local
+        port:
+          number: 8008
+        subset: v3
+      weight: 90
+

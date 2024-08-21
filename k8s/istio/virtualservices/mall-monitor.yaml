@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mall-monitor
+  namespace: istio-system
+spec:
+  hosts:
+  - mall-monitor.baway.org.cn
+  gateways:
+  - baway-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 8101
+        host: mall-monitor-service.mall-swarm.svc.cluster.local

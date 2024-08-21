@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ecshop-dp
+  name: ecshop-dpn2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecshop-pon2
+  template:
+    metadata:
+      labels:
+        app: ecshop-pon2
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-node2
+      containers:
+      - name: ecshop
+        image: webdevops/php-nginx:7.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: ecshop-data
+            mountPath: /app
+          - name: ecshop-config
+            mountPath: /opt/docker/etc/nginx
+          - name: app-logs
+            mountPath: /var/log/nginx
+      - name: filebeat
+        image: filebeat:v3
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: app-logs
+          mountPath: /logs
+        - name: filebeat-config
+          mountPath: /etc/filebeat/
+      volumes:
+      - name: ecshop-data
+        persistentVolumeClaim:
+          claimName: ecshop-data-claim
+      - name: ecshop-config
+        persistentVolumeClaim:
+          claimName: ecshop-config-claim
+      - name: app-logs
+        emptyDir: {}
+      - name: filebeat-config
+        configMap:
+          name: filebeat-config-in-pod-to-kafka
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecshop-svcn2
+spec:
+  ports:
+  - port: 8008 
+    targetPort: 80
+    protocol: TCP
+    name: nginx
+  - port: 10051 
+    targetPort: 10051
+    protocol: TCP
+    name: zabbix-agent
+  selector:
+    app: ecshop-pon2
+  type: ClusterIP

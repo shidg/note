@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ceph
+  namespace: istio-system
+spec:
+  hosts:
+  - ceph.baway.org.cn
+  gateways:
+  - baway-gateway-http
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 7000
+        host: rook-ceph-mgr-dashboard.rook-ceph.svc.cluster.local

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jumpserver-proxy
+  name: jumpserver-proxy
+  namespace: jumpserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jumpserver-proxy
+  template:
+    metadata:
+      labels:
+        app: jumpserver-proxy
+    spec:
+      containers:
+      - name: jumpserver-proxy
+        image: nginx
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: jumpserver-proxy-nginx-config
+            mountPath: /etc/nginx
+          - name: jumpserver-proxy-nginx-data
+            mountPath: /usr/share/nginx/html
+
+      volumes:
+      - name: jumpserver-proxy-nginx-config
+        persistentVolumeClaim:
+          claimName: jumpserver-proxy-nginx-config-claim
+      - name: jumpserver-proxy-nginx-data
+        persistentVolumeClaim:
+          claimName: jumpserver-proxy-nginx-data-claim
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jumpserver-proxy-svc
+  namespace: jumpserver
+spec:
+  ports:
+  - port: 8008 
+    targetPort: 80
+    protocol: TCP
+    name: jumpserver-proxy-nginx
+  selector:
+    app: jumpserver-proxy
+  type: ClusterIP

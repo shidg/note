@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  labels:
+    app: gitlab
+  namespace: private
+spec:
+  type: ClusterIP
+  selector:
+    app: gitlab
+  ports:
+  - name: http
+    port: 80
+    targetPort: http-80
+    appProtocol: http
+  - name: tcp-22
+    port: 22
+    targetPort: tcp-22
+    appProtocol: tcp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: private
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      nodeName: k8s-node1
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+      serviceAccount: gitlab-private
+      serviceAccountName: gitlab-private
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: gitlab
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/gitlab-ce:16.10.0-ce.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 22
+          hostPort: 22
+          name: tcp-22
+          protocol: TCP
+        - containerPort: 80
+          name: http-80
+          protocol: TCP
+        volumeMounts:
+        - name: gitlabhome
+          mountPath: /var/opt/gitlab
+        - name: gitlabconf
+          mountPath: /etc/gitlab
+        - name: timezone
+          mountPath: /etc/localtime
+      volumes:
+      - name: gitlabhome
+        persistentVolumeClaim:
+          claimName: gitlab-claim-data-private
+      - name: gitlabconf
+        persistentVolumeClaim:
+          claimName: gitlab-claim-main-conf-private
+      - name: timezone
+        hostPath:
+          path: /etc/localtime

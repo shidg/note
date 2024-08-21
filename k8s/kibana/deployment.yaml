@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+spec:
+  selector:
+    matchLabels:
+      app: kibana
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: kibana:7.17.10
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5601
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 50m
+            limits:
+              memory: 512Mi
+              cpu: 200m
+          volumeMounts:
+            - name: kibana-config
+              mountPath: /usr/share/kibana/config/kibana.yml
+              subPath: kibana.yml
+      volumes:
+        - name: kibana-config
+          configMap:
+            name: kibana-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+spec:
+  type: ClusterIP
+  ports:
+    - name: kibana
+      port: 5601
+      targetPort: 5601
+  selector:
+    app: kibana

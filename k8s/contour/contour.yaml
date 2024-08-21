@@ -15,11 +15,6 @@
 
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: projectcontour
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: contour
@@ -136,8 +131,8 @@ data:
     # - "HTTP/1.1"
     #
     # The following shows the default proxy timeout settings.
-    # timeouts:
-    #   request-timeout: infinity
+    timeouts:
+      request-timeout: infinity
     #   connection-idle-timeout: 60s
     #   stream-idle-timeout: 5m
     #   max-connection-duration: infinity

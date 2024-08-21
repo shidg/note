@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mall
+  namespace: istio-system
+spec:
+  hosts:
+  - mall.baway.org.cn
+  - mall-gateway.baway.org.cn
+  - mall-portal.baway.org.cn
+  - mall-doc.baway.org.cn
+  gateways:
+  - baway-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 8008
+        host: mall-swarm-admin-web.mall-swarm.svc.cluster.local

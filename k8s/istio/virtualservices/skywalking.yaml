@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: skywalking
+  namespace: istio-system
+spec:
+  hosts:
+  - skywalking.baway.org.cn
+  gateways:
+  - baway-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 80
+        host: skywalking-skywalking-helm-ui.skywalking.svc.cluster.local

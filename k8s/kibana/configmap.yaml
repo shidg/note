@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-cm
+  namespace: default
+data:
+  kibana.yml: |
+    server.name: kibana
+    server.port: 5601
+    server.host: "0.0.0.0"
+    server.publicBaseUrl: "http://kibana.baway.org.cn"
+    elasticsearch.hosts: [ "http://es-cluster-0.es-cluster-svc:9200","http://es-cluster-1.es-cluster-svc:9200","http://es-cluster-2.es-cluster-svc:9200" ]
+    #elasticsearch.hosts: [ "http://es-cluster-svc:9200" ]
+    monitoring.ui.container.elasticsearch.enabled: true
+    i18n.locale: "zh-CN"

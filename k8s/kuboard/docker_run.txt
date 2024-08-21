@@ -1,0 +1,1 @@
+docker run -d  --name=kuboard --restart=unless-stopped -p 80:80/tcp -p 10081:10081/tcp -e KUBOARD_ENDPOINT="http://172.27.3.210:80" -e KUBOARD_AGENT_SERVER_TCP_PORT="10081" -v /root/kuboard-data:/mnt/kuboard/ eipwork/kuboard:v3.5.2.1

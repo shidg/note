@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Endpoints
+metadata: 
+  name: prometheus
+  namespace: istio-system
+subsets:
+  - addresses:
+    - ip: 10.203.43.101
+    ports:
+    - protocol: TCP
+      port: 30090
