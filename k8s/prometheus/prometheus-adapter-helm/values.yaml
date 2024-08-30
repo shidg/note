@@ -129,24 +129,36 @@ readinessProbe:
 startupProbe: {}
 
 rules:
-  default: true
+  default: false
 
   custom:
-    - seriesQuery: 'nginx_server_requests{code="4xx",job!="",instance!=""}'
+    - seriesQuery: '{__name__="istio_requests_total",destination_service_namespace!=""}'
       resources:
         overrides:
-          namespace: {resource: "namespace"}
-          pod: {resource: "pods"}
+          destination_service_namespace:
+            resource: namespace
       name:
-        matches: "^(.*)_requests"
-        as: "$1_4xx_total"
-      metricsQuery: 'sum(rate(<<.Series>>[5m])) by (<<.GroupBy>>)'
+        matches: "^(.*)"
+        as: "http_requests_per_second"
+      metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[5m])) by (<<.GroupBy>>)'
+
+    - seriesQuery: '{__name__="kube_pod_container_status_running",pod!="",container!="POD",namespace!=""}'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pods
+      name:
+        matches: "^(.*)"
+        as: "container_running"
+      metricsQuery: 'sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
 
   # Mounts a configMap with pre-generated rules for use. Overrides the
   # default, custom, external and resource entries
   # existing:
 
-  external: []
+  external:
     # - seriesQuery: '{__name__=~"^some_metric_count$"}'
     #   resources:
     #     template: <<.Resource>>
@@ -154,6 +166,15 @@ rules:
     #     matches: ""
     #     as: "my_external_metric"
     #   metricsQuery: sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)
+    - seriesQuery: '{__name__="istio_requests_total",destination_service_namespace!=""}'
+      resources:
+        overrides:
+          destination_service_namespace:
+            resource: namespace
+      name:
+        matches: "^(.*)"
+        as: "http_requests_per_second"
+      metricsQuery: 'sum(rate(<<.Series>>{<<.LabelMatchers>>}[5m])) by (<<.GroupBy>>)'
 
   resource:
     cpu:
