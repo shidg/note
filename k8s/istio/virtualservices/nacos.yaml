@@ -7,7 +7,7 @@ spec:
   hosts:
   - nacos.baway.org.cn
   gateways:
-  - baway-gateway
+  - baway-gateway-http
   http:
   - match:
     - uri:
