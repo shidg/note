@@ -215,9 +215,9 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 
 \$@和\$*是shell脚本的特殊变量，作用都是获取传递给脚本或函数的所有参数
 
-当它们在**没有**被双引号包裹时，两者是没有区别，都代表一个包含接收到的所有参数的数组，各个数组元素是传入的独立参数
+当它们在没有被双引号包裹时，两者是没有区别，都代表一个包含接收到的所有参数的数组，各个数组元素是传入的独立参数
 
-当**被双引号包裹时**，\$@仍然是一个数组，\$*会变成一个字符串
+当被双引号包裹时，\$@仍然是一个数组，\$*会变成一个字符串
 
 ---
 
@@ -2109,56 +2109,64 @@ Deepin : 武汉深之度，基于Debian
 
 ### Jenkins的分布式架构了解吗？
 
-* [ ] 多个物理节点
-* [ ] jenkins in kubernetes
-  **jenkins连接k8s之Token认证：**
+##### 多个物理节点
 
-  * [ ] 安装插件"Kunernetes plugin"
-  * [ ] k8s中创建永久Token(service-account-token类型的secret)
+##### jenkins in kubernetes
 
-    并与jenkins使用的sa绑定，这样当pod使用该token认证的同时也获得了该sa的权限
+###### **jenkins连接k8s之Token认证：**
 
-    ```yaml
-    kubectl apply -f - <<EOF
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: jenkins-secret
-      namespace: kube-jenkins
-      annotations:
-        kubernetes.io/service-account.name: jenkins
-    type: kubernetes.io/service-account-token
-    EOF
+1. 安装插件"Kunernetes plugin"
+2. k8s中创建永久Token(service-account-token类型的secret),并与jenkins使用的sa绑定，这样当pod使用该token认证的同时也获得了该sa的权限
+3. Jenkins中新建Secret text类型的全局凭证，将token值写入Secret字段
+4. 配置jenkins连接k8s
 
-    # 查看Token
-    kl describe secrets -n kube-jenkins jenkins-secret
-    Name:         jenkins-secret
-    Namespace:    kube-jenkins
-    Labels:       kubernetes.io/legacy-token-last-used=2024-09-03
-    Annotations:  kubernetes.io/service-account.name: jenkins
-                  kubernetes.io/service-account.uid: e257ec67-9a75-47df-b907-23f029806b98
+```yaml
+# 创建Token
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jenkins-secret
+  namespace: kube-jenkins
+  annotations:
+    kubernetes.io/service-account.name: jenkins
+type: kubernetes.io/service-account-token
+EOF
 
-    Type:  kubernetes.io/service-account-token
+# 查看Token
+kl describe secrets -n kube-jenkins jenkins-secret
+Name:         jenkins-secret
+Namespace:    kube-jenkins
+Labels:       kubernetes.io/legacy-token-last-used=2024-09-03
+Annotations:  kubernetes.io/service-account.name: jenkins
+              kubernetes.io/service-account.uid: e257ec67-9a75-47df-b907-23f029806b98
 
-    Data
-    ====
-    ca.crt:     1107 bytes
-    namespace:  12 bytes
-    token:      eyJhbGciOiJSUzI1NiIsImtpZCI6ImdnRnVz……
-    ```
-  * [ ] Jenkins中新建Secret text类型的全局凭证，将token值写入Secret字段
-  * [ ] 配置jenkins连接k8s
+Type:  kubernetes.io/service-account-token
 
-    ![img](img/k8s1.png)
+Data
+====
+ca.crt:     1107 bytes
+namespace:  12 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6ImdnRnVz……
+```
 
-    ![img](img/k8s2.png)
-
-**
-    jenkins连接k8s之客户端证书认证：**
-
-    生成证书,客户端以"jenkins"用户的身份去请求k8s api进行认证
 
 ```shell
+# 以下为jenkins配置截图
+```
+
+![img](img/k8s1.png)
+
+![img](img/k8s2.png)
+
+###### **jenkins连接k8s之客户端证书认证：**
+
+1. 生成证书,客户端以"jenkins"用户的身份去请求k8s api进行认证
+2. 授权，确保认证通过后，jenkins用户能够有足够的权限进行相关操作，这里是限制了jenkins用户只能在kube-jenkins命名空间下有足够权限(使用rolebinding绑定的clusterrole角色)
+3. Jenkins中创建X.509 Client Certificate类型的全局凭据
+
+```shell
+# 为jenkins用户生成证书
 username=jenkins
 openssl genrsa -out ${username}.key 2048
 openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username}/O=MGM"
@@ -2166,11 +2174,10 @@ openssl x509 -req -in ${username}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc
 
 ```
 
-    授权，确保认证通过后，jenkins用户能够有足够的权限进行相关操作
-
-    这里是限制了jenkins用户只能在kube-jenkins命名空间下有足够权限(使用rolebinding绑定的clusterrole角色)
+    
 
 ```yaml
+# 将jenkins用户与jenkins这个clusterrole绑定，并限制在kube-jenkins命名空间内
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -2187,11 +2194,59 @@ subjects:
     apiGroup: ""
 ```
 
-    Jenkins中创建X.509 Client Certificate类型的全局凭据
+    
 
-    ![img](img/k8s3.png)
+```shell
+# jenkins中创建X.509类型的全局凭据
+```
 
-[ ]  docker-in-docker
+![img](img/k8s3.png)
+
+
+
+要注意，在配置Container Template的时候，容器镜像使用jenkins/inbound-agent，之前的jenkins/jnlp-slave已经废弃
+
+![img](img/k8s4.png)
+
+```java
+# 一个动态创建slave执行构建任务的pipeline示例
+
+pipeline {
+    agent {
+        node {
+            label 'jenkins-slave'
+        }
+    }
+
+    stages {
+         stage('get code') {
+            steps {
+                 git branch: 'main', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+            }
+        }
+        stage('mvn build') {
+            steps {
+                script {
+                    container('maven') {
+                        sh 'mvn package'
+                    }
+                }
+            }
+        }
+        stage('run app') {
+          steps {
+              script {
+                  container('jdk') {
+                      sh 'sleep 60'
+                  }
+              }
+          }
+        }
+    }
+}
+```
+
+##### docker-in-docker
 
     当需要在容器中执行docker命令的时候，可以将宿主机的docker.sock挂载到容器中。称之为docker in docker
 
