@@ -1,0 +1,307 @@
+1. 查询课程1比课程2成绩高的学生信息及课程分数
+# sql 1
+SELECT
+    A.student_id AS 学生编号,
+    B.sname AS 学生姓名,
+    A.c1 AS 科目1成绩,
+    A.c2 AS 科目2成绩
+FROM
+    (
+SELECT
+    student_id,
+    ( SELECT num FROM score t2 WHERE t2.student_id = t1.student_id AND cid = 1 ) AS c1,
+    ( SELECT num FROM score t2 WHERE t2.student_id = t1.student_id AND cid = 2 ) AS c2
+FROM
+    score t1
+		GROUP BY student_id
+    ) A,
+    ( SELECT sid, sname FROM student ) B
+WHERE
+    c1 > c2
+    AND B.sid = A.student_id
+
+# sql 2
+SELECT
+	sid,
+	sname,
+	t1.num,
+	t2.num
+FROM
+	student,
+	( SELECT student_id, num FROM score WHERE cid = 1 ) t1,
+	( SELECT student_id, num FROM score WHERE cid = 2 ) t2
+WHERE
+	student.sid = t1.student_id
+	AND t1.student_id = t2.student_id
+	AND t1.num > t2.num
+
+# 查询平均成绩大于等于 60 分的同学的学生编号、学生姓名和平均成绩
+# sql 1
+SELECT
+	student_id,
+	sname,
+	avg( num ) AS avg_num 
+FROM
+	score
+	LEFT JOIN student b ON score.student_id = b.sid 
+GROUP BY
+	student_id 
+HAVING
+	avg_num > 60
+
+# sql 2
+SELECT
+	sid,
+	sname,
+	avg( num ) AS avg_num 
+FROM
+	student,
+	score 
+WHERE
+	sid = student_id 
+GROUP BY
+	sid 
+HAVING
+	avg_num > 60
+
+3. 查询存在成绩的学生信息
+
+SELECT
+	*
+FROM
+	student
+WHERE
+	sid IN ( SELECT student_id FROM score WHERE num IS NOT NULL )
+
+
+
+###  查询和1号同学选修课程完全相同的学生信息
+#
+# 现在成绩表(score)中查询选修的课程范围和1号同学相同，且选修总课程数大于或等于1号同学的学生id
+#
+# 1号选了哪些课
+# (SELECT cid FROM score WHERE student_id=1)
+
+# 哪些人和1号选了同一范围内的课
+# SELECT student_id,cid FROM score WHERE cid IN (SELECT cid FROM score WHERE student_id=1)
+
+# 对上一步查询结果分组
+# SELECT student_id,count(cid) FROM score WHERE cid IN (SELECT cid FROM score WHERE student_id=1) GROUP BY student_id
+#
+#
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	sid IN (
+SELECT
+	student_id 
+FROM
+	score 
+WHERE
+	cid IN ( SELECT cid FROM score WHERE student_id = 1 ) 
+	AND sid <> 1 
+GROUP BY
+	student_id 
+HAVING
+	COUNT( cid ) >= ( SELECT count( cid ) FROM score GROUP BY student_id HAVING student_id = 1 ) 
+	)
+
+# 查询至少有一门课和1号同学相同的学生信息
+#
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	sid IN ( SELECT student_id FROM score WHERE cid IN ( SELECT cid FROM score WHERE student_id = 1 ) )
+AND
+	sid <> 1
+
+
+# 按平均成绩从高到低显示所有学生的所有课程的成绩以及平均成绩
+
+SELECT
+	student_id,
+	SUM( CASE WHEN cid = 1 THEN num ELSE 0 END ) AS score_1,
+	SUM( CASE WHEN cid = 2 THEN num ELSE 0 END ) AS score_2,
+	SUM( CASE WHEN cid = 3 THEN num ELSE 0 END ) AS score_3,
+	AVG( num )
+FROM
+	score
+GROUP BY
+	student_id
+ORDER BY
+	avg( num )
+
+
+# 查询各科成绩最高分、最低分和平均分，以如下形式显示：课程 ID，课程 
+# name，最高分，最低分，平均分，及格率，中等率，优良率，优秀率(及格为>=60，中等为：70-80，优良为：80-90，优秀为：>=90）
+SELECT
+	c.cid AS 课程编号,
+	c.cname AS 课程名称,
+    COUNT(student_id) as 选修人数,
+	MAX( num ) AS 最高分,
+	MIN( num ) AS 最低分,
+	AVG( num ) AS 平均分,
+	SUM( CASE WHEN num >= 60 THEN 1 ELSE 0 END ) / count( num ) AS 及格率,
+	SUM( CASE WHEN num >= 70 AND num < 80 THEN 1 ELSE 0 END ) / count( num ) AS 中等率,
+	SUM( CASE WHEN num >= 80 AND num < 90 THEN 1 ELSE 0 END ) / count( num ) AS 优良率,
+	SUM( CASE WHEN num >= 90 THEN 1 ELSE 0 END ) / count( num ) AS 优秀率 
+FROM
+	score,
+	course c 
+WHERE
+	score.cid = c.cid 
+GROUP BY
+	c.cid
+ORDER BY
+	AVG(num)
+
+
+# 未选修张三老师任何课程的学生
+# 选查询所有选修了张三课程的学生，然后取反
+# sql 1
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	sid NOT IN ( SELECT student_id FROM score WHERE cid = ( SELECT cid FROM course WHERE teacher_id = ( SELECT tid FROM teacher WHERE tname = '张三' ) ) )
+
+# sql 2
+SELECT
+	sname 
+FROM
+	student 
+WHERE
+	sname NOT IN (
+SELECT
+	s.sname 
+FROM
+	student AS s,
+	course AS c,
+	teacher AS t,
+	score 
+WHERE
+	s.sid = score.student_id 
+	AND score.cid = c.cid 
+	AND c.teacher_id = t.tid 
+	AND t.tname = '张三'
+)
+
+# 查询至少有两门成绩不及格的学生姓名
+SELECT
+	sid,
+	sname,
+	avg( num ) AS 平均成绩,
+	max( num ) AS 最高分,
+	min( num ) AS 最低分 
+FROM
+	student,
+	score 
+WHERE
+	student.sid = score.student_id 
+	AND num < 60 GROUP BY student_id HAVING count( num ) >=2
+
+# sql 2
+SELECT a.student_id,b.sname,a.avg_num as 平均成绩
+FROM 
+(SELECT student_id,avg(num) as avg_num FROM score WHERE num < 60 GROUP BY student_id HAVING count(num) >=2) a,
+student b
+WHERE a.student_id=b.sid
+
+# sql 3
+SELECT
+	student_id,
+	sname,
+	avg( num ),
+	max( num ),
+	min( num ) 
+FROM
+	score
+	LEFT JOIN student ON score.student_id = student.sid 
+WHERE
+	num < 60 GROUP BY student_id HAVING count( num ) >=2
+
+# 按平均成绩进行排序，显示总排名和各科排名，Score 重复时保留名次空缺
+SELECT
+	s.*,
+	rank_01,
+	rank_02,
+	rank_03,
+	rank_total 
+FROM
+	student s
+	LEFT JOIN ( SELECT student_id, rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_01 FROM score WHERE cid = 01 ) A ON s.sid = A.student_id
+	LEFT JOIN ( SELECT student_id, rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_02 FROM score WHERE cid = 02 ) B ON s.sid = B.student_id
+	LEFT JOIN ( SELECT student_id, rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_03 FROM score WHERE cid = 03 ) C ON s.sid = C.student_id
+	LEFT JOIN ( SELECT student_id, rank ( ) over ( ORDER BY avg( num ) DESC ) AS rank_total FROM score GROUP BY student_id ) D ON s.sid = D.student_id 
+ORDER BY
+	rank_total ASC
+
+# 按平均成绩进行排序，显示总排名和各科排名，Score 重复时合并名次
+SELECT
+	s.*,
+	rank_01,
+	rank_02,
+	rank_03,
+	rank_total 
+FROM
+	student s
+	LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_01 FROM score WHERE cid = 01 ) A ON s.sid = A.student_id
+	LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_02 FROM score WHERE cid = 02 ) B ON s.sid = B.student_id
+	LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS rank_03 FROM score WHERE cid = 03 ) C ON s.sid = C.student_id
+	LEFT JOIN ( SELECT student_id, dense_rank ( ) over ( ORDER BY avg( num ) DESC ) AS rank_total FROM score GROUP BY student_id ) D ON s.sid = D.student_id 
+ORDER BY
+	rank_total ASC
+
+# 查询各科前三名
+SELECT
+	a.*,
+	b.sname 
+FROM
+	( SELECT *, rank ( ) over ( PARTITION BY cid ORDER BY num DESC ) AS graderank FROM score ) a,
+	student b 
+WHERE
+	a.student_id = b.sid 
+	AND graderank <= 3 
+ORDER BY
+	cid
+
+# 计算学生年龄
+
+SELECT
+	sid,
+	sname,
+	YEAR ( NOW( ) ) - YEAR ( sage ) AS age
+FROM
+	student
+
+# 按照出生日期来算，当前月日 < 出生年月的月日,则年龄减一(计算周岁)
+# TIMESTAMPDIFF函数，不到生日则不计为一年
+SELECT
+	sid,
+	sname,
+	TIMESTAMPDIFF( YEAR, sage, NOW( ) ) AS age 
+FROM
+	student
+
+# 查询本周过生日的学生
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	WEEK ( sage ) = WEEK ( NOW( ) )
+
+# 查询下周过生日的人
+SELECT
+	* 
+FROM
+	student 
+WHERE
+	WEEK ( sage ) = WEEK ( NOW( ) +1)
+
+

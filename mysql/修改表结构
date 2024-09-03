@@ -1,0 +1,20 @@
+#### 修改表 ####
+
+# 添加/删除列
+alter table tb1 add 列名 类型
+alter table tb1 drop column 列名
+
+# 修改列数据类型
+alter table tb1 modify column 列名 类型
+# 修改列名和列数据类型
+alter table tb1 change 原列名 新列名 类型
+
+# 添加主键
+alter table tb1 add primary key(列名)
+# 删除主键
+alter table tb1 drop primary key
+
+# 修改默认值
+alter table tb1 alter 列名 SET DEFAULT 2
+# 删除默认值
+alter table tb1 alter 列名 DROP DEFAULT

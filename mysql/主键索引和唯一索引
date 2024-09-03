@@ -1,0 +1,46 @@
+# 默认值  default 2
+# 是否可以为空 null   not null
+# 自增列 （int类型，必须是索引,一般是主键索引，一张表只能有一个自增列）
+create table tb1(
+    uid int not null auto_increment primary key,
+    age int default 20) engine=innodb default charset=utf8
+
+# 主键索引
+# 主键本身是一个索引，是唯一的，不可重复的，不能为空。一般会将自增列设置为主键
+# 一张表只能有一个主键，可以由多列组成一个主键
+
+# 唯一索引
+# 数据唯一不能重复，但是可以为空
+# 一张表可以有多个唯一索引
+
+# 多个字段组成的主键：(联合唯一索引)
+create table student(
+    name varchar(10) not null,
+    num int not null,
+    age int not null,
+    gender int,
+    primary key(name,age)
+) engine=innodb default charset=utf8
+
+# 主键索引和唯一索引的作用：
+# 约束
+# 加速查找
+
+
+# 主键的生成：
+
+# 常用方式：
+create table t1(
+        uid int auto_increment primary key,
+           ……,
+           ……)engine=innodb defualt charset=utf8
+
+
+
+
+# 对于自增字段，使用delete清空数据之后，新插入的数据不会从1开始，而是从清除之前已经达到的位置开始
+
+# 如果使用truncate来清空数据，就会从1重新开始了
+delete from tb1
+
+truncate table tb1  # 清空速度更快，且自增字段回到原点

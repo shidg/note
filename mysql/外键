@@ -1,0 +1,34 @@
+### 外键 ###
+有两张表： userinfo、 part,数据结构如下：
+
+userinfo表:
+create table userinfo(
+    nid int not null auto_increment primary key,
+    name varchar(16),
+    age int default 20,
+    part_id int)engine=innodb default charset=utf8;
+
+nid   name    age   part_id
+ 1     tom     19      3
+ 2     jerry   20      1
+ 3     lucy    21      2
+
+part表：
+create table part(
+    nid int not null auto_increment primary key,
+    caption varchar(20))engine=innodb default charset=utf8;
+
+nid     caption
+ 1        研发
+ 2        测试
+ 3        行政
+
+下面使用外键对userinfo表的part_nid进行约束，使其取值范围限定在part表的nid字段的已有数据中，
+如果试图在userinfo表插入一条数据并将part_id设置为6（一个part表中的nid字段中没有的数值），该条数据将插入失败，
+这就叫为userinfo表的part_id字段设置了一个外键。
+
+# 设置外键的sql语句：
+alter table userinfo add constraint fk_u_p foreign key userinfo(part_nid) references part(nid);
+#其中fk_u_p为一个自定义名称，可随意修改。
+
+# 在建表的时候就指定外键
