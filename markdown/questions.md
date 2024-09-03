@@ -2206,6 +2206,8 @@ subjects:
 
 要注意，在配置Container Template的时候，容器镜像使用jenkins/inbound-agent，之前的jenkins/jnlp-slave已经废弃
 
+如果有多个容器，除了jnlp，其他容器都需要使用sleep来维持在running状态，否则pod不能正常运行，pipeline任务无法执行
+
 ![img](img/k8s4.png)
 
 ```java
