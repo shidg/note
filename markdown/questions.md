@@ -2150,7 +2150,6 @@ namespace:  12 bytes
 token:      eyJhbGciOiJSUzI1NiIsImtpZCI6ImdnRnVz……
 ```
 
-
 ```shell
 # 以下为jenkins配置截图
 ```
@@ -2174,8 +2173,6 @@ openssl x509 -req -in ${username}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc
 
 ```
 
-    
-
 ```yaml
 # 将jenkins用户与jenkins这个clusterrole绑定，并限制在kube-jenkins命名空间内
 apiVersion: rbac.authorization.k8s.io/v1
@@ -2194,15 +2191,11 @@ subjects:
     apiGroup: ""
 ```
 
-    
-
 ```shell
 # jenkins中创建X.509类型的全局凭据
 ```
 
 ![img](img/k8s3.png)
-
-
 
 要注意，在配置Container Template的时候，容器镜像使用jenkins/inbound-agent，之前的jenkins/jnlp-slave已经废弃
 
@@ -2212,18 +2205,20 @@ subjects:
 
 ```java
 # 一个动态创建slave执行构建任务的pipeline示例
-
 pipeline {
     agent {
         node {
             label 'jenkins-slave'
         }
     }
+    parameters {
+        choice choices: ['pro','dev'],description: '目标环境',name: 'TARGET_ENV'
+    }
 
     stages {
          stage('get code') {
             steps {
-                 git branch: 'main', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+                git branch: 'main', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
             }
         }
         stage('mvn build') {
@@ -2231,6 +2226,109 @@ pipeline {
                 script {
                     container('maven') {
                         sh 'mvn package'
+                    }
+                }
+            }
+        }
+         stage('dockerfile') {
+            environment {
+                docker_directory = 'docker-app'
+                target_env="${params.TARGET_ENV}"
+            } 
+            steps {
+                script {
+                    container('docker') {
+                        sh '''
+                        rm -rf ${docker_directory}
+                        mkdir -p ${docker_directory}
+                        cp target/jartestone-2.4.3.jar ${docker_directory}/jartestone-2.4.3.jar
+                        cd ${docker_directory}
+                        echo "GMinfosec123" | docker login registry.cn-hangzhou.aliyuncs.com --username niebianertuo --password-stdin
+cat > Dockerfile <<EOF
+FROM  registry.cn-hangzhou.aliyuncs.com/shidg/openjdk:8-alpine
+COPY  jartestone-2.4.3.jar jartestone-2.4.3.jar
+ENTRYPOINT ["java","-jar","jartestone-2.4.3.jar"]
+EOF
+                        docker build -t registry.cn-hangzhou.aliyuncs.com/shidg/myapp-v1:latest .
+                        docker push registry.cn-hangzhou.aliyuncs.com/shidg/myapp-v1:latest
+                        '''
+                    }
+                }
+            }
+        }
+        stage('run app') {
+          steps {
+              script {
+                  container('jdk') {
+                      sh 'sleep 60'
+                  }
+              }
+          }
+        }
+    }
+}
+
+```
+
+---
+
+### jenkins pipeline
+
+node: 节点
+
+stages： 阶段
+
+steps：步骤
+
+```shell
+# 声明式pipeline，包含在pipeline{}块中
+pipeline {
+    agent {
+        node {
+            label 'jenkins-slave'
+        }
+    }
+    parameters {
+        choice choices: ['pro','dev'],description: '目标环境',name: 'TARGET_ENV'
+    }
+
+    stages {
+         stage('get code') {
+            steps {
+                git branch: 'main', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+            }
+        }
+        stage('mvn build') {
+            steps {
+                script {
+                    container('maven') {
+                        sh 'mvn package'
+                    }
+                }
+            }
+        }
+         stage('dockerfile') {
+            environment {
+                docker_directory = 'docker-app'
+                target_env="${params.TARGET_ENV}"
+            } 
+            steps {
+                script {
+                    container('docker') {
+                        sh '''
+                        rm -rf ${docker_directory}
+                        mkdir -p ${docker_directory}
+                        cp target/jartestone-2.4.3.jar ${docker_directory}/jartestone-2.4.3.jar
+                        cd ${docker_directory}
+                        echo "GMinfosec123" | docker login registry.cn-hangzhou.aliyuncs.com --username niebianertuo --password-stdin
+cat > Dockerfile <<EOF
+FROM  registry.cn-hangzhou.aliyuncs.com/shidg/openjdk:8-alpine
+COPY  jartestone-2.4.3.jar jartestone-2.4.3.jar
+ENTRYPOINT ["java","-jar","jartestone-2.4.3.jar"]
+EOF
+                        docker build -t registry.cn-hangzhou.aliyuncs.com/shidg/myapp-v1:latest .
+                        docker push registry.cn-hangzhou.aliyuncs.com/shidg/myapp-v1:latest
+                        '''
                     }
                 }
             }
@@ -2248,17 +2346,89 @@ pipeline {
 }
 ```
 
-##### docker-in-docker
+---
 
-    当需要在容器中执行docker命令的时候，可以将宿主机的docker.sock挂载到容器中。称之为docker in docker
+### Jenkins自动触发
+
+##### Gitlab Plugin插件提供的自动触发
+
+```shell
+# webhook地址
+http://jenkins-servername/project/projectname   +  Secret
+
+```
+
+![img](img/jenkins1.png)
+
+![img](img/jenkins4.png "gitlab配置webhook")
+
+##### Generic Webhook Trigger插件提供的自动触发
+
+```shell
+# webhook地址
+http://ljenkins-servername/generic-webhook-trigger/invoke?token=my-token
+
+# 可以在jenkins job配置中手动激活Generic Webhook Trigger插件并进行配置
+# 也可以将Generic Webhook Trigger的配置写到Jenkinsfile中，首次构建后，Jenkins将会自动激活该job的Generic Webhook Trigger插件并将Jenkinsfile中的配置同步过来
+```
+
+```json
+pipeline {
+    agent {
+        node {
+            label 'jenkins-slave'
+        }
+    }
+
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [defaultValue: '', key: 'ref', regexpFilter: '', value: '$.ref'],
+                [defaultValue: '', key: 'WEBHOOK_USER_NAME', regexpFilter: '', value: '$.user_name'],
+                [defaultValue: '', key: 'Project name', regexpFilter: '', value: '$project.name'],
+                [defaultValue: '', key: 'WEBHOOK_RECENT_COMMIT_ID', value: '$.commits[-1].id'],
+                [defaultValue: '', key: 'WEBHOOK_RECENT_COMMIT_MESSAGE', value: '$.commits[-1].message']
+            ],
+            causeString: 'Triggered on $ref',
+            silentResponse: false,
+            shouldNotFlatten: false,
+            printContributedVariables: true,
+            printPostContent: true,
+            regexpFilterExpression: 'refs/heads/dev',
+            regexpFilterText: '$ref',
+            token: '123098'
+        )
+    }
+    stages {
+	 ……
+    }
+```
+
+![img](img/jenkins2.png)
+
+
+##### Multibranch Scan Webhook Trigger插件提供的自动触发
+
+```shell
+# webhook地址
+http://ljenkins-servername/multibranch-webhook-trigger/invoke?token=my-token
+
+# 该插件适用与多分支流水线类型的构建任务
+```
+
+![img](img/jenkins3.png)
 
 ---
 
 ### Jenkins的权限控制了解吗？
 
-Role-based Authorization Strategy插件的配置
+Role-based Authorization Strategy插件的配
 
 ---
+
+### docker-in-docker
+
+    当需要在容器中执行docker命令的时候，可以将宿主机的docker.sock挂载到容器中。称之为docker in docker
 
 ### 你每天到公司第一件事是什么？
 
