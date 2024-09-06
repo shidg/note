@@ -2290,12 +2290,21 @@ pipeline {
     }
     parameters {
         choice choices: ['pro','dev'],description: '目标环境',name: 'TARGET_ENV'
+	gitParameter(  // 需要安装Git Parameter插件
+                name: 'BRANCH', 
+                type: 'PT_BRANCH_TAG',
+                branchFilter: 'origin/(.*)',
+                defaultValue: 'dev',
+                selectedValue: 'DEFAULT',
+                sortMode: 'DESCENDING_SMART',
+                useRepository: 'git@git.baway.org.cn:teacher/cicdtest.git', 
+                description: '本次发布要使用的代码分支'
     }
 
     stages {
          stage('get code') {
             steps {
-                git branch: 'main', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+                git branch: '${BRANCH}', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
             }
         }
         stage('mvn build') {
@@ -2326,8 +2335,8 @@ FROM  registry.cn-hangzhou.aliyuncs.com/shidg/openjdk:8-alpine
 COPY  jartestone-2.4.3.jar jartestone-2.4.3.jar
 ENTRYPOINT ["java","-jar","jartestone-2.4.3.jar"]
 EOF
-                        docker build -t registry.cn-hangzhou.aliyuncs.com/shidg/myapp-v1:latest .
-                        docker push registry.cn-hangzhou.aliyuncs.com/shidg/myapp-v1:latest
+                        docker build -t registry.cn-hangzhou.aliyuncs.com/shidg/myapp-${TARGET_ENV}:v${BUILD_NUMBER}: .
+                        docker push registry.cn-hangzhou.aliyuncs.com/shidg/myapp-${TARGET_ENV}:v${BUILD_NUMBER}
                         '''
                     }
                 }
@@ -2405,7 +2414,6 @@ pipeline {
 ```
 
 ![img](img/jenkins2.png)
-
 
 ##### Multibranch Scan Webhook Trigger插件提供的自动触发
 

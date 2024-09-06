@@ -674,8 +674,6 @@ pv和pvc是一一对应的绑定关系
             averageValue: 30
     ```
 
-
-
     使用prometheus-adapter提供custom和external接口，以为HPA提供Pods和External两种类型的指标
 
 ```yaml
@@ -1422,7 +1420,90 @@ kubectl uncordon [node-name]
 
 ---
 
-## Dockerfile中的RUN、CMD和ENTRYPOINT的区别？
+### kubectl 管理多个集群
+
+
+```shell
+mkdir kube-config && cd kube-config
+# 新建配置文件config,内容如下:（也可以使用kubectl  config --kubeconfig config  set-cluster 来自动创建该文件 )
+
+```
+
+```yaml
+apiVersion: v1
+kind: Config
+preferences: {}
+
+clusters:
+- cluster:
+  name: development
+- cluster:
+  name: test
+
+users:
+- name: developer
+- name: tester
+
+contexts:
+- context:
+  name: dev-frontend
+- context:
+  name: dev-storage
+- context:
+  name: exp-test
+```
+
+```shell
+# 设置cluster
+kubectl config --config config set-cluster develepment --server=https://1.2.3.4:6443 --certificate-authority=<ca.crt for this cluster>
+kubectl config --config config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster>
+
+# 设置用户
+kubectl config --kubeconfig=config set-credentials developer --client-certificate=<developer.crt> --client-key=<developer.key>
+kubectl config --kubeconfig=config set-credentials tester --client-certificate=<tester.crt> --client-key=<tester.key>
+
+# 设置上下文
+
+# 该上下文表示developer用户连接development集群，默认namespace是frontend
+kubectl config --kubeconfig=config set-context dev-frontend --cluster=development --namespace=frontend --user=developer
+
+# 该上下文表示developer用户连接development集群，默认namespace是storage
+kubectl config --kubeconfig=config set-context dev-storage --cluster=development --namespace=storage --user=developer
+
+# 该上下文表示tester用户连接test集群，默认namespace是default
+kubectl config --kubeconfig=config set-context exp-test --cluster=test --namespace=default --user=tester
+
+# 切换上下文
+kubectl config use-context  development
+
+# 生成用户证书
+username="my_user"
+openssl genrsa -out ${username}.key 2048
+openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username}/O=MGM". #这里的CN会被识别为用户身份
+openssl x509 -req -in ${username}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out ${username}.crt -days 3650
+
+# 为用户授权,用户${username}在public命名空间下有最高权限
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ${username}
+  namespace: public
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: ""
+subjects:
+  - kind: User
+    name: ${username}
+    apiGroup: ""
+```
+
+特别注意：k8s的认证和鉴权是分开的，以上步骤只是实现使用不同的上下文来对不同的k8s集群进行认证，认证通过不代表有权限对k8s的资源进行操作，还需要使用RBAC对用户进行授权，确保用户在对应的namespace下具备必要的权限
+
+---
+
+### Dockerfile中的RUN、CMD和ENTRYPOINT的区别？
 
 ###### RUN 、CMD、ENTRYPOINT
 
