@@ -2304,7 +2304,10 @@ pipeline {
     stages {
          stage('get code') {
             steps {
-                git branch: '${BRANCH}', credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+		script {
+			def currentBranch = "${BRANCH}"
+                	git branch: currentBranch, credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+		}
             }
         }
         stage('mvn build') {

@@ -839,7 +839,7 @@ spec:
 
 ### k8s资源配额
 
- pod.spec.resources
+#### pod.spec.resources
 
 ```yaml
 apiVersion: v1
@@ -861,7 +861,7 @@ spec:
 
 ---
 
-ResourceQuota
+#### ResourceQuota
 
 `apiserver`的 `--enable-admission-plugins=` 参数中包含 `ResourceQuota`
 
@@ -1024,13 +1024,69 @@ spec:
   priorityClassName: high
 ```
 
-3. [ ] LimitRange
 
-    `apiserver`的 `--enable-admission-plugins=` 参数中包含 `LimitRanger`
+#### LimitRange
+
+`apiserver`的 `--enable-admission-plugins=` 参数中包含 `LimitRanger`
+
+默认情况下如果创建一个 Pod 没有设置 `Limits` 和 `Requests` 对其加以限制，那么这个 Pod 可能能够使用 Kubernetes 集群中全部资源， 但是每创建 Pod 资源时都加上这个动作是繁琐的，考虑到这点 Kubernetes 提供了 `LimitRange` 对象，它能够对一个 Namespace 下的全部 Pod 使用资源设置默认值、并且设置上限大小和下限大小等操作
+
+
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limit-test
+spec:
+  limits:
+    - type: Pod        #对Pod中所有容器资源总和进行限制
+      max:
+        cpu: 4000m
+        memory: 2048Mi 
+      min:
+        cpu: 10m
+        memory: 128Mi 
+      maxLimitRequestRatio:
+        cpu: 5
+        memory: 5
+    - type: Container  #对Pod中所有容器资源进行限制
+      max:
+        cpu: 2000m
+        memory: 1024Mi
+      min:
+        cpu: 10m
+        memory: 128Mi 
+      maxLimitRequestRatio:
+        cpu: 5
+        memory: 5
+      default:
+        cpu: 1000m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 500m
+        memory: 256Mi
+```
+
+
+**Container 参数：**
+
+* max： Pod 中所有容器的 Limits 值上限。
+* min：  Pod 中所有容器的 Requests 值下限。
+* default： Pod 中容器未指定 Limits 时，将此值设置为默认值。
+* defaultRequest： Pod 中容器未指定 Requests 时，将此值设置为默认值。
+* maxLimitRequestRatio： Pod 中的容器设置 Limits 与 Requests 的比例的值不能超过 maxLimitRequestRatio 参数设置的值，即  **Limits/Requests ≤ maxLimitRequestRatio** 。
+
+**Pod 参数：**
+
+* max： Pod 中所有容器资源总和值上限。
+* min：  Pod 中所有容器资源总和值下限。
+* maxLimitRequestRatio： Pod 中全部容器设置 Limits 总和与 Requests 总和的比例的值不能超过 maxLimitRequestRatio 参数设置的值，即  **(All Container Limits)/(All Container Requests) ≤ maxLimitRequestRatio** 。
 
 ---
 
 ### 集群中出现很多"Evicted"状态的POD可能是什么原因造成的?
+
+---
 
 ### k8s日志定制
 
