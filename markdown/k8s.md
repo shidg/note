@@ -20,19 +20,83 @@
 
 ### k8s的网络插件，calico和flannel的区别？
 
-[参考链接](https://www.cnblogs.com/BlueMountain-HaggenDazs/p/18152648)
+##### [参考链接](https://www.cnblogs.com/BlueMountain-HaggenDazs/p/18152648)
 
-calico支持的工作模式
+##### calico支持的工作模式
 
 * [ ] **BGP**:           CALICO_IPV4POOL_IPIP="Never" 且 CALICO_IPV4POOL_VXLAN=”Never“
 * [ ] **IP Tunnel:**   CALICO_IPV4POOL_IPIP="Always" 且 CALICO_IPV4POOL_VXLAN=”Never“
 * [ ] **VXLAN** :      CALICO_IPV4POOL_IPIP="Never" 且 CALICO_IPV4POOL_VXLAN=”Always“
 
- flannel支持的工作模式
+##### flannel支持的工作模式
 
 * [ ] VXLAN
 * [ ] HOST-GW
 * [ ] UDP （已废弃）
+
+##### 优缺点对比：
+
+###### 工作模式
+
+两者都同时支持”路由"和"隧道"两种工作模式，
+
+flannel的VXLAN是隧道模式，host-gw是路由模式
+
+calico的IPIP是隧道模式，BGP是路由模式
+
+###### 可配置性
+
+flannel配置更为简单，在小规模集群中，如果对性能要求不是很苛刻，也没有复杂的网络要求，建议使用flannel
+
+calico配置较为复杂，支持配置网络策略，并且能够与istio集成，配置复杂的规则以描述pod应如何发送和接受流量，提高安全性并控制网络环境。如果对性能要求较高，且有网络安全方面的需求，要使用calico
+
+###### 性能差异
+
+flannel的VXLAN模式下，使用overlay(覆盖网络)来实现Pod跨节点通信，将二层数据包封装到四层的UDP数据包中，并在目标节点进行反向的解封操作，会占用一定的cpu资源，导致网络性能会有损耗
+
+calico的BGP模式下，每一个节点都作为边界网关，跨节点通信不需要进行包的封装和解封，直接使用现有的三层网络进行传输，性能更高
+
+即使同样在"隧道模式下",calico的IPIP也比flannel的VXLAN性能更好，因为封装的header头体积更小
+
+###### 环境要求
+
+flannel的VXLAN模式对节点没有特殊要求，只要三层可达即可
+
+calico的BGP模式要求所有节点必须二层可达，即在同一交换机下
+
+
+-------------------------------
+
+calico的BGP模式下，每一个节点都需要和其他所有建立BGP连接，BGP连接总数就是N^2，所以当节点数量较多时(大于100台)，会有大量的BPG连接，造成网络性能下降，可以配置路由反射模式来解决
+
+flannel的VXLAN模式使用的是overlay网络，也就是在现有的三层物理网络之上，“覆盖”一层虚拟的、由内核 VXLAN 模块负责维护的二层网络，在这个 VXLAN 二层网络上的“主机”（虚拟机或者容器都可以）之间，可以像在同一个局域网（LAN）里那样自由通信。
+
+VXLAN的工作原理是，当pod需要跨节点访问时，源pod所在节点的VTEP 设备(flannel.1)会根据目标pod的ip定位到"下一跳"，也就是目标Pod所在节点的VTEP设备(flannel.1)的mac地址以及目标节点的物理网卡ip（node ip）,源VTEP设备将vxlan的二层数据包封装在四层数据包(UDP)中，将数据包发送到目标节点，目标节点的VTEP设备再进行数据包的“拆解",然后发送给网桥，最终通过绑定在网桥上的Veth Pari设备转发给容器。因为有数据包的封装和拆解，会有一定的性能损耗
+
+VXLAN模式下，同节点上的容器间通信，直接通过网桥+Veth Pair设备完成，不需要经过flannel.1
+
+##### 如何选择：
+
+1、是否需要细粒度网络访问控制？
+
+这个flannel是不支持的，calico支持，所以做多租户网络方面的控制ACL，那么要选择 calico。
+
+2、是否追求网络性能？
+
+选择 `flannel host-gw` 模式 和 `calico BGP` 模式。
+
+3、服务器之前是否可以跑BGP协议？
+
+很多的公有云是不支持跑BGP协议，那么使用calico的BGP模式自然是不行的。
+
+4、集群规模多大？
+
+如果规模不大，100以下节点可以使用flannel，优点是维护比较简单。
+
+5、是否有维护能力？
+
+calico的路由表很多，而且走BGP协议，一旦出现问题排查起来也比较困难，上百台的，路由表去排查也是很麻烦，这个具体需求需要根据自己的情况而定。
+
 
 ---
 
@@ -1024,13 +1088,11 @@ spec:
   priorityClassName: high
 ```
 
-
 #### LimitRange
 
 `apiserver`的 `--enable-admission-plugins=` 参数中包含 `LimitRanger`
 
 默认情况下如果创建一个 Pod 没有设置 `Limits` 和 `Requests` 对其加以限制，那么这个 Pod 可能能够使用 Kubernetes 集群中全部资源， 但是每创建 Pod 资源时都加上这个动作是繁琐的，考虑到这点 Kubernetes 提供了 `LimitRange` 对象，它能够对一个 Namespace 下的全部 Pod 使用资源设置默认值、并且设置上限大小和下限大小等操作
-
 
 ```yaml
 apiVersion: v1
@@ -1066,7 +1128,6 @@ spec:
         cpu: 500m
         memory: 256Mi
 ```
-
 
 **Container 参数：**
 
@@ -1477,7 +1538,6 @@ kubectl uncordon [node-name]
 ---
 
 ### kubectl 管理多个集群
-
 
 ```shell
 mkdir kube-config && cd kube-config
