@@ -2079,6 +2079,12 @@ Deepin : 武汉深之度，基于Debian
 
 ---
 
+### iptables 四表五链
+
+![img](img/iptables.png)
+
+---
+
 ### 你们的研发团队有多少人，运维团队如何分工？
 
 ---
