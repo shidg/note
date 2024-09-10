@@ -294,6 +294,42 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 
 ---
 
+### shell脚本中的exec和eval
+
+exec shell替换，即启动一个新的shell来执行命令，执行完毕后不再返回当前shell
+
+exec有一个例外，当操作文件描述符的时候，不会产生shell替换
+
+| exec命令                   | 作用                                                                   |
+| -------------------------- | ---------------------------------------------------------------------- |
+| exec ls                    | 在shell中执行ls，ls结束后不返回原来的shell中了                         |
+| exec <file                 | 等于exec 0<file,file中的内容作为标准输入（替代STDIN）                  |
+| exec >file                 | 等于exec 1>file,将标准输出写入file（替代STDOUT）                      |
+| exec 3<file                | 以只读方式打开文件file，并关联到文件描述符3（此时，创建了文件描述符3） |
+| sort <&3                   | 将文件描述符3作为临时输入，用于sort排序                                |
+| exec 4>file                | 以只写方式打开file，并关联到文件描述符4（此时，创建了文件描述符4）     |
+| ls >&4                     | Ls将不会有显示，直接写入文件描述符4中了，即上面的file中                |
+| exec 6 <> /tmp/test.fifo | 以读写方式打开命名管道，并关联到文件描述符6                            |
+| exec 5<&4                  | 创建文件描述符4的拷贝文件描述符5                                       |
+| exec 3<&-                  | 关闭文件描述符3                                                        |
+
+
+
+eval  可以让shell对将要执行的命令进行 2 次扫描，第 1 次扫描时把扫描的内容替换成命令，第 2 次扫描时执行扫描到的命令
+
+```shell
+command=pwd
+echo $command  # result: pwd
+eval $command  # result: `pwd`
+
+
+# 打印最后一个参数
+#! /bin/bash
+eval echo \$$#
+```
+
+---
+
 ### 怎样查看docker的运行日志（不是具体哪个容器的日志）
 
 ```shell
@@ -424,6 +460,7 @@ fuser -l # 列出所有支持的信号
 # 查找并批量移动文件
 find . -name "aa*" -exec mv {} ~/tmp/
 find . -name "aa*" | xargs -I {} mv {} ~/tmp/ # -I 将查找到的内容逐个赋值给{}
+ls *.sh | xargs -P N -I {} bash {} # -P指定最大同时处理N个文件
 
 # find 默认做递归查询，如过想指定查询层数，使用-maxdepth
 find -maxdepth 3
