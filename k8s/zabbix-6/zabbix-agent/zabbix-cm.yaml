@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  zabbix_server_host: 10.203.43.103,127.0.0.1
+kind: ConfigMap
+metadata:
+  name: zabbix-init
+  namespace: default

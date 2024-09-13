@@ -13,6 +13,8 @@ spec:
       labels:
         daemonset: zabbix-agent2
     spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
       containers:
       - name: zabbix-agent2
         env:
@@ -21,10 +23,13 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
         - name: ZBX_SERVER_HOST
-          value: "172.27.11.249,127.0.0.1"
+          valueFrom:
+            configMapKeyRef:
+              name: zabbix-init 
+              key: zabbix_server_host
         - name: ZBX_TIMEOUT
           value: "30"
-        image: zabbix/zabbix-agent2:centos-6.4-latest
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/zabbix-agent2:centos-6.4-latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 10050
