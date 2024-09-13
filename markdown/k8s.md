@@ -1331,8 +1331,8 @@ spec:
         - my.dns.search.suffix
       options:
         - name: ndots
-          value: "2"
-        - name: edns0
+          value: "5"
+
   ```
 
 ---
@@ -1596,7 +1596,9 @@ kubectl config use-context  development
 # 生成用户证书
 username="my_user"
 openssl genrsa -out ${username}.key 2048
-openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username}/O=MGM". #这里的CN会被识别为用户身份
+openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username}/O=MGM". 
+#这里的CN为用户，O为组，分别对应RBAC中的User和Group
+
 openssl x509 -req -in ${username}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out ${username}.crt -days 3650
 
 # 为用户授权,用户${username}在public命名空间下有最高权限
