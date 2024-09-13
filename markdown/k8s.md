@@ -101,6 +101,78 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
 
 ---
 
+### calico指定网卡
+
+当节点上有多个网卡时，需要为calico指定使用哪块网卡
+
+```yaml
+# Choose the backend to use.
+ - name: CALICO_NETWORKING_BACKEND
+   valueFrom:
+     configMapKeyRef:
+       name: calico-config
+       key: calico_backend
+# Cluster type to identify the deployment type
+- name: CLUSTER_TYPE
+  value: "k8s,bgp"
+# Specify interface 这里指定网卡，支持正则
+- name: IP_AUTODETECTION_METHOD
+  value: "interface=e[a-z]+[0-9]+"
+# Auto-detect the BGP IP address.
+- name: IP
+  value: "autodetect"
+# Enable IPIP
+- name: CALICO_IPV4POOL_IPIP
+  value: "Never"
+# Enable or Disable VXLAN on the default IP pool.
+- name: CALICO_IPV4POOL_VXLAN
+  value: "Never"
+# Enable or Disable VXLAN on the default IPv6 IP pool.
+- name: CALICO_IPV6POOL_VXLAN
+  value: "Never"
+```
+
+
+
+```yaml
+# calico自动检测ip的方法
+
+#first-found
+#列举所有网卡 IP 地址然后返回第一个有效网卡上的第一个有效的 IP 地址(基于IP版本和地址的类型)。确切已知的"ocal”网卡会被忽略，例如 #docker 网桥。网卡和 IP 地址的顺序根据不同系统会有差异。
+#这个是默认的检测方法。然而，由于这个方法只会作非常简单的假设，强烈推荐要么给节点配置一个特定的 IP 地址(应该是通过给 kubelet 指定参#数)，要么使用另外一种检测方法。
+# e.g.
+- name: IP_AUTODETECTION_METHOD
+  value: "first-found"
+- name: IP6 AUTODETECTION METHOD
+  value: "first-found"
+
+
+# can-reach=DESTINATION
+can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达提供的目的地。可以使用IP地址或者域名。
+# e. g.  使用IP
+- name: IP_AUTODETECTION_METHOD
+  value: "can-reach=8.8.8.8"
+- name: IP6_AUTODETECTION_METHOD
+  value: = "can-reach=2001:4860:4860::8888"
+
+# e.g. 使用域名:
+- name: IP_AUTODETECTION_METHOD
+  value: "can-reach=www.google.COM"
+- name: IP6_AUTODETECTION_METHOD
+  value: "can-reach=www.google.com"
+
+
+# interface=INTERFACE-REGEX
+# interface方法使用提供的网卡正则表达式(golang语法)去列举匹配到的网卡然后返回在第一个匹配到的网卡上的第一个|P 地址。网卡和IP 地址的顺序根据不同系统会有差异。网卡 etho, eth1,eth2 etc.
+# e.g.
+- name: IP_AUTODETECTION_METHOD
+  value: "interface=eth.*
+- name: IP6_AUTODETECTION_METHOD
+  value: "interface=eth.*"
+```
+
+---
+
 ### k8s pod启动流程[以Deployment为例]
 
 * [X] pod创建流程
