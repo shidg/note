@@ -1540,6 +1540,81 @@ spec:
 
 ---
 
+### pod的变量传递
+
+##### 传递方式
+
+```yaml
+# 直接赋值
+env:
+  - name: MY_KEY
+    value: "hello world"
+
+# 使用pod字段
+env:
+  - name: MY_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+  - name: MY_POD_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+
+# 使用容器字段
+env:
+  - name: MY_CPU_LIMIT
+    valueFrom:
+      resourceFieldRef:
+        containerName: test-container
+        resource: limits.cpu
+  - name: MY_MEM_REQUEST
+    valueFrom:
+      resourceFieldRef:
+        containerName: test-container
+        resource: requests.memory
+
+# 使用secret
+env:
+  - name: SECRET_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: secret-config
+        key: username
+
+# 使用configmap
+env:
+  - name: LOG_LEVEL
+    valueFrom:
+      configMapKeyRef:
+        name: env-config
+        key: log_level
+
+```
+
+
+
+##### 变量优先级
+
+```shell
+按顺序遍历 envFrom 引用的 ConfigMap 和 Secret 的 Key/Value
+按顺序遍历 env 中的设置的 Key/Value
+由于 Pod 默认开启了 EnableServiceLinks，最后还需要将 Service 相关变量注入
+优先级是，Service 变量 > Env > EnvFrom，其中 EnvFrom 的优先级是后面覆盖前面
+
+# 关于service变量
+注入的范围。所在命名空间的所有 Service
+注入的内容。同一命名空间下，所有的服务地址、端口、协议。
+注入的格式。大写字母加下划线的格式，例如
+ADMIN_WEB_PC_TEST_PORT_80_TCP=tcp://10.233.45.183:80
+ADMIN_WEB_PC_TEST_PORT=tcp://10.233.45.183:80
+ADMIN_WEB_PC_TEST_PORT_80_TCP_ADDR=10.233.45.183
+ADMIN_WEB_PC_TEST_PORT_80_TCP_PORT=80
+ADMIN_WEB_PC_TEST_PORT_80_TCP_PROTO=tcp
+```
+
+---
+
 ### PDB(Pod Disruption Budgets)    k8s v1.21之后才成为stable版本
 
 对于对 高可用要求很高的一些[容器](https://cloud.tencent.com/product/tke?from_column=20065&from=20065)化应用，例如一些 有状态的工作负载，比如[数据库](https://cloud.tencent.com/solution/database?from_column=20065&from=20065)，分布式协调服务等， K8s 集群中 Pod 频繁的调度是不能容忍的一件事。尤其涉及到应用集群数据 同步，共识，心跳等诸多因素. 容易造成可用性降低，数据延迟甚至潜在的**数据丢失**。

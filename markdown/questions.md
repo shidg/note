@@ -979,6 +979,12 @@ blkid
 
 ### keepalived的主要模块？
 
+core
+
+check
+
+VRRP
+
 ---
 
 ### 什么是泛域名解析？
