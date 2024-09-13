@@ -1540,7 +1540,7 @@ spec:
 
 ---
 
-### pod的变量传递
+### pod通过环境变量将信息传递给容器
 
 ##### 传递方式
 
@@ -1589,6 +1589,14 @@ env:
       configMapKeyRef:
         name: env-config
         key: log_level
+
+# 使用envFrom
+envFrom:
+  - secretRef:
+      name: <name of secret>
+envFrom:
+  - configMapRef:
+      name: <name of configmap>
 
 ```
 
