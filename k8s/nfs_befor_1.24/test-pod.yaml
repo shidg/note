@@ -18,4 +18,3 @@ spec:
     - name: test-pod-nginx-storage
       persistentVolumeClaim:
         claimName: test-claim
-            ---
