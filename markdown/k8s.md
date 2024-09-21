@@ -65,8 +65,7 @@ flannel的VXLAN模式对节点没有特殊要求，只要三层可达即可
 
 calico的BGP模式要求所有节点必须二层可达，即在同一交换机下
 
-
--------------------------------
+---
 
 calico的BGP模式下，每一个节点都需要和其他所有建立BGP连接，BGP连接总数就是N^2，所以当节点数量较多时(大于100台)，会有大量的BPG连接，造成网络性能下降，可以配置路由反射模式来解决
 
@@ -97,7 +96,6 @@ VXLAN模式下，同节点上的容器间通信，直接通过网桥+Veth Pair�
 5、是否有维护能力？
 
 calico的路由表很多，而且走BGP协议，一旦出现问题排查起来也比较困难，上百台的，路由表去排查也是很麻烦，这个具体需求需要根据自己的情况而定。
-
 
 ---
 
@@ -131,8 +129,6 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
 - name: CALICO_IPV6POOL_VXLAN
   value: "Never"
 ```
-
-
 
 ```yaml
 # calico自动检测ip的方法
@@ -444,10 +440,10 @@ spec:
 pv/pvc
 pv和pvc是一一对应的绑定关系
 
-1. [X] hostPath
-2. [ ] nfs:
+1. [ ] hostPath
+2. [X] nfs:
 3. [ ] ceph
-4. [X] local
+4. [ ] local
 
     ```shell
     # cat pv-local.yml
@@ -1600,8 +1596,6 @@ envFrom:
 
 ```
 
-
-
 ##### 变量优先级
 
 ```shell
@@ -1727,8 +1721,8 @@ contexts:
 
 ```shell
 # 设置cluster
-kubectl config --config config set-cluster develepment --server=https://1.2.3.4:6443 --certificate-authority=<ca.crt for this cluster>
-kubectl config --config config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster>
+kubectl config --kubeconfig=config set-cluster develepment --server=https://1.2.3.4:6443 --certificate-authority=<ca.crt for this cluster>
+kubectl config --kubeconfig=config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster>
 
 # 设置用户
 kubectl config --kubeconfig=config set-credentials developer --client-certificate=<developer.crt> --client-key=<developer.key>
@@ -1828,7 +1822,7 @@ ENTRYPOINT echo "Hello,$name"
 
 ### Dockerfile中的ARG和ENV的区别：
 
-`ARG`和 `ENV`指令的最大区别在于它们的作用域。`ARG`指令定义的参数仅在构建映像期间可用，而 `ENV`指令定义的环境变量在容器运行时可用。因此，你可以使用 `ARG`指令来传递构建参数，而使用 `ENV`指令来设置容器的环境变量。
+`ARG`和 `ENV`指令的最大区别在于它们的作用域。`ARG`指令定义的参数仅在构建镜像期间可用，而 `ENV`指令定义的环境变量在容器运行时可用。因此，你可以使用 `ARG`指令来传递构建参数，而使用 `ENV`指令来设置容器的环境变量。
 
 `ARG`指令可以在 `FROM`指令之前使用，但 `ENV`指令则不能。这是因为 `FROM`指令之前的任何指令都在构建上下文中执行，而 `FROM`指令之后的指令则在新的构建阶段中执行
 
