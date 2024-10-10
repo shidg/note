@@ -313,8 +313,6 @@ exec有一个例外，当操作文件描述符的时候，不会产生shell替�
 | exec 5<&4                  | 创建文件描述符4的拷贝文件描述符5                                       |
 | exec 3<&-                  | 关闭文件描述符3                                                        |
 
-
-
 eval  可以让shell对将要执行的命令进行 2 次扫描，第 1 次扫描时把扫描的内容替换成命令，第 2 次扫描时执行扫描到的命令
 
 ```shell
@@ -490,6 +488,10 @@ lsof | grep delete
 ---
 
 ### IaaS PaaS SaaS
+
+![img](img/iaas-paas-saas.jpg)
+
+![img](img/iaas-paas-saas.png)
 
 ---
 
