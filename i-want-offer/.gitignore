@@ -1,0 +1,42 @@
+﻿*.tgz
+*.gz
+*.bz2
+*.xz
+*.msi
+*.exe
+*.rpm
+*.pdf
+*.bin
+*.zip
+*.rar
+*.7z
+*~
+*.swp
+*.iso
+*.dat
+*.pm
+*.chm
+*.jar
+*.sqlite3
+.DS_Store
+/gcc/gcc/
+__pycache__/
+migrations/
+
+# 忽略 build/ 目录下的所有文件
+build/
+bin/
+sbin/
+
+#example
+# 此为注释 – 将被 Git 忽略
+# 忽略所有 .a 结尾的文件
+*.a
+# 但 lib.a 除外
+#!lib.a
+# 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO
+#/TODO
+# 会忽略 doc/notes.txt 但不包括 doc/server/arch.txt
+#doc/*.txt
+# ignore all .txt files in the doc/ directory
+#doc/**/*.txt

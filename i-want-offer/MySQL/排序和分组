@@ -1,0 +1,15 @@
+###### 排序 ######
+order by uid asc  正序
+order by uid desc 倒序
+
+select * from tb1 order by column1,order by column2;
+# 先按照column1排序，排序完成之后，对于column1中的相同数据，再按照column2进行排序
+
+
+
+###### 分组 ######
+
+group by
+
+对聚合函数的结果进行筛选，不能使用where,要使用having
+select max(nid),part_nid,count(nid) from tb1 group by part_nid having count(nid) >2
