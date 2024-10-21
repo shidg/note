@@ -1725,7 +1725,7 @@ kubectl config --kubeconfig=config set-cluster develepment --server=https://1.2.
 kubectl config --kubeconfig=config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster>
 
 # 设置用户
-kubectl config --kubeconfig=config set-credentials developer --client-certificate=<developer.crt> --client-key=<developer.key>
+kubectl config --kubeconfig=config set-credentials developer c
 kubectl config --kubeconfig=config set-credentials tester --client-certificate=<tester.crt> --client-key=<tester.key>
 
 # 设置上下文

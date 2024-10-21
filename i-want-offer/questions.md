@@ -1,4 +1,4 @@
-# `<font color=red>` *Linux基础知识部分* `</font>`
+# rgs `<font color=red>` *Linux基础知识部分* `</font>`
 
 ### linux runlevel
 
@@ -7,7 +7,7 @@
 ### Linux 计划任务
 
 * [ ] cron
-* [ ] anacron
+* [X] anacron
   只能执行每天/每周/每月的任务；
   没有独立的守护进程，仍然是使用crond进程来执行具体任务；
   服务器开机后会自动执行因关机而未能执行的任务
@@ -218,6 +218,32 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 当它们在没有被双引号包裹时，两者是没有区别，都代表一个包含接收到的所有参数的数组，各个数组元素是传入的独立参数
 
 当被双引号包裹时，\$@仍然是一个数组，\$*会变成一个字符串
+
+---
+
+### shell通配符
+
+
+| **字符**        | **含义**                              | **实例**                                                                       |
+| --------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| *                     | 匹配 0 或多个字符                           | a*b  a与b之间可以有任意长度的任意字符, 也可以一个也没有, 如aabcb, axyzb, a012b, ab。 |
+| ?                     | 匹配任意一个字符                            | a?b  a与b之间必须也只能有一个字符, 可以是任意字符, 如aab, abb, acb, a0b。            |
+| [list]                | 匹配 list 中的任意单一字符                  | a[xyz]b   a与b之间必须也只能有一个字符, 但只能是 x 或 y 或 z, 如: axb, ayb, azb。    |
+| [!list]               | 匹配 除list 中的任意单一字符                | a[!0-9]b  a与b之间必须也只能有一个字符, 但不能是阿拉伯数字, 如axb, aab, a-b。        |
+| [c1-c2]               | 匹配 c1-c2 中的任意单一字符 如：[0-9] [a-z] | a[0-9]b  0与9之间必须也只能有一个字符 如a0b, a1b... a9b。                            |
+| {string1,string2,...} | 匹配 sring1 或 string2 (或更多)其一字符串   | a{abc,xyz,123}b    a与b之间只能是abc或xyz或123这三个字符串之一。                     |
+
+### 在正则中的. 、*和?
+
+.   匹配换行符之外的任意一个字符
+
+\*   匹配星号前边的字符或表达式出现0次或者多次
+
+?   匹配问号前边的字符或表达式出现0次或者1次
+
+\+  匹配加号前边的字符或者表达式出现1次或者多次
+
+[^abc]  [^a-c]  取反，匹配不在列表中的字符
 
 ---
 
@@ -1502,6 +1528,53 @@ server {
 
 ---
 
+### 远程执行命令或脚本
+
+#### 执行远程命令
+
+ssh  user@host:port  "command1; command2"
+
+```shell
+ssh  k8s-master  "hostname"
+ssh  k8s-master  "hostname;ls /opt"
+ssh  k8s-master 'hostname;echo "$PATH"'
+```
+
+#### 执行远程脚本
+
+ssh user@host:port "bash  /path/xxx.sh  arg1  arg2 .."
+
+#### 执行本地脚本
+
+ssh user@host:port "bash" < xxx.sh
+
+```shell
+cat example.sh
+#!/bin/bash
+name=tom
+echo $name
+echo "I am $(hostname)"
+echo "The first arg is $1"
+
+# 执行本地脚本并传参
+ssh user@host:port "bash -s" < example.sh  aaa
+
+```
+
+#### bash -c 和bach -s
+
+-c :  将字符串作为对象传递给bash执行，可以正常传递参数
+
+-s：告诉bash需要从标准输入读取参数，或者需要使用标准输入为bash传递参数时，需要添加-s参数
+
+#### 执行交互式命令
+
+ssh -t user@host:port  "command"
+
+```shell
+ssh -t k8s-master "top"
+```
+
 ### CentOS 7启动过程说一下？
 
 ---
@@ -2218,7 +2291,7 @@ Deepin : 武汉深之度，基于Debian
 
 ```yaml
 # 创建Token
-kubectl apply -f - <<EOF
+kubectl apply -f - <<-EOF
 apiVersion: v1
 kind: Secret
 metadata:
