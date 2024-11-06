@@ -1,0 +1,111 @@
+filebeat.inputs:
+- type: log
+  id: log-of-yum  
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+  fields:
+    app: "nginx"
+    method: "yum"
+  fields_under_root: true
+  json:
+    keys_under_root: true
+  # 当type=filestream时的配置方法
+  #parsers:
+  #  - ndjson:
+  #      target: ""
+
+
+- type: filestream
+  id: logs-of-docker
+  enabled: true
+  paths:
+    - /opt/nginx/logs/access.log
+  fields:
+    app: "nginx"
+    method: "docker"
+  fields_under_root: true
+
+- type: filestream
+  id: logs-of-java
+  enabled: true
+  paths:
+    - /usr/local/tomcat/logs/catalina.out
+  fields:
+    app: "tomcat"
+    method: "binnary"
+  fields_under_root: true
+  parsers:
+    - multiline:
+        type: pattern
+        pattern: "^[[:space:]]+"
+        negate: false
+        match: after 
+
+- type: filestream
+  id: logs-of-other
+  enabled: true
+  paths:
+    - /home/anaconda-ks.cfg
+
+
+processors:
+  - add_docker_metadata: ~
+  - add_host_metadata: ~
+  - drop_fields:
+      fields: 
+        - "agent"
+        - "ecs"
+        - "host"
+        - "log"
+        - "input"
+        - "bytes"
+
+#output.elasticsearch:
+#    hosts: ["10.203.43.101:30920","10.203.43.102:30920","10.203.43.103:30920"]
+#    index: "tomcat-logs-%{+yyyy-MM-dd}"
+#    indices:
+#      - index: "nginx-logs-json-%{+yyyy-MM-dd}"
+#        when:
+#            equals:
+#              method: "yum"
+#      - index: "nginx-logs-text-%{+yyyy-MM-dd}"
+#        when:
+#            equals:
+#              method: "docker"
+#
+#setup.template.overwrite: true
+#setup.template.name: "tomcat-logs"
+#setup.template.pattern: "tomcat-logs-*"
+#setup.ilm.enabled: false
+#
+
+
+output.kafka:
+  hosts: ["10.203.43.101:9092","10.203.43.102:9092","10.203.43.103:9092"]
+  topic: "other-logs-%{+yyyy-MM-dd}"
+  topics:
+    - topic: "tomcat-logs-%{+YYYY.MM.dd}"
+      when:
+        equals:
+          app: "tomcat"
+
+    - topic: "nginx-logs-text-%{+YYYY.MM.dd}"
+      when:
+        equals:
+          method: "docker"
+    - topic: "nginx-logs-json-%{+YYYY.MM.dd}"
+      when:
+        equals:
+          method: "yum"
+
+  partition.round_robin:
+    reachable_only: false
+  required_acks: 1
+
+# 自定义filebeat的运行日志
+logging.to_files: true
+logging.level: info
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log

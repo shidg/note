@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: private
+data:
+   filebeat.yml: |
+     filebeat.inputs:
+       - type: log
+         id: logs-of-nginx-access
+         enabled: true
+         paths:
+           - /logs/host.access.log
+         json: #当日志源为json格式时，对json字段进行解析
+           keys_under_root: true
+           add_error_key: true 
+           message_key: "message"
+           overwrite_keys: false
+         
+         # 当日志源为json，但type为filestream时,需要使用如下配置
+         #parsers:
+         #   - ndjson: 
+         #       target: ""  # 该项留空则类似于keys_under_root
+         #       add_error_key: true 
+         #       message_key: "message"
+         #       overwrite_keys: false
+         
+         # 同样功能也可以定义在处理器中  
+         #processors:
+         #  - decode_json_fields:
+         #      fields: ["message"]
+         #      process_array: false
+         #      max_depth: 1
+         #      target: ""
+         #      overwrite_keys: true
+         #      add_error_key: false
+
+     # 输出到es            
+     output.elasticsearch:
+       hosts: ["10.203.43.101:9200","10.203.43.102:9200","10.203.43.103:9200"]
+       index: nginx-json-logs-%{+yyyy-MM-dd}
+       #indices:
+       #  - index: nginx-info-logs-%{+yyyy-MM-dd}
+       #    when:
+       #      equals:
+       #        level: info
+       #  - index: nginx-error-logs-%{+yyyy-MM-dd}
+       #    when:
+       #      equals:
+       #        level: error
+       #
+
+     # 修改默认索引名称。<fileb-%{[agent.version]}-%{+yyyy.MM.dd}-000001>
+     setup.template.overwrite: true
+     setup.template.name: "nginx-json-logs"
+     setup.template.pattern: "nginx-json-logs-*"
+     setup.ilm.enabled: false
+     #
+     #
+        
+     ##### 开启filebeat运行日志
+     logging.level: info
+     logging.to_files: true
+     logging.files:
+       path: /usr/share/filebeat/logs
+       name: filebeat.log

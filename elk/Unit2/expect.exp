@@ -1,0 +1,8 @@
+#!/usr/bin/expect
+# File Name: -- expect.sh --
+# author: -- shidegang --
+# Created Time: 2024-10-16 10:45:03
+
+spawn ssh -p 5122 shidegang@10.203.43.101 uptime
+expect "*password" {send  "123456\n"}
+expect eof 

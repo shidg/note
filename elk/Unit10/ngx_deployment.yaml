@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngx-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: nginx
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx:1.24.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: log-dir
+          mountPath: /var/log/nginx
+
+      - name: filebeat
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/filebeat:7.17.25
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: log-dir
+          mountPath: /logs
+        - name: config
+          mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      
+      volumes:
+      - name: log-dir
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: filebeat-config
+

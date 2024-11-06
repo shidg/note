@@ -1,0 +1,40 @@
+---
+version: '2'
+services:
+  zookeeper:
+    image: "registry.cn-hangzhou.aliyuncs.com/shidg/cp-zookeeper:5.2.1"
+    pull_policy: missing
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '22181:2181'
+
+# This has three listeners you can experiment with. 
+# BOB for internal traffic on the Docker network
+# FRED for traffic from the Docker-host machine (`localhost`)
+# ALICE for traffic from outside, reaching the Docker host on the DNS name `never-gonna-give-you-up`
+# Use 
+  kafka0:
+    image: "registry.cn-hangzhou.aliyuncs.com/shidg/cp-enterprise-kafka:5.2.1"
+    pull_policy: missing
+    ports:
+      - '9092:9092'
+      - '29094:29094'
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: LISTENER_BOB://kafka0:29092,LISTENER_FRED://kafka0:9092,LISTENER_ALICE://kafka0:29094
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_BOB://kafka0:29092,LISTENER_FRED://localhost:9092,LISTENER_ALICE://10.203.43.200:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_BOB:PLAINTEXT,LISTENER_FRED:PLAINTEXT,LISTENER_ALICE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_BOB
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+
+  kafkacat:
+    image: registry.cn-hangzhou.aliyuncs.com/shidg/cp-kafkacat
+    pull_policy: missing
+    command: sleep infinity

@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+data:
+   filebeat.yml: |
+     filebeat.inputs:
+       - type: filestream
+         id: logs-of-nginx-access
+         enabled: true
+         paths:
+           - /logs/access.log
+
+         # 添加自定义字段
+         fields:
+           level: "info"
+         #fields_under_root: true
+         
+       - type: filestream
+         id: logs-of-nginx-error
+         enabled: true
+         paths:
+           - /logs/error.log
+
+         # 添加自定义字段
+         fields:
+           level: "errof"
+         #fields_under_root: true
+
+       - type: filestream
+         id: logs-of-filebeat
+         enabled: true
+         paths:
+           - /usr/share/filebeat/logs/filebeat.log
+
+     # 输出到es            
+     output.elasticsearch:
+       hosts: ["10.203.43.101:9200","10.203.43.102:9200","10.203.43.103:9200"]
+       #indices:
+       #  - index: "%{[fields.level]}"
+       #    mappings:
+       #     info: "nginx-info-logs-%{+yyyy-MM-dd}"
+       #      error: "nginx-error-logs-%{+yyyy-MM-dd}"
+       #    default: "filebeat-running-logs-%{+yyyy-MM-dd}"
+       index: filebeat-logs-%{+yyyy-MM-dd}
+       indices:
+         - index: nginx-info-logs-%{+yyyy-MM-dd}
+           when:
+             equals:
+               level: info
+         - index: nginx-error-logs-%{+yyyy-MM-dd}
+           when:
+             equals:
+               level: error
+
+
+     # 修改默认索引名称。<fileb-%{[agent.version]}-%{+yyyy.MM.dd}-000001>
+     setup.template.overwrite: true
+     setup.template.name: "filebeat-logs"
+     setup.template.pattern: "filebeat-logs-*"
+     setup.ilm.enabled: false
+     #
+     #
+     # 定义共享处理器
+     processors:
+       # 自动追加k8s相关信息，如POD_NAME\NAMESPACE等
+       - add_kubernetes_metadata: ~ 
+
+       # 自动追加云主机相关信息
+       #- add_cloud_metadata: ~
+
+       # 自动追加docker容器相关信息   
+       - add_docker_metadata: ~
+       
+       # 自动追加主机信息，架构类型、操作系统、ip\mac等信息,默认开启
+       #- add_host_metadata: ~
+        
+     ##### 开启filebeat运行日志
+     logging.level: info
+     logging.to_files: true
+     logging.files:
+       path: /usr/share/filebeat/logs
+       name: filebeat.log

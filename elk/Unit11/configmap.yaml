@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+data:
+   filebeat.yml: |
+     filebeat.inputs:
+       - type: filestream
+         id: logs-of-yum-nginx-access
+         enabled: true
+         paths:
+           - /logs/access.log
+         # 排除指定行
+         exclude_lines:
+           - "200"
+           - "304"
+         
+         # 包含特定行
+         include_lines:
+           - "404"
+
+         # 添加自定义字段
+         fields:
+           level: "info"
+         fields_under_root: true
+         
+         # 添加标签，功能和自定义字段类似
+         tags:
+           log_source: "k8s"
+        
+         # 独享处理器       
+         processors:
+           # 重命名字段         
+           - copy_fields:
+               fields:
+                 - from: "message"
+                   to: "content"
+               ignore_missing: true
+               fail_on_error: false
+
+
+       - type: filestream
+         id: logs-of-yum-nginx-error
+         enabled: true
+         paths:
+           - /logs/error.log
+         fields:
+           level: error
+         fields_under_root: true
+
+       - type: filestream
+         id: logs-of-filebeat
+         enabled: true
+         paths:
+           - /usr/share/filebeat/logs/filebeat.log
+        
+     # 输出到控制台,默认为json格式
+     #output.console:
+     #  codec.json:
+     #    pretty: true
+     #    escape_html: false
+     
+     # 输出到控制台,自定义输出格式
+     #output.console:
+     #  codec.format:
+     #    string: '%{[@timestamp]} %{[message]}'
+
+
+     # 输出到es            
+     output.elasticsearch:
+       hosts: ["10.203.43.101:9200","10.203.43.102:9200","10.203.43.103:9200"]
+       index: "filebeat-running-logs-%{+yyyy-MM-dd}"
+       indices:
+         - index: "web-access-logs-%{+yyyy-MM-dd}"
+           when.equals:
+             level: "info"
+         - index: "web-error-logs-%{+yyyy-MM-dd}"
+           when.equals:
+             level: "error"
+
+     # 修改filebeat创建索引时默认加载的模版。<filebeat-%{[agent.version]}-%{+yyyy.MM.dd}-000001>
+     # 只有output.elasticsearch中配置了index属性的时候才需要添加该配置,
+     # output.elasticsearch.indices不需要
+
+     # 覆盖原有模板
+     setup.template.overwrite: true
+     # 模板名称,不存在则自动创建
+     setup.template.name: "filebeat-running-logs"
+     # 该模板匹配哪些索引,<凡是匹配该模式的索引都会自动引用该模板的配置>
+     setup.template.pattern: "filebeat-running-logs-*"
+     # 禁用索引生命周期管理
+     setup.ilm.enabled: false
+     #
+     #
+     # 定义共享处理器
+     processors:
+       # 自动追加k8s相关信息，如POD_NAME\NAMESPACE等
+       - add_kubernetes_metadata: ~ 
+
+       # 自动追加云主机相关信息
+       #- add_cloud_metadata: ~
+
+       # 自动追加docker容器相关信息   
+       - add_docker_metadata: ~
+       
+       # 自动追加主机信息，架构类型、操作系统、ip\mac等信息,默认开启
+       #- add_host_metadata: ~
+        
+       # 丢弃字段
+       - drop_fields:
+           fields:
+             - "ecs"
+             - "agent"
+             - "log"
+             - "input"
+             - "host"
+           when.equals:
+             app: "nginx"
+           ignore_missing: true
+
+       # 丢弃整个事件，屏蔽不需要的数据
+       - drop_event:
+           when:
+             or:
+             - equals:
+                 http_request_uri: "/health"
+             - regexp:
+                 http_user_agent: "Chrome"
+
+       # 重命名字段         
+       - rename:
+           fields:
+             - from: "host.mac"
+               to: "host.macaddr"
+           ignore_missing: false
+           fail_on_error: true
+
+       # 转换指定字段的数据格式
+       - convert:
+           fields:
+             - from: "src_ip"
+               to: "source.ip"
+               type: "ip"
+             - from: "src_port"
+               to: "source.port"
+               type: "integer"
+      
+     ##### 开启filebeat运行日志
+     logging.level: info
+     logging.to_files: true
+     logging.files:
+       path: /usr/share/filebeat/logs
+       name: filebeat.log
+        
+     ## 其他控制器
+     # https://www.elastic.co/guide/en/beats/filebeat/7.17/index.html

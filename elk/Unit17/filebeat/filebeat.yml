@@ -1,0 +1,29 @@
+filebeat.inputs:
+- type: filestream
+  id: logs-of-docker-nginx
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+
+
+#output.logstash:
+#  hosts: ["localhost:5044"]
+
+output.kafka:
+  hosts: ["10.203.43.101:9092","10.203.43.102:9092","10.203.43.103:9092"]
+  topic: "nginx-access-log-%{+YYYY.MM.dd}"
+  partition.round_robin:
+    reachable_only: false
+  required_acks: 1
+
+
+  #partition.hash:
+  #  hash: ["message"]
+  
+
+# 自定义filebeat的运行日志
+logging.to_files: true
+logging.level: info
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log

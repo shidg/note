@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngx-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: nginx
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx:1.24.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-log
+          mountPath: /var/log/nginx
+
+      volumes:
+      - name: nginx-log
+        hostPath:
+          path: /opt/nginx/log

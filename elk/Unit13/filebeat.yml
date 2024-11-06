@@ -1,0 +1,65 @@
+filebeat.inputs:
+- type: filestream
+  id: logs-of-docker-nginx
+  enabled: true
+  paths:
+    - /opt/nginx/logs/access.log
+  tags:
+    - docker
+
+#  fileds:
+#    log_type: system
+#  fileds_under_root: true
+
+- type: filestream
+  id: logs-of-yum-nginx
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+  tags:
+    - yum
+#  fileds:
+#    log_source: yum
+#  fileds_under_root: true
+
+
+# ============================== Filebeat modules ==============================
+
+filebeat.config.modules:
+  # Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
+
+  # Set to true to enable config reloading
+  reload.enabled: false
+
+  # Period on which files under path should be checked for changes
+  #reload.period: 10s
+
+
+output.elasticsearch:
+  hosts: ["10.203.43.101:9200","10.203.43.102:9200","10.203.43.103:9200"]
+  indices: 
+    - index: "nginx-docker-logs-%{+yyyy-MM-dd}"
+      when.contains:
+        tags: docker
+    - index: "nginx-yum-logs-%{+yyyy-MM-dd}"
+      when.contains:
+        tags: yum
+
+#
+## ================================= Processors =================================
+#processors:
+#  - add_host_metadata:
+#      when.not.contains.tags: forwarded
+#  - add_cloud_metadata: ~
+#  - add_docker_metadata: ~
+#  - add_kubernetes_metadata: ~
+
+
+
+# 自定义filebeat的运行日志
+logging.to_files: true
+logging.level: info
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log

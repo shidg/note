@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+data:
+   filebeat.yml: |
+     filebeat.inputs:
+       - type: filestream
+         id: logs-of-yum-nginx-access
+         enabled: true
+         paths:
+           - /logs/access.log
+
+         # 添加自定义字段
+         fields:
+           app: "nginx"
+         fields_under_root: true
+         
+         # 添加标签，功能和自定义字段类似
+         tags:
+           log_source: "k8s"
+        
+       - type: filestream
+         id: logs-of-yum-nginx-error
+         enabled: true
+         paths:
+           - /logs/error.log
+
+       - type: filestream
+         id: logs-of-filebeat
+         enabled: true
+         paths:
+           - /usr/share/filebeat/logs/filebeat.log
+         fields:
+           app: filebeat
+         fields_under_root: true
+         
+                 
+     output.elasticsearch:
+       hosts: ["10.203.43.101:9200","10.203.43.102:9200","10.203.43.103:9200"]
+       index: "default-logs-%{+yyyy-MM-dd}"
+       indices:
+         - index: "nginx-k8s-logs-%{+yyyy-MM-dd}"
+           when.equals:
+             app: "nginx"
+         - index: "filebeat-k8s-logs-%{+yyyy-MM-dd}"
+           when.equals:
+             app: "filebeat"
+     # 修改默认索引名称。<fileb-%{[agent.version]}-%{+yyyy.MM.dd}-000001>
+     setup.template.overwrite: true
+     setup.template.name: "default"
+     setup.template.pattern: "default-*"
+     setup.ilm.enabled: false
+     #
+     #
+     # 定义共享处理器
+     processors:
+       # 丢弃字段
+       - drop_fields:
+           fields:
+             - "ecs"
+             - "agent"
+             - "log"
+             - "input"
+           when.equals:
+             app: "nginx"
+           ignore_missing: true
+
+       # 自动追加k8s相关信息，如POD_NAME\NAMESPACE等
+       - add_kubernetes_metadata: ~ 
+
+       # 自动追加云主机相关信息
+       - add_cloud_metadata: ~
+
+       # 自动追加docker容器相关信息   
+       - add_docker_metadata: ~
+       
+       # 自动追加主机信息，架构类型、操作系统、ip\mac等信息
+       - add_host_metadata: ~
+        
+     ##### 开启filebeat运行日志
+     logging.level: info
+     logging.to_files: true
+     logging.files:
+       path: /usr/share/filebeat/logs
+       name: filebeat.log
+        
+     ## 其他控制器
+     # https://www.elastic.co/guide/en/beats/filebeat/7.17/index.html

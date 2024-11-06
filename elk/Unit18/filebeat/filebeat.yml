@@ -1,0 +1,35 @@
+filebeat.inputs:
+- type: log
+  id: logs-of-tomcat
+  enabled: true
+  paths:
+    - /usr/local/tomcat/logs/catalina.out
+#  parsers:  # type=filestream时的配置方法
+#    - multiline:  
+#        type: pattern
+#        pattern: '^[0-9]{2}'
+#        negate: true
+#        match: after
+
+# type=log时使用以下配置
+  multiline.type: pattern
+  multiline.pattern: '^[0-9]{2}'
+  multiline.negate: true
+  multiline.match: after
+  #multiline.max_lines: 50    
+  #multiline.timeout: 5
+  #multiline.flush_pattern: '^(Exception)[[:space:]]+\b'
+
+output.kafka:
+  hosts: ["10.203.43.101:9092","10.203.43.102:9092","10.203.43.103:9092"]
+  topic: "tomcat-catalina-%{+YYYY.MM.dd}"
+  partition.round_robin:
+    reachable_only: false
+  required_acks: 1
+
+# 自定义filebeat的运行日志
+logging.to_files: true
+logging.level: info
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log

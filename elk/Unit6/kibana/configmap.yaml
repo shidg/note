@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-cm
+  namespace: default
+data:
+  kibana.yml: |
+    server.name: kibana
+    server.port: 5601
+    server.host: "0.0.0.0"
+    server.publicBaseUrl: "http://10.203.43.200"
+    elasticsearch.hosts: [ "http://10.203.43.104:9200" ]
+    monitoring.ui.container.elasticsearch.enabled: true
+    i18n.locale: "zh-CN"
