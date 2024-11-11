@@ -1,4 +1,4 @@
-# rgs `<font color=red>` *Linux基础知识部分* `</font>`
+# `<font color=red>` *Linux基础知识部分* `</font>`
 
 ### linux runlevel
 
@@ -222,7 +222,6 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 ---
 
 ### shell通配符
-
 
 | **字符**        | **含义**                              | **实例**                                                                       |
 | --------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -732,7 +731,7 @@ JAVA_OPTS="-server -Xms256m -Xmx2048m -XX:PermSize=256m -XX:MaxNewSize=1024m -XX
 
 ---
 
-### 什么是ELK/EFK（英文发音）
+### 什么是ELK/EFK/ELFK（英文发音）
 
 ---
 
@@ -797,7 +796,7 @@ jvm优化：
 
 ---
 
-### ELK节点类型：
+### ES集群中的节点类型：
 
 * [ ] 主节点，master node
 
@@ -843,7 +842,7 @@ node.data: true
 
 ---
 
-### ELK的冷热分离
+### ES的冷热分离
 
 ```shell
 # 设置节点属性
@@ -1886,6 +1885,41 @@ server {
 3. rewrite redirect – 返回302临时重定向，地址栏显示重定向后的url，爬虫不会更新url（因为是临时），浏览器不会缓存当前域名的解析记录
 4. rewrite permanent – 返回301永久重定向, 地址栏显示重定向后的url，爬虫更新url，浏览器会缓存永久重定向的DNS解析记录
 
+   ```shell
+   # 301 永久重定向
+   return 301 $scheme://domain.com$request_uri;
+   rewrite ^ $scheme//domain.com$uri permanent;
+
+   $uri和$request_uri的区别：
+
+   request_uri: full original request URI (with arguments)
+   - 请求的整个生命周期里不会变化
+   - 携带原始参数的完整的uri
+
+   uri: current URI in request, normalized
+   The value of $uri may change during request processing, e.g. when doing internal redirects, or when using index files.
+
+   - 不携带参数
+   - 值是可变的，比如发生内部重定向时， 通过$uri获取的值不一定是原始的请求路径， 因此当发生了内部重定向比如子请求时，要想保持原始的URI，需要使用$request_uri
+
+
+   # http强制跳转https
+   server {
+       listen 80;
+       server_name www.domain.com;
+       return 301 https://www.domain.com$request_uri;
+   }
+
+   if ($scheme != “https”) {
+       rewrite ^ https://www.mydomain.com$uri permanent;
+   }
+
+   ```
+
+
+
+
+
 ** 使用last会对server标签重新发起请求
 
 1. 如果location中rewrite后是对静态资源的请求，不需要再进行其他匹配，一般要使用break或不写，直接使用当前location中的数据源，完成本次请求
@@ -2008,7 +2042,7 @@ http {
         server_name example.com;
 
         location / {
-            limit_req zone=limit_zone burst=20;
+            limit_req zone=limit_zone burst=5 nodelay;
             proxy_pass http://backend;
         }
     }

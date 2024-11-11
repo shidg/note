@@ -32,6 +32,17 @@
 
 * [ ] VXLAN
 * [ ] HOST-GW
+
+  ```yaml
+  net-conf.json: |
+      {
+        "Network": "10.244.0.0/16",
+        "Backend": {
+          "Type": "host-gw" 
+  	#"Type": "vxlan"
+        }
+      }
+  ```
 * [ ] UDP （已废弃）因为存在三次用户态和内核态之间的数据拷贝，导致性能低下
   ![img](img/flannel-udp.png)
 
@@ -85,7 +96,7 @@ VXLAN模式下，同节点上的容器间通信，直接通过网桥+Veth Pair�
 
 选择 `flannel host-gw` 模式 和 `calico BGP` 模式。
 
-3、服务器之前是否可以跑BGP协议？
+3、服务器之间是否可以跑BGP协议？
 
 很多的公有云是不支持跑BGP协议，那么使用calico的BGP模式自然是不行的。
 
