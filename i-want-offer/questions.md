@@ -63,6 +63,46 @@
 
 ---
 
+### Linux时间同步
+
+chronyd
+
+```
+# chronyc命令行接口
+
+# chronyc tracing
+
+chronyc tracking 显示的信息是 chronyd 服务当前同步状态的快照。主要包括正在同步的远程服务器的 ID、系统在 NTP 层次中的位置（stratum）、系统时间与 NTP 时间的差异，以及其他一些信息。如果系统时间与 NTP 时间的差异接近于 0，并且显示 "Leap status : Normal"，那么同步状态可以认为是正常的。
+
+以下是 chronyc tracking 命令输出的各个字段的含义：
+
+Reference ID：你的系统正在与之同步的远程 NTP 服务器的地址或者 IP。
+Stratum：表示你的系统在 NTP 层次中的级别。Stratum 1 服务器直接与原子钟或 GPS 时钟等准确的时间源同步。Stratum 2 服务器与 Stratum 1 服务器同步，以此类推。这个字段表示你的系统是与哪个 stratum 的服务器同步。
+Ref time (UTC)：上一次从远程服务器接收到时间更新的时间（以 UTC 表示）。
+System time：你的系统时间相对于 NTP 服务器时间的差异。如果显示 "fast"，表示你的系统时间比 NTP 时钟快；如果显示 "slow"，表示你的系统时间比 NTP 时钟慢。
+Last offset：上一次时间同步时，系统时间与 NTP 服务器时间的偏移量。
+RMS offset：时间偏移量的均方根，是一个衡量时间同步精度的指标。
+Frequency：本地系统时钟的速度，相对于完美的时间源，以每百万部分（ppm）表示。如果显示 "fast"，表示你的系统时钟运行得比完美的时钟快；如果显示 "slow"，表示你的系统时钟运行得比完美的时钟慢。
+Residual freq：在最后一次同步之后，已经观察到的本地时钟频率的改变。
+Skew：本地时钟频率估计的不确定性。
+Root delay：到同步源的往返时间。
+Root dispersion：同步源的最大可能误差。
+Update interval：两次连续更新之间的间隔时间（以秒为单位）。
+Leap status：闰秒状态。可以是 "Normal"、"Insert second" 或 "Delete second"。
+
+
+chronyc sources -v
+chronyc sources -v 命令能显示 chronyd 服务正在使用的 NTP 源服务器的详细状态。这个命令会列出每个源服务器的 IP 地址，以及每个源服务器的状态和时间偏移量。通过这个命令，你可以看到你的系统是从哪些 NTP 服务器获取时间的，以及每个服务器的状态和时间偏移量
+
+chronyc soucestats -v
+chronyc sourcestats -v 提供的是关于每个 NTP 源服务器的统计信息，包括每个源服务器的 IP 地址，以及每个源服务器的样本数量、样本的均值和标准偏差等。这个命令可以帮助我们更好地了解时间源的稳定性和可靠性。
+
+chronyc makestep
+手动同步时间
+```
+
+ntp
+
 ### mysql索引类型
 
 ---
@@ -608,7 +648,19 @@ Send-Q：已发送但未收到确认的字节数
 
 ---
 
-### 什么叫单点登录
+### 什么叫单点登录(SSO)
+
+---
+
+### FTP主动模式和被动模式
+
+主动模式(port模式)
+
+![img](img/port.png)
+
+被动模式(PASV/passive模式)
+
+![img](img/PASV.png)
 
 ---
 
@@ -840,9 +892,19 @@ node.data: true
 
   其实任何一个节点都可以完成这样的工作，单独增加这样的节点更多地是为了提高并发性
 
+#### [参考资料](https://www.cnblogs.com/davis12/p/15500158.html)
+
+---
+
+### es的master选举机制
+
+#### [参考资料](https://juejin.cn/post/7074157612752699406)
+
 ---
 
 ### ES的冷热分离
+
+#### [参考资料](https://www.cnblogs.com/xuwujing/p/14599290.html)
 
 ```shell
 # 设置节点属性
@@ -898,6 +960,43 @@ POST /log_alias/_rollover
 # 索引自动应用索引模板的属性
 
 ```
+
+---
+
+### docker启动es并加入(物理机部署的)现有集群
+
+```shell
+# es的要求vm.max_map_count的值至少是262144
+sysctl -w vm.max_map_count=262144 # 临时修改
+
+# /etc/sysctl.conf # 永久修改
+vm.max_map_countm=262144
+
+
+# 启动命令
+docker run -d  \
+--name elasticsearch \
+-p 9200:9200 -p 9300:9300 \
+-v /elasticsearch:/usr/share/elasticsearch/data \
+-v /etc/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
+harbor.baway.org.cn/elk/elasticsearch:7.17.25
+
+# elasticsearch.yml文件内容
+cluster.name: baway    # 要加入的集群名称
+node.name: node-5      # 节点名称
+path.data: /usr/share/elasticsearch/data   # 数据目录
+path.logs: /usr/share/elasticsearch/logs   # 日志目录
+network.host: 0.0.0.0  
+network.publish_host: 10.203.43.105   # 必须。否则会以容器ip去连接其他节点，无法建立通信
+discovery.seed_hosts: ["10.203.43.101", "10.203.43.102","10.203.43.103","10.203.43.104","10.203.43.105","10.203.43.106"]  # 所有的节点ip
+
+# 以下为跨允许域访问 
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+ingest.geoip.downloader.enabled: false
+```
+
+
 
 ---
 
@@ -1503,20 +1602,6 @@ server {
 
 ---
 
-### es集群的角色类型有哪些，作用是什么？
-
-#### [参考资料](https://www.cnblogs.com/davis12/p/15500158.html)
-
-### es的master选举机制
-
-#### [参考资料](https://juejin.cn/post/7074157612752699406)
-
----
-
-### es冷热分离
-
-#### [参考资料](https://www.cnblogs.com/xuwujing/p/14599290.html)
-
 ---
 
 ### du和df的区别
@@ -1916,10 +2001,6 @@ server {
 
    ```
 
-
-
-
-
 ** 使用last会对server标签重新发起请求
 
 1. 如果location中rewrite后是对静态资源的请求，不需要再进行其他匹配，一般要使用break或不写，直接使用当前location中的数据源，完成本次请求
@@ -2310,6 +2391,12 @@ Deepin : 武汉深之度，基于Debian
 
 ---
 
+### CI/CD
+
+概念、两者的区别、相关的工具及其部署、配置
+
+---
+
 ### Jenkins的分布式架构了解吗？
 
 ##### 多个物理节点
@@ -2636,7 +2723,7 @@ http://ljenkins-servername/multibranch-webhook-trigger/invoke?token=my-token
 
 ### Jenkins的权限控制了解吗？
 
-Role-based Authorization Strategy插件的配
+Role-based Authorization Strategy插件的配置
 
 ---
 

@@ -7,6 +7,23 @@
 
 ---
 
+### k8s指定apiserver的ip和端口
+
+```
+--advertise-address
+--bind-address
+--secure-port
+
+--advertise-address ip 
+用于将 apiserver 通告给集群成员的 IP 地址。此地址必须可供集群的其余部分访问。如果为空，将使用 --bind-address。
+如果未指定 --bind-address，将使用主机的默认接口。
+--bind-address ip 
+用于侦听 --secure-port 端口的 IP 地址。相关接口必须可由集群的其余部分以及 CLI/Web 客户端访问。
+如果为空，则将使用所有接口（所有 IPv4 接口为 0.0.0.0，所有 IPv6 接口为 ::）。（默认值为 0.0.0.0）
+
+默认情况下，默认 IP 是第一个非本地主机网络接口和 6443 端口。
+```
+
 ### k8s集群规模限制
 
 集群是运行 Kubernetes 代理的、 由[控制平面](https://kubernetes.io/zh-cn/docs/reference/glossary/?all=true#term-control-plane)管理的一组 [节点](https://kubernetes.io/zh-cn/docs/concepts/architecture/nodes/)（物理机或虚拟机）。 Kubernetes v1.30 单个集群支持的最大节点数为 5,000。 更具体地说，Kubernetes 旨在适应满足以下**所有**标准的配置：
@@ -30,8 +47,8 @@
 
 ##### flannel支持的工作模式
 
-* [ ] VXLAN
-* [ ] HOST-GW
+* [ ] **VXLAN**
+* [ ] **HOST-GW**
 
   ```yaml
   net-conf.json: |
@@ -110,6 +127,29 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
 
 ---
 
+### flannel指定网卡
+
+```yaml
+- name: kube-flannel
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/flannel:v0.26.1
+        command:
+        - /opt/bin/flanneld
+        args:
+        - --ip-masq
+        - --kube-subnet-mgr
+        - --iface=eth1   # 新增配置，指定网卡
+
+# 网段，与pod cidr一致
+net-conf.json: |
+    {
+      "Network": "172.31.0.0/16",
+      "EnableNFTables": false,
+      "Backend": {
+        "Type": "vxlan"     # host-gw
+      }
+    }
+```
+
 ### calico指定网卡
 
 当节点上有多个网卡时，需要为calico指定使用哪块网卡
@@ -139,6 +179,11 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
 # Enable or Disable VXLAN on the default IPv6 IP pool.
 - name: CALICO_IPV6POOL_VXLAN
   value: "Never"
+# # The default IPv4 pool to create on startup if none exists. Pod IPs will be
+  # chosen from this range. Changing this value after installation will have
+  # no effect. This should fall within `--cluster-cidr`.
+- name: CALICO_IPV4POOL_CIDR
+  value: "192.168.0.0/16"
 ```
 
 ```yaml
