@@ -934,9 +934,7 @@ PUT test-index/_settings
     }
   }
 }
-```
 
-```shell
 # 索引滚动
 PUT test-000001
 {
@@ -964,15 +962,30 @@ POST /log_alias/_rollover
 # 如果文档的数目超过 14000 个，那么自动 rollover
 # 如果 index 的大小超过 5G，那么自动 rollover
 # 滚动的结果是生成一个新索引test-000002,新数据写入新索引，旧索引变为只读
+```
 
-
+```shell
 # ILM 索引生命周期管理
 # 索引模板，并将ILM应用到索引模板
 # 索引自动应用索引模板的属性
 
 
 
-## 通过索模板+生命周期策略(ilm)实现索引的自动滚动和数据冷热分离
+## 通过索引模板+生命周期策略(ilm)实现索引的自动滚动和数据冷热分离
+
+# 创建索引模板，并与生命周期策略关联
+PUT /_template/my_template_test
+{
+  "index_patterns": ["my-test-*"],     # 该模板对所有my-test开头的索引生效
+  "settings": {
+    "number_of_shards": "3",
+    "number_of_replicas": "1",
+    "refresh_interval": "30s",  # 索引刷新时间，每刷新一次会生成一个新段
+    "index.lifecycle.name": "my_policy_test",   # 该模板关联的ILM策略
+    "index.lifecycle.rollover_alias":"log-alias",  # 引用该模板的索引，在做滚动时使用的别名
+    "index.routing.allocation.include.box_type": "hot"  # 引用该模板的索引会被分配到热节点
+  }
+}
 
 # 创建生命周期策略
 PUT _ilm/policy/my_policy_test 
@@ -984,7 +997,7 @@ PUT _ilm/policy/my_policy_test
             "actions": {
                 "rollover": {           # 索引滚动策略
                     "max_age": "7d",
-                    "max_docs": 5,
+                    "max_docs": 10000,
                     "max_size": "5gb"
                 },
                 "set_priority": {
@@ -993,22 +1006,26 @@ PUT _ilm/policy/my_policy_test
             }
         },
         "warm": {
-            "min_age": "3m",   # 索引创建3分钟后，进入到warm阶段
+            "min_age": "3m",   # 从索引滚动后开始计时，3分钟后，进入到warm阶段
             "actions": {
 		"forcemerge": {
-                  "max_num_segments": 1
+                  "max_num_segments": 1    # 段合并，可提升查询效率
                 }, 
                 "shrink": {
                   "number_of_shards": 1    # 主分片数收缩为1
                 }, 
                 "allocate": {
+		    "include": {
+                      "_tier_preference" : "data_warm,data_hot", # 该组属性es会默认添加
+                      "box_type" : "hot"   # 这里继承的是index模板的属性
+                    },
                     "number_of_replicas": 0  # 副本分片收缩为0
                 },
                 "readonly": {}   # 转入只读状态
             }
         },
         "cold": {
-          "min_age": "8m",    # 索引创建8分钟后，进入cold阶段
+          "min_age": "8m",    # 从索引滚动后开始计时，8分钟后，进入cold阶段
           "actions": {
             "set_priority": {
               "priority": 0
@@ -1016,13 +1033,15 @@ PUT _ilm/policy/my_policy_test
             "freeze": {},
             "allocate": {
               "require": {
-                "box_type": "cool"  # 索引自动迁移到冷节点
+		"_tier_preference" : "data_cold",   # 在warm阶段，es会给索引添加"_tier_preference"属性，且值为
+                                                    # "data_warm,data_hot"，所以这里要显示设置以覆盖其值
+                "box_type": "cool"  # 覆盖模板自带的"box_type": "hot"
               }
             }
           }
         }, 
        "delete": {
-         "min_age": "10m",     # 索引创建10分钟后，进入delete阶段
+         "min_age": "10m",     # 从索引滚动后开始计时，10分钟后，进入delete阶段
          "actions": {
            "delete": {}        # 索引被删除
          }
@@ -1032,18 +1051,7 @@ PUT _ilm/policy/my_policy_test
 }
 
 
-# 创建索引模板，并与生命周期策略关联
-PUT /_template/my_template_test
-{
-  "index_patterns": ["my-test-*"],     # 该模板对所有my-test开头的索引生效
-  "settings": {
-    "number_of_shards": "3",
-    "number_of_replicas": "1",
-    "index.lifecycle.name": "my_policy_test",   # 该模板关联的ILM策略
-    "index.lifecycle.rollover_alias":"log-alias",  # 引用该模板的索引，在做滚动时使用的别名
-    "index.routing.allocation.include.box_type": "hot"  # 引用该模板的索引会被分配到热节点
-  }
-}
+
 
 # 创建索引并设置别名
 PUT my-test-000001        # 索引名必须以数字结尾，否则自动rollover不生效
@@ -2298,6 +2306,18 @@ deny 123.45.6.0/24
 include       black.ip;
 
 ---
+
+### Nginx的负载均衡算法
+
+---
+
+
+
+### LVS的工作模式和负载均衡算法
+
+---
+
+
 
 ### Prometheus报警
 
