@@ -1,4 +1,4 @@
-# `<font color=red>` *Linux基础知识部分* `</font>`
+`<font color=red>` *Linux基础知识部分* `</font>`
 
 ### linux runlevel
 
@@ -67,7 +67,7 @@
 
 chronyd
 
-```
+```shell
 # chronyc命令行接口
 
 # chronyc tracing
@@ -263,7 +263,7 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 
 ### shell通配符
 
-| **字符**        | **含义**                              | **实例**                                                                       |
+| **字符**              | **含义**                                    | **实例**                                                                             |
 | --------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
 | *                     | 匹配 0 或多个字符                           | a*b  a与b之间可以有任意长度的任意字符, 也可以一个也没有, 如aabcb, axyzb, a012b, ab。 |
 | ?                     | 匹配任意一个字符                            | a?b  a与b之间必须也只能有一个字符, 可以是任意字符, 如aab, abb, acb, a0b。            |
@@ -365,18 +365,18 @@ exec shell替换，即启动一个新的shell来执行命令，执行完毕后�
 
 exec有一个例外，当操作文件描述符的时候，不会产生shell替换
 
-| exec命令                   | 作用                                                                   |
-| -------------------------- | ---------------------------------------------------------------------- |
-| exec ls                    | 在shell中执行ls，ls结束后不返回原来的shell中了                         |
-| exec <file                 | 等于exec 0<file,file中的内容作为标准输入（替代STDIN）                  |
-| exec >file                 | 等于exec 1>file,将标准输出写入file（替代STDOUT）                      |
-| exec 3<file                | 以只读方式打开文件file，并关联到文件描述符3（此时，创建了文件描述符3） |
-| sort <&3                   | 将文件描述符3作为临时输入，用于sort排序                                |
-| exec 4>file                | 以只写方式打开file，并关联到文件描述符4（此时，创建了文件描述符4）     |
-| ls >&4                     | Ls将不会有显示，直接写入文件描述符4中了，即上面的file中                |
+| exec命令                 | 作用                                                                   |
+| ------------------------ | ---------------------------------------------------------------------- |
+| exec ls                  | 在shell中执行ls，ls结束后不返回原来的shell中了                         |
+| exec <file               | 等于exec 0<file,file中的内容作为标准输入（替代STDIN）                  |
+| exec >file               | 等于exec 1>file,将标准输出写入file（替代STDOUT）                       |
+| exec 3<file              | 以只读方式打开文件file，并关联到文件描述符3（此时，创建了文件描述符3） |
+| sort <&3                 | 将文件描述符3作为临时输入，用于sort排序                                |
+| exec 4>file              | 以只写方式打开file，并关联到文件描述符4（此时，创建了文件描述符4）     |
+| ls >&4                   | Ls将不会有显示，直接写入文件描述符4中了，即上面的file中                |
 | exec 6 <> /tmp/test.fifo | 以读写方式打开命名管道，并关联到文件描述符6                            |
-| exec 5<&4                  | 创建文件描述符4的拷贝文件描述符5                                       |
-| exec 3<&-                  | 关闭文件描述符3                                                        |
+| exec 5<&4                | 创建文件描述符4的拷贝文件描述符5                                       |
+| exec 3<&-                | 关闭文件描述符3                                                        |
 
 eval  可以让shell对将要执行的命令进行 2 次扫描，第 1 次扫描时把扫描的内容替换成命令，第 2 次扫描时执行扫描到的命令
 
@@ -530,6 +530,19 @@ fuser -l # 列出所有支持的信号
 
 ---
 
+### find
+
+```
+# find 默认做递归查询，如过想指定查询层数，使用-maxdepth
+find -maxdepth 0
+
+#find 排除目录
+find  ! -path "./skywalking/*" ! -path "./sourcecode_of_back-end/*" -name "*.yaml"  | xargs -I {} grep -w "image:" {}
+
+find ./ -path ./database -prune -or -type f -print
+
+```
+
 ### -exec和xargs
 
 ```shell
@@ -538,8 +551,7 @@ find . -name "aa*" -exec mv {} ~/tmp/
 find . -name "aa*" | xargs -I {} mv {} ~/tmp/ # -I 将查找到的内容逐个赋值给{}
 ls *.sh | xargs -P N -I {} bash {} # -P指定最大同时处理N个文件
 
-# find 默认做递归查询，如过想指定查询层数，使用-maxdepth
-find -maxdepth 3
+
 ```
 
 ---
@@ -1238,14 +1250,53 @@ VRRP
 仅复制仓库的最新版本,而不是所有的历史记录
 
 ```shell
-git clone -–depth [depth] [remote-url]
+git clone -–depth 1 [remote-url]
 ```
 
 仅克隆单个分支
 
 ```shell
-git clone [远程URL] --branch [名称] --single-branch [文件夹]
+git clone [远程URL] --branch [名称] --single-branch [remote-url]
 ```
+
+---
+
+### git 数据回滚
+
+```
+# 仅撤销commit
+git reset --soft HEAD^
+
+# 同时撤销commit和add
+git reset --mixed HEAD^
+
+# 撤销commit 、add和上次提交以来的代码修改
+git reset --hard HEAD^
+
+#撤销push（先撤销commit,再提交，即让远程仓库回到上一个版本）
+git reset --soft HEAD^
+git push origin HEAD --force
+```
+
+---
+
+### git 的合并方式(git merge)
+
+Fast-Forward Merge
+
+Tree-Way Merge(git merge --no-ff)
+
+Squash Merge(git merge --squash)
+
+---
+
+### git merge和git rebase
+
+---
+
+### git fetch和git pull
+
+git pull == git fetch + git merge
 
 ---
 
@@ -1287,10 +1338,10 @@ alertmanager的分组、抑制和静默
 
 | 信号编号 | 信号名 | 信号含义                                   |
 | :------: | :----- | ------------------------------------------ |
-|    1    | HUP    | 挂起信号                                   |
-|    2    | INT    | 中断信号                                   |
-|    3    | QUIT   | 退出信号                                   |
-|    9    | KILL   | 杀死信号                                   |
+|    1     | HUP    | 挂起信号                                   |
+|    2     | INT    | 中断信号                                   |
+|    3     | QUIT   | 退出信号                                   |
+|    9     | KILL   | 杀死信号                                   |
 |    11    | SEGV   | 段错误信号                                 |
 |    15    | TERM   | 终止信号，kill命令默认发送的信号类型       |
 |    18    | CONT   | 继续运行信号，恢复之前接受了STOP信号的进程 |
@@ -1392,7 +1443,7 @@ pkill -9 -t pts/1   #强制杀死从pts/1虚拟终端登陆的进程
 
 **du命令是用户级的程序，它不考虑Meta Data**，而 **df命令则查看文件系统的磁盘分配图并考虑Meta Data** 。**df命令获得真正的文件系统数据，而du命令只查看文件系统的部分情况**
 
-如果用户删除了一个正在运行的应用所打开的某个目录下的文件，则du命令返回的值显示出减去了该文件后的目录的大小。但df命令并不显示减去该文件后的大小。**直到该运行的应用关闭了这个打开的文件，df返回的值才显示出减去了该文件后的文件系统的使用情况。**
+如果用户删除了一个正在运行的应用所打开的某个目录下的文件，则du命令返回的值显示出减去了该文件后的目录的大小。但df命令并不显示减去该文件后的大小。**直到该运行的应用关闭了这个打开的文件，du返回的值才显示出减去了该文件后的文件系统的使用情况。**
 
 ---
 
@@ -1443,7 +1494,9 @@ ssh -t user@host:port  "command"
 ssh -t k8s-master "top"
 ```
 
-### CentOS 7启动过程说一下？
+### Linux启动过程说一下？
+
+![img](img/Linux-boot-process.png)
 
 ---
 
@@ -2311,13 +2364,9 @@ include       black.ip;
 
 ---
 
-
-
 ### LVS的工作模式和负载均衡算法
 
 ---
-
-
 
 ### Prometheus报警
 
@@ -2506,6 +2555,12 @@ Deepin : 武汉深之度，基于Debian
 ---
 
 ### 堡垒机的作用是什么？
+
+认证
+
+授权
+
+审计
 
 ---
 

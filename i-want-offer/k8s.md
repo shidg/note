@@ -240,6 +240,75 @@ can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达�
 
 ---
 
+### k8s不同容器运行时配置私有仓库
+
+#### docker
+
+```shell
+#  /etc/docker/daemon.json
+
+# 添加信任仓库，允许http连接
+"insecure-registries":["harbor.baway.org.cn","10.203.43.233"] 
+
+# ~/.docker/config.json
+{
+        "auths": {
+                "harbor.baway.org.cn": {
+                        "auth": "YWRtaW46R01pbmZvc2VjMTIz"  # 用户名密码
+                },
+                "registry.cn-hangzhou.aliyuncs.com": {
+                        "auth": "bmllYmlhbmVydHVvOkdNaW5mb3NlYzEyMw=="
+                }
+        }
+}
+
+
+```
+
+### containerd
+
+```shell
+# containerd添加自定义仓库需要修改两个文件
+# /etc/containerd/config.toml中只定义仓库的用户名和密码
+# 仓库的名称、地址、是否跳过安全检查这几项配置在config_path指定的子目录中单独配置
+# /etc/containerd/config.toml
+[plugins."io.containerd.grpc.v1.cri".registry]
+   config_path = "/etc/containerd/certs.d"   # 这个目录下定义镜像仓库的名称、地址和是否跳过https
+   [plugins."io.containerd.grpc.v1.cri".registry.configs] # 仓库的用户名密码
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."registry.cn-hangzhou.aliyuncs.com".auth]
+          username = "niebianertuo"
+          password = "GMinfosec123"
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."harbor.baway.org.cn".auth]
+          username = "admin"
+          password = "GMinfosec123"
+
+#  tree  /etc/containerd/certs.d
+/etc/containerd/certs.d/
+├── docker.m.daocloud.io
+│   └── hosts.toml
+├── docker.mirrors.ustc.edu.cn
+│   └── hosts.toml
+├── dockerproxy.com
+│   └── hosts.toml
+├── harbor.baway.org.cn       # 目录名和仓库地址保持一致   
+│   └── hosts.toml
+└── registry.cn-hangzhou.aliyuncs.com  # 目录名和仓库地址保持一致
+    └── hosts.toml
+
+# cat hosts.toml
+server = "http://harbor.baway.org.cn"
+
+[host."http://harbor.baway.org.cn"]
+  capabilities = ["pull", "resolve","push"]
+  skip_verify = true      # http or https
+
+
+  
+
+
+
+```
+
 ### k8s数据备份
 
 1. [X] etcd备份
@@ -253,8 +322,9 @@ can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达�
 
 注意某些状态不属于pod的生命周期内的阶段，如 `Terminating`
 
+
 | `Pending`（悬决）   | Pod 已被 Kubernetes 系统接受，但有一个或者多个容器尚未创建亦未运行。此阶段包括等待 Pod 被调度的时间和通过网络下载镜像的时间。 |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `Running`（运行中） | Pod 已经绑定到了某个节点，Pod 中所有的容器都已被创建。至少有一个容器仍在运行，或者正处于启动或重启状态。                      |
 | `Succeeded`（成功） | Pod 中的所有容器都已成功终止，并且不会再重启。                                                                                |
 | `Failed`（失败）    | Pod 中的所有容器都已终止，并且至少有一个容器是因为失败终止。也就是说，容器以非 0 状态退出或者被系统终止。                     |
@@ -274,13 +344,13 @@ can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达�
 ### k8s高可用部署
 
 1. [X] 高可用原理
-    k8s高可用包含两个关键点：
+   k8s高可用包含两个关键点：
 
-    apiserver高可用。其原理是多个apiserver实例进行负载均衡。具体的实现可以使用nginx、lvs、Haproxy作为负载均衡器，使用keepalived生成并管理VIP，客户端请求通过VPI发送给负载均衡器，然后由负载均衡器转发给某一个apiserver。由于VIP可以在多个apiserver实例之间自动漂移，所以某一个实例的宕机不会影响整个集群的可用性。
+   apiserver高可用。其原理是多个apiserver实例进行负载均衡。具体的实现可以使用nginx、lvs、Haproxy作为负载均衡器，使用keepalived生成并管理VIP，客户端请求通过VPI发送给负载均衡器，然后由负载均衡器转发给某一个apiserver。由于VIP可以在多个apiserver实例之间自动漂移，所以某一个实例的宕机不会影响整个集群的可用性。
 
-    etcd高可用。etcd本身就是一个分布式键值存储库，使用3个及以上的节点来进行集群式部署即可实现高可用。k8s支持两种方式的etcd：堆叠etcd和外部etcd。堆叠etcd运行在k8s集群内，每个master节点运行一个etcd实例，外部etcd指的是k8s集群之外单独部署的etcd。
+   etcd高可用。etcd本身就是一个分布式键值存储库，使用3个及以上的节点来进行集群式部署即可实现高可用。k8s支持两种方式的etcd：堆叠etcd和外部etcd。堆叠etcd运行在k8s集群内，每个master节点运行一个etcd实例，外部etcd指的是k8s集群之外单独部署的etcd。
 
-    综上，实现k8s集群的高可用部署，分为两种情况，如果使用堆叠etcd，至少需要3台master来实现高，而使用外部etcd，则至少需要两台master。
+   综上，实现k8s集群的高可用部署，分为两种情况，如果使用堆叠etcd，至少需要3台master来实现高，而使用外部etcd，则至少需要两台master。
 2. [X] 部署方式
 
 ---
@@ -310,7 +380,7 @@ can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达�
 
 静态 Pod 在指定的节点上由 kubelet 守护进程直接管理，不需要 API 服务器监管。
 
- 与由控制面管理的 Pod（例如，Deployment、RC、DaemonSet） 不同；kubelet 监视每个静态 Pod（在它崩溃之后重新启动）。
+与由控制面管理的 Pod（例如，Deployment、RC、DaemonSet） 不同；kubelet 监视每个静态 Pod（在它崩溃之后重新启动）。
 
 静态 Pod 永远都会绑定到一个指定节点上的 Kubelet。
 
@@ -334,7 +404,7 @@ staticPodPath: /etc/kubernetes/manifests
 ### k8s中的资源对象
 
 1. [X] api资源
-    kubectl api-resources
+   kubectl api-resources
 2. [X] crd资源
 
 ---
@@ -386,27 +456,27 @@ kubectl debug <pod_name> -it --image=ubuntu --share-processes --copy-to <pod_nam
 
 1. [X] k8s的更新策略 Recreate  RollingUpdate
 
-    ```yaml
-    spec:
-      strategy:
-        type: RollingUpdate
-        rollingUpdate:
-          maxSurge: 1
-          maxUnavailable: 0
-    ```
+   ```yaml
+   spec:
+     strategy:
+       type: RollingUpdate
+       rollingUpdate:
+         maxSurge: 1
+         maxUnavailable: 0
+   ```
 2. [X] 常用命令
 
-    ```bash
-    kubectl roolout histtory 
-    kubectl roolout undo  --to-revision=2
-    kubectl roolout pause
-    kubectl roolout resume
+   ```bash
+   kubectl roolout histtory 
+   kubectl roolout undo  --to-revision=2
+   kubectl roolout pause
+   kubectl roolout resume
 
-    # 为更新添加注释，代替原来的--record
-    kubectl annotate deployment nginx kubernetes.io/change-cause=""
-    ```
+   # 为更新添加注释，代替原来的--record
+   kubectl annotate deployment nginx kubernetes.io/change-cause=""
+   ```
 
-    ---
+   ---
 
 ### k8s数据持久化
 
@@ -461,37 +531,37 @@ spec:
 
 ```
 
- secret
+secret
 
 1. [X] opaque
 2. [X] kubenetes.io/Service Account
 
-    ```yaml
-    apiVersion: v1
-    kind: Secret
-    # 表示这个 secret 类型
-    type: kubernetes.io/service-account-token
-    metadata:
-      name: mycontroller
-      namespace: kube-system
-      annotations:
-        # service account 名称
-        kubernetes.io/service-account.name: "mycontroller"
-    ```
+   ```yaml
+   apiVersion: v1
+   kind: Secret
+   # 表示这个 secret 类型
+   type: kubernetes.io/service-account-token
+   metadata:
+     name: mycontroller
+     namespace: kube-system
+     annotations:
+       # service account 名称
+       kubernetes.io/service-account.name: "mycontroller"
+   ```
 3. [X] kubernetes.io/dockerconfigjson
 
-    ```shell
-    kubectl create secret docker-registry  docker-tiger \
-        --docker-server="harbor.baway.org.cn:8000" \
-        --docker-username="admin" \
-        --docker-password="Harbor12345"
-    ```
+   ```shell
+   kubectl create secret docker-registry  docker-tiger \
+       --docker-server="harbor.baway.org.cn:8000" \
+       --docker-username="admin" \
+       --docker-password="Harbor12345"
+   ```
 
-    ```shell
-    kubectl create secret generic docker-auth \
-        --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
-        --type=kubernetes.io/dockerconfigjson
-    ```
+   ```shell
+   kubectl create secret generic docker-auth \
+       --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
+       --type=kubernetes.io/dockerconfigjson
+   ```
 
 pv/pvc
 pv和pvc是一一对应的绑定关系
@@ -501,84 +571,84 @@ pv和pvc是一一对应的绑定关系
 3. [ ] ceph
 4. [ ] local
 
-    ```shell
-    # cat pv-local.yml
-    apiVersion: v1
-    kind: PersistentVolume
-    metadata:
-      name: pv-local
-    spec :
-      capacity:
-        storage: 2Gi
-      volumeMode: Filesystem
-      accessModes:
-        - ReadWriteOnce
-      persistentVolumeReclaimPolicy: Delete
-      storageClassName: local-storage
-      local:
-        path: /data/localpv # k8s-node-03节点上的目录
-      nodeAffinity:
-        required:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: kubernetes.io/hostname
-                  operator: In
-                  values :
-                    - k8s-node-03
-    ```
+   ```shell
+   # cat pv-local.yml
+   apiVersion: v1
+   kind: PersistentVolume
+   metadata:
+     name: pv-local
+   spec :
+     capacity:
+       storage: 2Gi
+     volumeMode: Filesystem
+     accessModes:
+       - ReadWriteOnce
+     persistentVolumeReclaimPolicy: Delete
+     storageClassName: local-storage
+     local:
+       path: /data/localpv # k8s-node-03节点上的目录
+     nodeAffinity:
+       required:
+         nodeSelectorTerms:
+           - matchExpressions:
+               - key: kubernetes.io/hostname
+                 operator: In
+                 values :
+                   - k8s-node-03
+   ```
 
-    ```shell
-    # cat pvc-local.yml
-    kind: PersistentVolumeClaim
-    apiVersion: v1
-    metadata:
-      name: pvc-local
-    spec:
-      accessModes:
-        - ReadWriteOnce
-      resources:
-        requests:
-          storage: 2Gi
-      storageClassName: local-storage  #指定sc，集群中没有这个sc不影响pvc与pv的绑定
-    ```
+   ```shell
+   # cat pvc-local.yml
+   kind: PersistentVolumeClaim
+   apiVersion: v1
+   metadata:
+     name: pvc-local
+   spec:
+     accessModes:
+       - ReadWriteOnce
+     resources:
+       requests:
+         storage: 2Gi
+     storageClassName: local-storage  #指定sc，集群中没有这个sc不影响pvc与pv的绑定
+   ```
 
-    ```shell
-    # cat local-sc.yml 
-    apiVersion: storage.k8s.io/v1
-    kind: StorageClass
-    metadata:
-      name: local-storage
-    provisioner: kubernetes.io/no-provisioner
-    volumeBindingMode: WaitForFirstConsumer  #延迟绑定参数，很重要
-    ```
+   ```shell
+   # cat local-sc.yml 
+   apiVersion: storage.k8s.io/v1
+   kind: StorageClass
+   metadata:
+     name: local-storage
+   provisioner: kubernetes.io/no-provisioner
+   volumeBindingMode: WaitForFirstConsumer  #延迟绑定参数，很重要
+   ```
 
-    ```shell
-    # cat hostpath-nginx-pod.yaml
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: hostpath-nginx-pod
-      labels:
-        app: hostpath-nginx-pod
-    spec:
-      volumes:
-      - name: pv-hostpath
-        persistentVolumeClaim:
-          claimName: pvc-local  # 声明要使用的pvc
-      nodeSelector:
-        kubernetes.io/hostname: k8s-node-01  指定只能运行在k8s-node-01节点上
-      containers:
-      - name: nginx-pod
-        image: nginx:1.7.5
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - mountPath: "/usr/share/nginx/html"
-          name: pv-hostpath
-    ```
+   ```shell
+   # cat hostpath-nginx-pod.yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: hostpath-nginx-pod
+     labels:
+       app: hostpath-nginx-pod
+   spec:
+     volumes:
+     - name: pv-hostpath
+       persistentVolumeClaim:
+         claimName: pvc-local  # 声明要使用的pvc
+     nodeSelector:
+       kubernetes.io/hostname: k8s-node-01  指定只能运行在k8s-node-01节点上
+     containers:
+     - name: nginx-pod
+       image: nginx:1.7.5
+       imagePullPolicy: IfNotPresent
+       ports:
+       - containerPort: 80
+       volumeMounts:
+       - mountPath: "/usr/share/nginx/html"
+         name: pv-hostpath
+   ```
 5. [X] pv的访问模式、回收策略、状态各有哪些？
-    访问模式：
+   访问模式：
 
 * ReadWriteOnce（RWO）：读写权限，但是只能被单个节点挂载
 * ReadOnlyMany（ROX）：只读权限，可以被多个节点挂载
@@ -616,44 +686,44 @@ pv和pvc是一一对应的绑定关系
 
 1. [X] 启动
 
-    ```yaml
-    #  startupProbe:
-          #    httpGet:
-          #      path: /
-          #      port: 80
-          #    initialDelaySeconds: 10 #延迟加载时间
-          #    failureThreshold: 3 #检测失败3次表示未就绪
-          #    periodSeconds: 10 #重试时间间隔
-          #    timeoutSeconds: 3 #超时时间设置
-          #    successThreshold: 1 #检查成功为1次表示就绪
-    ```
+   ```yaml
+   #  startupProbe:
+         #    httpGet:
+         #      path: /
+         #      port: 80
+         #    initialDelaySeconds: 10 #延迟加载时间
+         #    failureThreshold: 3 #检测失败3次表示未就绪
+         #    periodSeconds: 10 #重试时间间隔
+         #    timeoutSeconds: 3 #超时时间设置
+         #    successThreshold: 1 #检查成功为1次表示就绪
+   ```
 2. [X] 就绪
 
-    ```yaml
-    #readinessProbe:
-            #  exec:
-            #    command:
-            #    - cat
-            #    - /usr/share/nginx/html/ready.html
-            #  initialDelaySeconds: 10 #延迟加载时间
-            #  failureThreshold: 3 #检测失败3次表示未就绪
-            #  periodSeconds: 10 #重试时间间隔
-            #  timeoutSeconds: 3 #超时时间设置
-            #  successThreshold: 1 #检查成功1次表示就绪
-    ```
+   ```yaml
+   #readinessProbe:
+           #  exec:
+           #    command:
+           #    - cat
+           #    - /usr/share/nginx/html/ready.html
+           #  initialDelaySeconds: 10 #延迟加载时间
+           #  failureThreshold: 3 #检测失败3次表示未就绪
+           #  periodSeconds: 10 #重试时间间隔
+           #  timeoutSeconds: 3 #超时时间设置
+           #  successThreshold: 1 #检查成功1次表示就绪
+   ```
 3. [X] 存活
 
-    ```yaml
-    #livenessProbe:
-            #  exec:
-            #    command:
-            #    - cat
-            #    - /usr/share/nginx/html/ready.html
-            #  failureThreshold: 3 #检测失败5次表示未就绪
-            #  periodSeconds: 10 #重试时间间隔
-            #  timeoutSeconds: 3 #超时时间设置
-            #  successThreshold: 1 #检查成功1次表示就绪
-    ```
+   ```yaml
+   #livenessProbe:
+           #  exec:
+           #    command:
+           #    - cat
+           #    - /usr/share/nginx/html/ready.html
+           #  failureThreshold: 3 #检测失败5次表示未就绪
+           #  periodSeconds: 10 #重试时间间隔
+           #  timeoutSeconds: 3 #超时时间设置
+           #  successThreshold: 1 #检查成功1次表示就绪
+   ```
 
 ---
 
@@ -668,202 +738,202 @@ pv和pvc是一一对应的绑定关系
 ### k8s弹性扩缩容
 
 1. [X] HPA
-    kubectl autoscale
+   kubectl autoscale
 
-    ```shell
-    kubectl autoscale  deployment  `<deployment_name> --cpu-percent=10  --min=1 --max=5
-    ```
+   ```shell
+   kubectl autoscale  deployment  `<deployment_name> --cpu-percent=10  --min=1 --max=5
+   ```
 
-    pod级的resource
+   pod级的resource
 
-    ```yaml
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: nginx-hpa
-      namespace: default
-    spec:
-      # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: nginx-deployment
-      # HPA的最小pod数量和最大pod数量
-      minReplicas: 1
-      maxReplicas: 10
-      # 监控的指标数组，支持多种类型的指标共存
-      metrics:
-      # Resource类型的指标
-      - type: Resource
-        resource:
-          name: cpu
-          # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
-          target:
-            type: Utilization
-            averageUtilization: 10
-          #name: memory
-          #target:
-          #  type: Utilization
-          #  averageUtilization: 60
-    ```
+   ```yaml
+   apiVersion: autoscaling/v2
+   kind: HorizontalPodAutoscaler
+   metadata:
+     name: nginx-hpa
+     namespace: default
+   spec:
+     # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
+     scaleTargetRef:
+       apiVersion: apps/v1
+       kind: Deployment
+       name: nginx-deployment
+     # HPA的最小pod数量和最大pod数量
+     minReplicas: 1
+     maxReplicas: 10
+     # 监控的指标数组，支持多种类型的指标共存
+     metrics:
+     # Resource类型的指标
+     - type: Resource
+       resource:
+         name: cpu
+         # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
+         target:
+           type: Utilization
+           averageUtilization: 10
+         #name: memory
+         #target:
+         #  type: Utilization
+         #  averageUtilization: 60
+   ```
 
-    容器级的resource [需要k8s版本1.30及以上]
+   容器级的resource [需要k8s版本1.30及以上]
 
-    ```yaml
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: nginx-hpa
-      namespace: default
-    spec:
-      # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: nginx-deployment
-      # HPA的最小pod数量和最大pod数量
-      minReplicas: 1
-      maxReplicas: 10
-      # 监控的指标数组，支持多种类型的指标共存
-      metrics:
-      # ContainerResource类型的指标[k8s1.30+]
-      - type: ContainerResource
-        containerResource:
-          name: cpu
-          container: nginx
-          # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
-          target:
-            type: Utilization
-            averageUtilization: 10
-          #name: memory
-          #target:
-          #  type: Utilization
-          #  averageUtilization: 60
-    ```
+   ```yaml
+   apiVersion: autoscaling/v2
+   kind: HorizontalPodAutoscaler
+   metadata:
+     name: nginx-hpa
+     namespace: default
+   spec:
+     # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
+     scaleTargetRef:
+       apiVersion: apps/v1
+       kind: Deployment
+       name: nginx-deployment
+     # HPA的最小pod数量和最大pod数量
+     minReplicas: 1
+     maxReplicas: 10
+     # 监控的指标数组，支持多种类型的指标共存
+     metrics:
+     # ContainerResource类型的指标[k8s1.30+]
+     - type: ContainerResource
+       containerResource:
+         name: cpu
+         container: nginx
+         # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
+         target:
+           type: Utilization
+           averageUtilization: 10
+         #name: memory
+         #target:
+         #  type: Utilization
+         #  averageUtilization: 60
+   ```
 
-    扩缩策略[k8s版本1.23及以上]
+   扩缩策略[k8s版本1.23及以上]
 
-    ```yaml
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: nginx-hpa
-      namespace: default
-    spec:
-      # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: nginx-deployment
-      # HPA的最小pod数量和最大pod数量
-      minReplicas: 1
-      maxReplicas: 10
-      behavior:
-        scaleDown:
-          stabilizationWindowSeconds: 300 #稳定窗口
-          policies:
-          - type: Percent
-            value: 100
-            periodSeconds: 15
-        scaleUp:
-          stabilizationWindowSeconds: 0
-          policies:
-          - type: Percent
-            value: 100
-            periodSeconds: 15
-          - type: Pods
-            value: 4
-            periodSeconds: 15
-          selectPolicy: Max
-          #selectPolicy: Min
-          #selectPolicy: Disabled
+   ```yaml
+   apiVersion: autoscaling/v2
+   kind: HorizontalPodAutoscaler
+   metadata:
+     name: nginx-hpa
+     namespace: default
+   spec:
+     # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
+     scaleTargetRef:
+       apiVersion: apps/v1
+       kind: Deployment
+       name: nginx-deployment
+     # HPA的最小pod数量和最大pod数量
+     minReplicas: 1
+     maxReplicas: 10
+     behavior:
+       scaleDown:
+         stabilizationWindowSeconds: 300 #稳定窗口
+         policies:
+         - type: Percent
+           value: 100
+           periodSeconds: 15
+       scaleUp:
+         stabilizationWindowSeconds: 0
+         policies:
+         - type: Percent
+           value: 100
+           periodSeconds: 15
+         - type: Pods
+           value: 4
+           periodSeconds: 15
+         selectPolicy: Max
+         #selectPolicy: Min
+         #selectPolicy: Disabled
 
 
-      # 监控的指标数组，支持多种类型的指标共存
-      metrics:
-      # ContainerResource类型的指标[k8s1.30+]
-      - type: ContainerResource
-        containerResource:
-          name: cpu
-          container: nginx
-          # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
-          target:
-            type: Utilization
-            averageUtilization: 10
-          #name: memory
-          #target:
-          #  type: Utilization
-          #  averageUtilization: 60
-    ```
+     # 监控的指标数组，支持多种类型的指标共存
+     metrics:
+     # ContainerResource类型的指标[k8s1.30+]
+     - type: ContainerResource
+       containerResource:
+         name: cpu
+         container: nginx
+         # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
+         target:
+           type: Utilization
+           averageUtilization: 10
+         #name: memory
+         #target:
+         #  type: Utilization
+         #  averageUtilization: 60
+   ```
 
-    HPA支持的四种类型的指标
+   HPA支持的四种类型的指标
 
-    ```yaml
-    apiVersion: autoscaling/v2beta2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: php-apache
-      namespace: default
-    spec:
-      # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: php-apache
-      # HPA的最小pod数量和最大pod数量
-      minReplicas: 1
-      maxReplicas: 10
-      # 监控的指标数组，支持多种类型的指标共存
-      metrics:
-      # Object类型的指标
-      - type: Object
-        object:
-          metric:
-            # 指标名称
-            name: requests-per-second
-          # 监控指标的对象描述，指标数据来源于该对象
-          describedObject:
-            apiVersion: networking.k8s.io/v1beta1
-            kind: Ingress
-            name: main-route
-          # Value类型的目标值，Object类型的指标只支持Value和AverageValue类型的目标值
-          target:
-            type: Value
-            value: 10k
-      # Resource类型的指标
-      - type: Resource
-        resource:
-          name: cpu
-          # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
-          target:
-            type: Utilization
-            averageUtilization: 50
-      # Pods类型的指标
-      - type: Pods
-        pods:
-          metric:
-            name: packets-per-second
-          # AverageValue类型的目标值，Pods指标类型下只支持AverageValue类型的目标值
-          target:
-            type: AverageValue
-            averageValue: 1k
-      # External类型的指标
-      - type: External
-        external:
-          metric:
-            name: queue_messages_ready
-            # 该字段与第三方的指标标签相关联，（此处官方文档有问题，正确的写法如下）
-            selector:
-              matchLabels:
-                env: "stage"
-                app: "myapp"
-          # External指标类型下只支持Value和AverageValue类型的目标值
-          target:
-            type: AverageValue
-            averageValue: 30
-    ```
+   ```yaml
+   apiVersion: autoscaling/v2beta2
+   kind: HorizontalPodAutoscaler
+   metadata:
+     name: php-apache
+     namespace: default
+   spec:
+     # HPA的伸缩对象描述，HPA会动态修改该对象的pod数量
+     scaleTargetRef:
+       apiVersion: apps/v1
+       kind: Deployment
+       name: php-apache
+     # HPA的最小pod数量和最大pod数量
+     minReplicas: 1
+     maxReplicas: 10
+     # 监控的指标数组，支持多种类型的指标共存
+     metrics:
+     # Object类型的指标
+     - type: Object
+       object:
+         metric:
+           # 指标名称
+           name: requests-per-second
+         # 监控指标的对象描述，指标数据来源于该对象
+         describedObject:
+           apiVersion: networking.k8s.io/v1beta1
+           kind: Ingress
+           name: main-route
+         # Value类型的目标值，Object类型的指标只支持Value和AverageValue类型的目标值
+         target:
+           type: Value
+           value: 10k
+     # Resource类型的指标
+     - type: Resource
+       resource:
+         name: cpu
+         # Utilization类型的目标值，Resource类型的指标只支持Utilization和AverageValue类型的目标值
+         target:
+           type: Utilization
+           averageUtilization: 50
+     # Pods类型的指标
+     - type: Pods
+       pods:
+         metric:
+           name: packets-per-second
+         # AverageValue类型的目标值，Pods指标类型下只支持AverageValue类型的目标值
+         target:
+           type: AverageValue
+           averageValue: 1k
+     # External类型的指标
+     - type: External
+       external:
+         metric:
+           name: queue_messages_ready
+           # 该字段与第三方的指标标签相关联，（此处官方文档有问题，正确的写法如下）
+           selector:
+             matchLabels:
+               env: "stage"
+               app: "myapp"
+         # External指标类型下只支持Value和AverageValue类型的目标值
+         target:
+           type: AverageValue
+           averageValue: 30
+   ```
 
-    使用prometheus-adapter提供custom和external接口，以为HPA提供Pods和External两种类型的指标
+   使用prometheus-adapter提供custom和external接口，以为HPA提供Pods和External两种类型的指标
 
 ```yaml
 # values.yaml  when install prometheus-adapter with helm
@@ -986,13 +1056,13 @@ kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/{namespace_n
 
 1. [X] Guaranteed
 
-    Pod 里的每个容器都必须有内存/CPU 限制和请求，而且值必须相等
+   Pod 里的每个容器都必须有内存/CPU 限制和请求，而且值必须相等
 2. [X] Burstable
 
-    Pod 里至少有一个容器有内存或者 CPU 请求且不满足 Guarantee 等级的要求，即内存/CPU 的值设置的不同
+   Pod 里至少有一个容器有内存或者 CPU 请求且不满足 Guarantee 等级的要求，即内存/CPU 的值设置的不同
 3. [X] BestEffort
 
-    容器必须没有任何内存或者 CPU 的限制或请求
+   容器必须没有任何内存或者 CPU 的限制或请求
 
 ---
 
@@ -1056,50 +1126,54 @@ spec:
 
 ##### 计算资源配额
 
-| 资源名称             | 描述                                                               |
-| -------------------- | ------------------------------------------------------------------ |
-| limits.cpu           | 所有非终止状态的 Pod，其 CPU 限额总量不能超过该值。                |
-| limits.memory        | 所有非终止状态的 Pod，其内存限额总量不能超过该值。                 |
-| requests.cpu         | 所有非终止状态的 Pod，其 CPU 需求总量不能超过该值。                |
-| requests.memory      | 所有非终止状态的 Pod，其内存需求总量不能超过该值。                 |
+
+| 资源名称           | 描述                                                               |
+| ------------------ | ------------------------------------------------------------------ |
+| limits.cpu         | 所有非终止状态的 Pod，其 CPU 限额总量不能超过该值。                |
+| limits.memory      | 所有非终止状态的 Pod，其内存限额总量不能超过该值。                 |
+| requests.cpu       | 所有非终止状态的 Pod，其 CPU 需求总量不能超过该值。                |
+| requests.memory    | 所有非终止状态的 Pod，其内存需求总量不能超过该值。                 |
 | hugepages-`<size>` | 对于所有非终止状态的 Pod，针对指定尺寸的巨页请求总数不能超过此值。 |
-| cpu                  | 与 `requests.cpu` 相同。                                         |
-| memory               | 与 `requests.memory`相同。                                       |
+| cpu                | 与`requests.cpu` 相同。                                            |
+| memory             | 与`requests.memory`相同。                                          |
 
 ##### 存储资源配额
 
-| 资源名称                                                                    | 描述                                                                                                                                                                                  |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| requests.storage                                                            | 所有 PVC，存储资源的需求总量不能超过该值                                                                                                                                              |
-| persistentvolumeclaims                                                      | 在该命名空间中所允许的[PVC](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) 总量。                                                         |
-| `<storage-class-name>`.storageclass.storage.k8s.io/requests.storage       | 在所有与 `<storage-class-name>` 相关的持久卷申领中，<br />存储请求的总和不能超过该值。                                                                                              |
+
+| 资源名称                                                                  | 描述                                                                                                                                                                                     |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| requests.storage                                                          | 所有 PVC，存储资源的需求总量不能超过该值                                                                                                                                                 |
+| persistentvolumeclaims                                                    | 在该命名空间中所允许的[PVC](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) 总量。                                                         |
+| `<storage-class-name>`.storageclass.storage.k8s.io/requests.storage       | 在所有与`<storage-class-name>` 相关的持久卷申领中，<br />存储请求的总和不能超过该值。                                                                                                    |
 | `<storage-class-name>`.storageclass.storage.k8s.io/persistentvolumeclaims | 在与 storage-class-name 相关的所有持久卷申领中，<br />命名空间中可以存在的[持久卷申领](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims)总数 |
-| requests.ephemeral-storage                                                  | 在命名空间的所有 Pod 中，本地临时存储请求的总和不能超过此值。                                                                                                                         |
-| limits.ephemeral-storage                                                    | 在命名空间的所有 Pod 中，本地临时存储限制值的总和不能超过此值。                                                                                                                       |
-| ephemeral-storage                                                           | 与 `requests.ephemeral-storage` 相同。                                                                                                                                              |
+| requests.ephemeral-storage                                                | 在命名空间的所有 Pod 中，本地临时存储请求的总和不能超过此值。                                                                                                                            |
+| limits.ephemeral-storage                                                  | 在命名空间的所有 Pod 中，本地临时存储限制值的总和不能超过此值。                                                                                                                          |
+| ephemeral-storage                                                         | 与`requests.ephemeral-storage` 相同。                                                                                                                                                    |
 
 ##### 对象数量配额
 
-| 资源名称               | 描述                                                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| configmaps             | 在该命名空间中允许存在的 ConfigMap 总数上限                                                                                           |
+
+| 资源名称               | 描述                                                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| configmaps             | 在该命名空间中允许存在的 ConfigMap 总数上限                                                                                              |
 | persistentvolumeclaims | 在该命名空间中允许存在的[PVC](https://kubernetes.io/zh-cn/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) 的总数上限。 |
-| pods                   | 在该命名空间中允许存在的非终止状态的 Pod 总数上限。Pod 终止状态等价于 Pod 的 `.status.phase in (Failed, Succeeded)` 为真            |
-| replicationcontrollers | 在该命名空间中允许存在的 ReplicationController 总数上限。                                                                             |
-| resourcequotas         | 在该命名空间中允许存在的 ResourceQuota 总数上限。                                                                                     |
-| services               | 在该命名空间中允许存在的 Service 总数上限                                                                                             |
-| services.loadbalancers | 在该命名空间中允许存在的 LoadBalancer 类型的 Service 总数上限                                                                         |
-| services.nodeports     | 在该命名空间中允许存在的 NodePort 或 LoadBalancer 类型的 Service 的 NodePort 总数上限。                                               |
-| secrets                | 在该命名空间中允许存在的 Secret 总数上限。                                                                                            |
+| pods                   | 在该命名空间中允许存在的非终止状态的 Pod 总数上限。Pod 终止状态等价于 Pod 的`.status.phase in (Failed, Succeeded)` 为真                  |
+| replicationcontrollers | 在该命名空间中允许存在的 ReplicationController 总数上限。                                                                                |
+| resourcequotas         | 在该命名空间中允许存在的 ResourceQuota 总数上限。                                                                                        |
+| services               | 在该命名空间中允许存在的 Service 总数上限                                                                                                |
+| services.loadbalancers | 在该命名空间中允许存在的 LoadBalancer 类型的 Service 总数上限                                                                            |
+| services.nodeports     | 在该命名空间中允许存在的 NodePort 或 LoadBalancer 类型的 Service 的 NodePort 总数上限。                                                  |
+| secrets                | 在该命名空间中允许存在的 Secret 总数上限。                                                                                               |
 
 ##### 配额作用域
 
-| 作用域                    | 描述                                                                                                                         |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Terminating               | 匹配所有 `spec.activeDeadlineSeconds` 不小于 0 的 Pod                                                                      |
-| NotTerminating            | 匹配所有 `spec.activeDeadlineSeconds` 是 nil 的 Pod                                                                        |
-| BestEffort                | 匹配所有 Qos 是 BestEffort 的 Pod                                                                                            |
-| NotBestEffort             | 匹配所有 Qos 不是 BestEffort 的 Pod。                                                                                        |
+
+| 作用域                    | 描述                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Terminating               | 匹配所有`spec.activeDeadlineSeconds` 不小于 0 的 Pod                                                                            |
+| NotTerminating            | 匹配所有`spec.activeDeadlineSeconds` 是 nil 的 Pod                                                                              |
+| BestEffort                | 匹配所有 Qos 是 BestEffort 的 Pod                                                                                               |
+| NotBestEffort             | 匹配所有 Qos 不是 BestEffort 的 Pod。                                                                                           |
 | PriorityClass             | 匹配所有引用了所指定的[优先级类](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/pod-priority-preemption)的 Pod。 |
 | CrossNamespacePodAffinity | 匹配那些设置了跨名字空间[（反）亲和性条件](https://kubernetes.io/zh-cn/docs/concepts/scheduling-eviction/assign-pod-node)的 Pod |
 
@@ -1278,30 +1352,37 @@ spec:
 
 1. [X] docker
 
-    ```shell
-    # vim /etc/docker/daemon.json
+   ```shell
+   # vim /etc/docker/daemon.json
 
-    {
-      "registry-mirrors": ["http://f613ce8f.m.daocloud.io"],
-      "log-driver":"json-file",
-      "log-opts": {"max-size":"500m", "max-file":"3"}   
-    }
-    ```
+   {
+     "registry-mirrors": ["http://f613ce8f.m.daocloud.io"],
+     "log-driver":"json-file",
+     "log-opts": {"max-size":"500m", "max-file":"3"},
+     "data-root": "/home/xxx"    # 默认存储目录
+   }
+   ```
 2. [X] containerd
-    kubelet的配置文件中，添加如下配置：
+   kubelet的配置文件中，添加如下配置：
 
-    ```shell
-    --container-log-max-files=10
-    --container-log-max-size="100Mi"
-    ```
+   ```shell
+   --container-log-max-files=10
+   --container-log-max-size="100Mi"
 
----
+   # kubelet配置文件
 
-### 如何修改docker的默认存储路径，为什么要修改
+   # 主配置，主配置中会加载多个子配置
+   /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
 
-/etc/docker/daemon.json:
+   # 子配置
+   /etc/kubernetes/kubelet.conf
+   /var/lib/kubelet/config.yaml
+   /var/lib/kubelet/kubeadm-flags.env
+   /etc/sysconfig/kubelet
 
-"data-root/graph": "/home/xxx"
+   # kubelet启动命令加载多个ARGS变量，可以把自定义配置添加到合适的ARGS变量中，推荐$KUBELET_EXTRA_ARGS
+   /usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+   ```
 
 ---
 
@@ -1310,7 +1391,7 @@ spec:
 1. service
 
    1. [X] ClusterIP
-       1.1 无头服务
+      1.1 无头服务
    2. [X] NodePort
    3. [X] Loadbalancer
    4. [X] ExternalIP
@@ -1343,13 +1424,13 @@ svc的externalTrafficPolicy选项设置为Local
 3. [X] hostport通过iptables防火墙的nat表进行转发，hostNetwork 直接通过主机端口到容器中
 4. [X] 配置层级不同：
 
-    hostPort是container级别
+   hostPort是container级别
 
-    deploy.spec.template.spec.containers.ports.hostPort
+   deploy.spec.template.spec.containers.ports.hostPort
 
-    hostNetwork是pod级别
+   hostNetwork是pod级别
 
-    deploy.spec.template.spec.hostNetwork
+   deploy.spec.template.spec.hostNetwork
 
 * [X] 优先级不同，hostNetwork高于hostPort
 
@@ -1483,112 +1564,112 @@ spec:
 2. [X] nodeName
 3. [X] taints & tolerations (污点和容忍度) `<pod.spec.tolerations>`
 
-    ```yaml
-    tolerations:
-    - key: "node-role.kubernetes.io/control-plane"
-      operator: "Equal"
-      value: "value1"
-      effect: "NoSchedule"
-      tolerationSeconds: 3600
-    #- key: "key1"
-    #  operator: "Exists"
-    #  effect: "NoSchedule"
+   ```yaml
+   tolerations:
+   - key: "node-role.kubernetes.io/control-plane"
+     operator: "Equal"
+     value: "value1"
+     effect: "NoSchedule"
+     tolerationSeconds: 3600
+   #- key: "key1"
+   #  operator: "Exists"
+   #  effect: "NoSchedule"
 
-    # 如果 operator 是 Equal，则toleration的key、value都必须与污点相同
-    # 此时如果effect 为空，表示可以与键名为key的任意效果相匹配。
+   # 如果 operator 是 Equal，则toleration的key、value都必须与污点相同
+   # 此时如果effect 为空，表示可以与键名为key的任意效果相匹配。
 
-    # 如果 operator 是 Exists,容忍度不能指定value，且key和effect都可以为空或省略
-    # 如果一个容忍度的 key 为空且 operator 为 Exists， 
-    # 表示这个容忍度与任意的 key、value 和 effect 都匹配，即这个容忍度能容忍任何污点。
+   # 如果 operator 是 Exists,容忍度不能指定value，且key和effect都可以为空或省略
+   # 如果一个容忍度的 key 为空且 operator 为 Exists， 
+   # 表示这个容忍度与任意的 key、value 和 effect 都匹配，即这个容忍度能容忍任何污点。
 
-    ```
+   ```
 4. [X] 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )
-    4.1 node亲和性 `<pod.spec.affinity>`
+   4.1 node亲和性 `<pod.spec.affinity>`
 
-    ```yaml
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: kubernetes.io/e2e-az-name
-              operator: In
-              values:
-              - e2e-az1
-              - e2e-az2
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: another-node-label-key
-              operator: In
-              values:
-              - another-node-label-value
+   ```yaml
+   affinity:
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+         - matchExpressions:
+           - key: kubernetes.io/e2e-az-name
+             operator: In
+             values:
+             - e2e-az1
+             - e2e-az2
+       preferredDuringSchedulingIgnoredDuringExecution:
+       - weight: 1
+         preference:
+           matchExpressions:
+           - key: another-node-label-key
+             operator: In
+             values:
+             - another-node-label-value
 
-    # requiredDuringSchedulingIgnoredDuringExecution，这个是必须满足
-    # preferredDuringSchedulingIgnoredDuringExecution，这个是优先满足，如果实在不能满足的话，则允许一些pod在其它地方运行
-    # In，NotIn，Exists，DoesNotExist，Gt，Lt。你可以使用 NotIn 和 DoesNotExist 来实现节点反亲和行为，
-    # 或者使用节点污点将 #pod 从特定节点中驱逐。
-    # 如果同时指定了nodeSelector 和 nodeAffinity，两者必须都要满足，才能将 pod 调度到候选节点上。
-    # 如果指定多个与 nodeAffinity 类型关联的 nodeSelectorTerms，其中一个 nodeSelectorTerms满足即可调度
-    # 如果指定多个与 nodeSelectorTerms 关联的 matchExpressions，必须所有 matchExpressions 满足才能调度
-    ```
+   # requiredDuringSchedulingIgnoredDuringExecution，这个是必须满足
+   # preferredDuringSchedulingIgnoredDuringExecution，这个是优先满足，如果实在不能满足的话，则允许一些pod在其它地方运行
+   # In，NotIn，Exists，DoesNotExist，Gt，Lt。你可以使用 NotIn 和 DoesNotExist 来实现节点反亲和行为，
+   # 或者使用节点污点将 #pod 从特定节点中驱逐。
+   # 如果同时指定了nodeSelector 和 nodeAffinity，两者必须都要满足，才能将 pod 调度到候选节点上。
+   # 如果指定多个与 nodeAffinity 类型关联的 nodeSelectorTerms，其中一个 nodeSelectorTerms满足即可调度
+   # 如果指定多个与 nodeSelectorTerms 关联的 matchExpressions，必须所有 matchExpressions 满足才能调度
+   ```
 
-    4.2 Pod亲和性
+   4.2 Pod亲和性
 
-    ```yaml
-    affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - web-store
-          topologyKey: "kubernetes.io/hostname"
-      podAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - store
-          topologyKey: "kubernetes.io/hostname"
+   ```yaml
+   affinity:
+     podAntiAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+       - labelSelector:
+           matchExpressions:
+           - key: app
+             operator: In
+             values:
+             - web-store
+         topologyKey: "kubernetes.io/hostname"
+     podAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+       - labelSelector:
+           matchExpressions:
+           - key: app
+             operator: In
+             values:
+             - store
+         topologyKey: "kubernetes.io/hostname"
 
-    # topologyKey可以设置成如下几种类型
-    #kubernetes.io/hostname　　＃Node
-    #failure-domain.beta.kubernetes.io/zone　＃Zone
-    #failure-domain.beta.kubernetes.io/region #Region
-    #可以设置node上的label的值来表示node的name,zone,region等信息，pod的规则中指定topologykey的值表示指定topology范围内的node上运行的pod满足指定规则
-    ```
+   # topologyKey可以设置成如下几种类型
+   #kubernetes.io/hostname　　＃Node
+   #failure-domain.beta.kubernetes.io/zone　＃Zone
+   #failure-domain.beta.kubernetes.io/region #Region
+   #可以设置node上的label的值来表示node的name,zone,region等信息，pod的规则中指定topologykey的值表示指定topology范围内的node上运行的pod满足指定规则
+   ```
 
-    示例：node硬亲和、Pod软反亲和
+   示例：node硬亲和、Pod软反亲和
 
-    ```yaml
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: abc.com/zhongtai
-              operator: In
-              values:
-              - standard
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 50
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - nginx
-            topologyKey: "kubernetes.io/hostname"
+   ```yaml
+   affinity:
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+         - matchExpressions:
+           - key: abc.com/zhongtai
+             operator: In
+             values:
+             - standard
+     podAntiAffinity:
+       preferredDuringSchedulingIgnoredDuringExecution:
+       - weight: 50
+         podAffinityTerm:
+           labelSelector:
+             matchExpressions:
+             - key: app
+               operator: In
+               values:
+               - nginx
+           topologyKey: "kubernetes.io/hostname"
 
-    ```
+   ```
 
 ---
 
