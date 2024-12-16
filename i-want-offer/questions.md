@@ -103,6 +103,37 @@ chronyc makestep
 
 ntp
 
+---
+
+### CentOS 7 单用户模式
+
+```shell
+在系统开始引导前按e键进入编辑模式
+对“linux16"开头的行做如下修改:
+# method1
+ro ---> rw init=/bin/sh
+然后ctr+x进入单用户模式
+chroot /sysroot
+passwd修改密码
+touch /.autorelabel   # 如果确认系统的Selinux是关闭的，则此步骤可以省略
+exit # 退出sysroot
+reboot # 重启
+
+# method2
+直接在行尾添加init=/bin/sh
+ctr+x进入单用户模式
+mount -o remount,rw /
+passwd修改密码
+touch /.autorelabel   # 如果确认系统的Selinux是关闭的，则此步骤可以省略
+exec /sbin/init  # 重启
+
+# 关于/.autorelabel
+在单用户模式下，修改用户密码后必须执行重新标记SElinux文件系统的操作，否则修改密码不能成功
+/.autorelabel文件的作用是，在系统重新启动的时候修正档案的预设security context(安全上下文)，因为在系统启动时发现存在/.autorelabel文件，就会调用fixfiles命令对整个文件系统进行relabeling。
+```
+
+---
+
 ### mysql索引类型
 
 ---
@@ -204,6 +235,25 @@ redis-server /usr/local/redis-cluster/6380/redis_6380.conf
   # 删除节点
   redis-cli --cluster del-node 10.203.43.151:6379 <node-id>
   ```
+
+---
+
+### Reddis雪崩、击穿和穿透
+
+![img](img/redis-1.png)
+
+---
+
+### Redis大key
+
+* [ ] 定义
+  并非真正指key过大，而是key所对应的value过大，比如string>100KB或者集合成员>5000
+* [ ] 危害
+  响应时间过长、进程阻塞、带宽消耗大
+* [ ] 应对措施
+  避免生产大key,拆分成若干个key,(代码层面是要做改动的)
+  找出并删除掉大key ，Redis中的SCAN、bigkeys(阻塞操作，不要在业务高峰期执行),然后清理掉大key，使用unlink（功能等同于del，但是后台执行，不阻塞工作进程）
+  添加监控策略，监控Redis的总体内存使用情况，或者内存在一段时间内的增长率，如果内存的使用率突然直线上升，一般都意味着有异常状况
 
 ---
 
@@ -2005,13 +2055,18 @@ server {
 #### ngx_http_proxy_module模块的proxy_pass用在location段
 
 ```
+upstream backend {
+   server 10.203.43.109 8090 weight 5;
+   server 10.203.43.110 8090 weight 2;
+   server 10.203.43.111 8090 weight 3;
+}
 server {
     listen      80;
     server_name www.test.com;
  
     # 正常代理，不修改后端url的
     location /some/path/ {
-        proxy_pass http://127.0.0.1;
+        proxy_pass http://backend;
     }
  
     # 修改后端url地址的代理（本例后端地址中，最后带了一个斜线)

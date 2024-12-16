@@ -527,18 +527,36 @@ staticPodPath: /etc/kubernetes/manifests
 
 ---
 
-### deployment和statefulSet
+### statefulSet和deployment
 
 deployment--->rs---->pod
 
 1. [X] 有状态应用
+
+    有状态应用是指应用的多个实例需要持久化状态，每个实例有其独特的身份和持久化的数据存储，不可互换
+
+    **特点** ：
+
+* **持久化标识** ：每个实例都有一个持久化的身份标识，即使在重新调度后也能保持不变。
+* **持久化存储** ：为每个实例提供持久化存储，即使实例被重新调度，其存储也不会丢失。
+* **有序部署、扩展和删除** ：StatefulSets 确保应用实例按顺序启动和关闭，这对于依赖特定启动顺序的应用非常重要。
+* **头尾依赖** ：StatefulSets 支持有序的依赖关系，即一个实例的启动可能依赖于前一个实例的状态。
+
 2. [X] 无状态应用
+
+    无状态应用是指应用的多个实例之间没有持久化状态，每个实例都是独立的，并且可以互换。这意味着任何实例都可以处理任何请求，不需要持久化数据
+
+    **特点** ：
+
+* **可扩展性** ：由于没有状态，可以很容易地增加或减少实例数量来应对负载变化。
+* **容错性** ：单个实例的故障不会影响整个应用，因为其他实例可以接管其工作。
+* **简单性** ：由于不需要管理状态，部署和管理相对简单。
 
 ---
 
 ### 如何调整deployment的副本数？
 
-* [X] kubectl scale
+* [X] kubectl scale¸
 * [X] kubectl edit
 * [X] kubectl apply -f
 
@@ -573,7 +591,6 @@ kubectl debug <pod_name> -it --image=ubuntu --share-processes --copy-to <pod_nam
 ### nsenter命令进行调试(该指令位于util-linux包中)
 
 进入到**指定进程的namespace下运行本机指令，类似于进入到容器内部执行操作，可用作镜像内缺少调试工具时的调试手段**
-
 
 ```shell
 nsenter --help
@@ -1603,7 +1620,7 @@ svc的externalTrafficPolicy选项设置为Local
 
 ---
 
-### hostPort、hostNetwork的区别？
+### hostPort、hostNetwork的区别？`<pod.spec.containers.ports.hostPort> <pod.spec.hostNetwork>`
 
 1. [X] 网络地址空间不同。hostport使用CNI分配的地址，hostNetwork使用宿主机网络地址空间；
 2. [X] 宿主机端口生成。hostport宿主机不生成端口，hostNetwork宿主机生成端口；
@@ -1669,7 +1686,7 @@ spec:
 
 ---
 
-### pod的DNS配置
+### pod的DNS配置 `<pod.spec.dnsPolicy>`
 
 * [X] dnsPolicy
 
@@ -1728,7 +1745,7 @@ spec:
 
 ---
 
-### pod的主机名和/etc/hosts配置
+### pod的主机名和/etc/hosts配置 `<pod.spec.hostname> <pod.spec.hostAliases>`
 
 ```yaml
 # 自定义/etc/hosts文件内容
@@ -1776,7 +1793,7 @@ spec:
 
 ---
 
-### Pod的重启策略
+### Pod的重启策略 `<pod.spec.restartPolicy>`
 
 1. [X] Always：容器失效时，自动重启该容器，这是默认值
 2. [X] OnFailure：容器停止运行且退出码不为0时重启
@@ -1794,8 +1811,8 @@ spec:
 
 ### pod的调度策略有哪些
 
-1. [X] nodeSelector
-2. [X] nodeName
+1. [X] nodeSelector `<pod.spec.nodeSelector>`
+2. [X] nodeName `<pod.spec.nodeName>`
 3. [X] taints & tolerations (污点和容忍度) `<pod.spec.tolerations>`
 
     ```yaml
@@ -1817,8 +1834,8 @@ spec:
     # 表示这个容忍度与任意的 key、value 和 effect 都匹配，即这个容忍度能容忍任何污点。
 
     ```
-4. [X] 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )
-    4.1 node亲和性 `<pod.spec.affinity>`
+4. [X] 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )` <pod.spec.affinity>`
+    4.1 node亲和性
 
     ```yaml
     affinity:
@@ -1909,7 +1926,7 @@ spec:
 
 ### pod通过环境变量将信息传递给容器
 
-##### 传递方式
+##### 传递方式 `<pod.spec.containers.env>`
 
 ```yaml
 # 直接赋值
@@ -1990,14 +2007,14 @@ ADMIN_WEB_PC_TEST_PORT_80_TCP_PROTO=tcp
 
 ### PDB(Pod Disruption Budgets)    k8s v1.21之后才成为stable版本
 
-对于对 高可用要求很高的一些[容器](https://cloud.tencent.com/product/tke?from_column=20065&from=20065)化应用，例如一些 有状态的工作负载，比如[数据库](https://cloud.tencent.com/solution/database?from_column=20065&from=20065)，分布式协调服务等， K8s 集群中 Pod 频繁的调度是不能容忍的一件事。尤其涉及到应用集群数据 同步，共识，心跳等诸多因素. 容易造成可用性降低，数据延迟甚至潜在的**数据丢失**。
+对于对 高可用要求很高的一些[容器](https://cloud.tencent.com/product/tke?from_column=20065&from=20065)化应用，例如一些有状态的工作负载，比如[数据库](https://cloud.tencent.com/solution/database?from_column=20065&from=20065)，分布式协调服务等， K8s 集群中 Pod 频繁的调度是不能容忍的一件事。尤其涉及到应用集群数据同步，共识，心跳等诸多因素. 容易造成可用性降低，数据延迟甚至潜在的**数据丢失**。
 
-集群中的 Pod 正常情况下不会频繁的调度，即使存在大量的超售超用，也可以通过 Qos 等手段在准入的时候控制。当然，除非有人操作，或者节点故障等一些因素的干扰
+集群中的 Pod 正常情况下不会频繁的调度，即使存在大量的超售超用，也可以通过 QoS等手段在准入的时候控制。当然，除非有人操作，或者节点故障等一些因素的干扰
 
 * [ ] 自愿干扰
 * [ ] 非自愿干扰
 
-用最简单的话描述，`Pod Disruption Budgets(PDB)`是 K8s 中的一项功能，可以确保在进行 维护、升级或扩展集群等自愿操作时，不会影响应用程序的 稳定性，从而提高可用性。
+用最简单的话描述，`Pod Disruption Budgets(PDB)`是 K8s 中的一项功能，可以确保在进行维护、升级或扩展集群等自愿操作时，不会影响应用程序的稳定性，从而提高可用性。
 
 一个 PodDisruptionBudget 有 3 个字段：
 
@@ -2030,8 +2047,51 @@ spec:
 ```
 
 1. 用户在同一个 `PodDisruptionBudget` 中只能够指定 `maxUnavailable` 和 `minAvailable` 中的一个。
-2. `maxUnavailable` 只能够用于控制存在 相应控制器的 Pod 的驱逐（即不受控制器控制的 Pod 不在 `maxUnavailable` 控制范围内）。
+2. `maxUnavailable` 只能够用于控制存在相应控制器的 Pod 的驱逐（即不受控制器控制的 Pod 不在 `maxUnavailable` 控制范围内）。
 3. 如果将 `maxUnavailable` 的值设置为 0%（或 0）或设置 minAvailable 值为 100%（或等于副本数） 则会阻止所有的自愿驱逐。将无法成功地腾空(drain )运行其中一个 Pod 的节点.
+
+---
+
+### k8s networkPolicy
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      role: db
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 172.17.0.0/16
+        except:
+        - 172.17.1.0/24
+    - namespaceSelector:
+        matchLabels:
+          project: myproject
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.0.0.0/24
+    ports:
+    - protocol: TCP
+      port: 5978
+```
+
+
 
 ---
 
