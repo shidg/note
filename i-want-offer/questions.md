@@ -70,7 +70,7 @@ chronyd
 ```shell
 # chronyc命令行接口
 
-# chronyc tracing
+# chronyc tracking
 
 chronyc tracking 显示的信息是 chronyd 服务当前同步状态的快照。主要包括正在同步的远程服务器的 ID、系统在 NTP 层次中的位置（stratum）、系统时间与 NTP 时间的差异，以及其他一些信息。如果系统时间与 NTP 时间的差异接近于 0，并且显示 "Leap status : Normal"，那么同步状态可以认为是正常的。
 
@@ -134,7 +134,123 @@ exec /sbin/init  # 重启
 
 ---
 
-### mysql索引类型
+### MySQL索引类型
+
+---
+
+### MySQL组复制（MGR  MySQL Group Replication）
+
+```shell
+# 前提条件
+MySQL版本5.7.17+
+存储引擎必须是Innodb，并且每张表一定要有主键，用于解决write冲突
+必须打开GTID特性
+binlog日志格式必须设置为ROW   [Statement,ROW,MiXED]
+目前一个MGR集群组最多支持9个节点
+
+
+# 部署过程。docker 运行MySQL8
+# 事先准备好my.cnf和plugin目录下的所有.so文件
+
+docker run -d --name mysql \
+-v /data/volumes/mysql/data:/var/lib/mysql \
+-v /data/volumes/mysql/conf/my.cnf:/etc/my.cnf \
+-v /data/volumes/mysql/plugin:/usr/lib64/mysql/plugin \
+-v /data/volumes/mysql/logs:/logs \
+--net=host \    # 三个实例要互相通信，这里使用主机网络
+--hostname=db1  # 三个MySQL实例主机名唯一
+--add-host=db1:10.203.43.170 \
+--add-host=db2:10.203.43.171 \
+--add-host=db3:10.203.43.172 \
+-e MYSQL_ROOT_PASSWORD=admin \
+harbor.baway.org.cn/library/mysql:8.0.40
+
+my.cnf内容如下:
+[mysqld]
+# Remove leading # to revert to previous value for default_authentication_plugin,
+# this will increase compatibility with older clients. For background, see:
+# https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_default_authentication_plugin
+# default-authentication-plugin=mysql_native_password
+skip-host-cache
+skip-name-resolve
+datadir=/var/lib/mysql
+socket=/var/run/mysqld/mysqld.sock
+secure-file-priv=/var/lib/mysql-files
+user=mysql
+disabled_storage_engines="MyISAM,BLACKHOLE,FEDERATED,ARCHIVE,MEMORY" # 禁用InnoDB之外的存储引擎
+
+# MGR相关配置
+server_id=1   # 各节点不能冲突
+gtid_mode=ON
+enforce_gtid_consistency=ON
+master_info_repository=TABLE
+relay_log_info_repository=TABLE
+log_bin=binlog
+binlog_format=ROW
+log_slave_updates=ON
+binlog_checksum=NONE
+transaction_write_set_extraction=XXHASH64
+loose-group_replication_recovery_use_ssl=ON
+loose-group_replication_group_name="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"  #组id,自定义，内容随意，格式正确即可ß
+loose-group_replication_start_on_boot=OFF
+loose-group_replication_local_address= "db1:33061"   # 主机名和ip的对应关系要写入/etc/hosts，端口号自定义
+loose-group_replication_group_seeds= "db1:33061,db2:33061,db3:33061"
+loose-group_replication_bootstrap_group=OFF
+loose-group_replication_member_weight=50   # 优先级越高，越被优先选举为新master
+loose-group_replication_single_primary_mode=TRUE  # 开启单主模式
+loose-group_replication_enforce_update_everywhere_checks=FALSE  # 关闭多主模式
+
+pid-file=/var/run/mysqld/mysqld.pid
+[client]
+socket=/var/run/mysqld/mysqld.sock
+
+!includedir /etc/mysql/conf.d/
+
+# 创建同步账号，3台服务器均执行
+mysql>CREATE USER rpl_user@'%' IDENTIFIED BY 'asAS123456!';
+mysql>GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%';
+mysql>FLUSH PRIVILEGES;
+mysql>RESET MASTER; 
+# 因为刚才Binglog包含创建用户这种高权限操作，用于主从同步的账户没有权限执行,RelayLog重放无法正确执行，导致从属服务器卡死在"RECEVERING"状态
+# RESET MASTER删除这些无法执行的binlog
+
+
+# 安装mrg插件，3台服务器均执行
+mysql> INSTALL PLUGIN group_replication SONAME 'group_replication.so';
+
+# primary节点开始组复制
+# 之前在配置文件中把 group_replication_bootstrap_group 参数设置成 OFF
+# 所以服务器启动时并不会直接启动复制组，通过下面的命令动态的开启复制组
+SET GLOBAL group_replication_bootstrap_group=ON;
+START GROUP_REPLICATION;
+SET GLOBAL group_replication_bootstrap_group=OFF;
+
+# 从节点开启组复制
+# 指定主从账户与指定通信频道
+CHANGE MASTER TO MASTER_USER="rpl_user", MASTER_PASSWORD="qaz123" FOR CHANNEL 'group_replication_recovery';
+# 开启组网数据同步
+START GROUP_REPLICATION;
+
+# 验证结果
+SELECT * FROM performance_schema.replication_group_members;
+
+
+```
+
+
+---
+
+### MySQL清空数据表
+
+```shell
+delete from <table_name>       #  不带where条件的delete
+truncate table <table_name>
+```
+
+效率上truncate比delete快，但truncate删除后不记录mysql日志，不可以恢复数据。
+delete的效果有点像将mysql表中所有记录一条一条删除到删完
+
+truncate相当于保留mysql表的结构，重新创建了这个表，所有的状态都相当于新表
 
 ---
 
@@ -3042,3 +3158,6 @@ Role-based Authorization Strategy插件的配置
 ---
 
 ### 13. 驻场过程中能够体现沟通能力的经典场景
+
+1.delete from 表名;
+2.truncate table 表名;

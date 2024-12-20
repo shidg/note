@@ -439,7 +439,7 @@ server = "http://harbor.baway.org.cn"
 
 ### POD生命周期？(POD有哪些阶段？)
 
-注意某些状态不属于pod的生命周期内的阶段，如 `Terminating`
+注意某些状态不属于pod的生命周期内的阶段，如 `Terminating、ErrImagePull、ImagePullBackOff、CrashLoopBackOff`
 
 | `Pending`（悬决）   | Pod 已被 Kubernetes 系统接受，但有一个或者多个容器尚未创建亦未运行。此阶段包括等待 Pod 被调度的时间和通过网络下载镜像的时间 |
 | :-------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -488,9 +488,48 @@ server = "http://harbor.baway.org.cn"
   # kube-scheduler and etcd, so that they can use the new certificates
   # 执行完此命令之后需要重启控制面Pod,并且如果是HA集群，需要在每个控制平面都执行同样的操作
 
+  # 以上操作不包含kubelet证书，需要手动对kubelet证书进行更新
 
+  # 备份kubelet配置文件（/etc/kubernetes/kubelet.conf)
+  mv /etc/kubernetes/kubelet.conf{,.back}
+  # 重新生成kubelet.conf
+  kubeadm init  phase kubeconfig kubelet  --config /root/kubeadm.yaml --node-name k8s-master1 --kubeconfig-dir /tmp/kubelet
+  # 参数解释
+  --config 指定当初初始化该集群的配置文件，该文件中包含了apiserver地址、k8s版本等必要信息。也可以不使用--config而是使用-control-plane-endpoint、--kubernetes-version来分别指定这些信息
+  --node-name 节点名称
+  --kubeconfig-dir 生成的配置文件存放在什么位置
 
+  # 将新生成的配置文件拷贝到/etc/kubernetes
+  cp /tmp/kubelet/kubelet.conf  /etc/kubernetes
+
+  # 重启kubelet服务
+  systemctl  restart kubelet
+
+  # 查看证书是否更新成功
+  ll /var/lib/kubelet/pki
+  kubelet-client-current.pem  # 查看该文件是否指向了最新的证书文件
+
+  # 更新KUBECONFIG
+  cp /etc/kubernetes/admin.conf ~/.kube/config
   ```
+
+---
+
+### kubelet证书的自动续期(kubelet证书轮换)(kubernetes版本1.8.0+)
+
+```shell
+kubelet 使用--rotate-certificates 参数来控制是否开启证书轮换
+cat /var/lib/kubelet/config.yaml
+……
+rotateCertificates: true   # 是否开启证书轮换
+……
+
+kube-controller-manager 使用--cluster-signing-duration参数来控制签发证书的有效期
+cat /etc/kubernetes/manifests/kube-controller-manager.yaml
+……
+- --cluster-signing-duration=87600h0m0s   # 有效期设置为1年
+……
+```
 
 ---
 
@@ -2091,8 +2130,6 @@ spec:
       port: 5978
 ```
 
-
-
 ---
 
 ### 如何排空一个work节点？
@@ -2156,8 +2193,11 @@ kubectl config --kubeconfig=config set-cluster develepment --server=https://1.2.
 kubectl config --kubeconfig=config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster>
 
 # 设置用户
-kubectl config --kubeconfig=config set-credentials developer c
+kubectl config --kubeconfig=config set-credentials developer --client-certificate=<dev.crt> --client-key=<dev.key>
+
 kubectl config --kubeconfig=config set-credentials tester --client-certificate=<tester.crt> --client-key=<tester.key>
+
+# 设置cluster和用户的时候都可以使用--embed-certs=true选项在kubeconfig配置文件中嵌入客户端证书/key
 
 # 设置上下文
 
@@ -2176,8 +2216,8 @@ kubectl config use-context  development
 # 生成用户证书
 username="my_user"
 openssl genrsa -out ${username}.key 2048
-openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username}/O=MGM". 
-#这里的CN为用户，O为组，分别对应RBAC中的User和Group
+openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username}/O=MGM"
+#这里的CN为用户，O为组，分别对应RBAC中的User和Group，这里如果设置为O=kubeadm:cluster-admins或者system:masters，则直接获得管理员权限
 
 openssl x509 -req -in ${username}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out ${username}.crt -days 3650
 
@@ -2196,6 +2236,11 @@ subjects:
   - kind: User
     name: ${username}
     apiGroup: ""
+
+
+# 也可以直接将多个集群的~/.kube/config定义到KUBECONFIG变量中(集群名称和用户名等信息不能相同)
+export KUBECONFIG=~/.kube/config-dev:~/.kube/config-pro:~/.kube/config-test
+kubectl  config  view --flatten > config-all # 将多个config进行合并
 ```
 
 特别注意：k8s的认证和鉴权是分开的，以上步骤只是实现使用不同的上下文来对不同的k8s集群进行认证，认证通过不代表有权限对k8s的资源进行操作，还需要使用RBAC对用户进行授权，确保用户在对应的namespace下具备必要的权限
