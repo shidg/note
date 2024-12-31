@@ -2583,7 +2583,7 @@ include       black.ip;
 
     此时报文的源IP为CIP，目标IP为RIP
 
-    3. POSTROUTING发给后端realy server[基于IP地址的转发，也就是三层转发，所以需要ip_forward是开启的]，realy server收到数据包发现目标ip是自己，然后向Director响应请求，
+    3. POSTROUTING发给后端realy server[IP包转发，也就是三层转发，所以需要ip_forward是开启的]，realy server收到数据包发现目标ip是自己，然后向Director响应请求，
 
     此时响应报文中的源IP地址信息为 RIP,目标地址IP为CIP
 
@@ -2631,7 +2631,7 @@ net.ipv4.conf.ens33.send_redirects = 0
 
     3. IPVS比对数据包请求的服务是否为集群服务，若是，将请求报文中的源MAC地址修改为DIP的MAC地址，将目标MAC地址修改RIP的MAC地址，然后将数据包发至POSTROUTING链。 此时的源IP和目的IP均未修改，仅修改了源MAC地址为DIP的MAC地址，目标MAC地址为RIP的MAC地址
 
-    4. 由于DS和RS在同一个网络中，所以是通过二层来传输。POSTROUTING链检查目标MAC地址为RIP的MAC地址，那么此时数据包将会发至Real Server。
+    4. 由于DS和RS在同一个网络中，所以是通过二层来传输[ip_forward不需要开启]。POSTROUTING链检查目标MAC地址为RIP的MAC地址，那么此时数据包将会发至Real Server。
 
     5. RS发现请求报文的MAC地址是自己的MAC地址，就接收此报文。处理完成之后，将响应报文通过lo接口传送给eth0网卡然后向外发出。 此时的源IP地址为VIP，目标IP为CIP
 
