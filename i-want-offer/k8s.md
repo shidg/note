@@ -1636,8 +1636,62 @@ spec:
        1.1 无头服务
    2. [X] NodePort
    3. [X] Loadbalancer
-   4. [X] ExternalIP
-   5. [X] ExternalName #pod跨namespace调用service
+   4. [X] ExternalName #pod跨namespace调用service
+   5. [X] 没有选择器的service
+
+       缺陷： 这种类型的svc对自定义的endpoint没有健康检查机制
+
+       ```yaml
+       apiVersion: v1
+       kind: Service
+       metadata:
+         name: my-service
+       spec:
+         ports:
+           - protocol: TCP
+             name: 'http-80'
+             port: 80
+             targetPort: 80
+
+       ################################
+
+
+       apiVersion: discovery.k8s.io/v1
+       kind: EndpointSlice               # 新版本endpoint，k8sversion v1.21+
+       metadata:
+         name: my-service-1 # 按惯例将 Service 的名称用作 EndpointSlice 名称的前缀
+         labels:
+           # 你应设置 "kubernetes.io/service-name" 标签。
+           # 设置其值以匹配 Service 的名称
+           kubernetes.io/service-name: my-service
+       addressType: IPv4
+       ports:
+         - name: 'http-80' # 应与上面定义的 Service 端口的名称匹配
+           appProtocol: http
+           protocol: TCP
+           port: 80
+       endpoints:  # 此列表中的 IP 地址可以按任何顺序显示
+         - addresses:
+             - "10.203.43.8"
+         - addresses:
+             - "10.203.43.106"
+
+       ##
+       apiVersion: v1  
+       kind: Endpoints    # 旧版本endpoint
+       metadata:
+         name: my-service-2
+       #指定自定义的point的目标地址
+       subsets:
+       - addresses:
+         - ip: 10.203.43.8
+         - ip: 10.203.43.106
+         # 外部redis的真实的工作端口
+         ports:
+          - port: 80
+            # 定义端口的名称，必须与 service 中的 ports.name 一致
+            name: http-80
+       ```
 2. ingress
 
    1. [X] ingress-nginx
@@ -1649,6 +1703,112 @@ spec:
 ### 服务网格
 
 * [X] istio
+
+  ```yaml
+  ##### istio 1.24.1 ######
+
+  #### https  SIMPLE mode
+  # step1  生成tls证书并保存为secret
+  penssl genrsa -out server.key 2048  # 长度至少为2048
+  openssl req -new -key server.key -out server.csr  # CN nor SAN names不能全部为空
+  openssl x509 -req -in server.csr -out server.crt -signkey server.key -days 3650
+
+  kl -n istio-system  create secret tls baway-https --key=server.key --cert=server.crt  # 将证书保存到secret中
+
+  # step2 创建gateway
+  apiVersion: networking.istio.io/v1
+  kind: Gateway
+  metadata:
+    name: baway-gateway-http
+    namespace: istio-system
+  spec:
+    selector:
+      istio: ingressgateway # use Istio default gateway implementation
+    servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+      - git.baway.org.cn
+      - jenkins.baway.org.cn
+      tls:
+        httpsRedirect: true     # http强制跳转https
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: baway-https  # secret的名称，位于istio-system命名空间下
+      - git.baway.org.cn
+      - jenkins.baway.org.cn
+
+
+  # step 3 创建virtualservices
+  kind: VirtualService
+  metadata:
+    name: gitlab-http
+    namespace: istio-system
+  spec:
+    hosts:
+    - git.baway.org.cn
+    gateways:
+      - baway-gateway-http  # 选择正确的网关
+    http:
+    - match:
+      - uri:
+          prefix: /
+      route:
+      - destination:
+          port:
+            number: 80
+          host: gitlab.private.svc.cluster.local
+
+
+
+  ##### https  PASSTHROUGH mode
+  # step1 创建网关
+  apiVersion: networking.istio.io/v1
+  kind: Gateway
+  metadata:
+    name: baway-gateway-https
+    namespace: istio-system
+  spec:
+    selector:
+      istio: ingressgateway # use Istio default gateway implementation
+    servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: PASSTHROUGH  # 透传模式
+      hosts:
+      - ldapadm.baway.org.cn
+
+  # step2 创建virtualservices
+  apiVersion: networking.istio.io/v1
+  kind: VirtualService
+  metadata:
+    name: ldapadm-https
+    namespace: istio-system
+  spec:
+    hosts:
+    - ldapadm.baway.org.cn
+    gateways:
+    - baway-gateway-https  # 选择正确的网关
+    tls:
+    - match:
+      - port: 443    # 端口和对应的网关中的端口一致
+        sniHosts:    # 必须
+        - ldapadm.baway.org.cn
+      route:
+      - destination:
+          port:
+            number: 443    # https协议连接后端，所以要求后端必须开启了https监听
+          host: openldap.private.svc.cluster.local
+  ```
 * [X] skywalking
 
 ---
@@ -2244,6 +2404,26 @@ kubectl  config  view --flatten > config-all # 将多个config进行合并
 ```
 
 特别注意：k8s的认证和鉴权是分开的，以上步骤只是实现使用不同的上下文来对不同的k8s集群进行认证，认证通过不代表有权限对k8s的资源进行操作，还需要使用RBAC对用户进行授权，确保用户在对应的namespace下具备必要的权限
+
+---
+
+### kubectl插件管理工具krew
+
+```shell
+# 安装
+https://github.com/kubernetes-sigs/krew/releases/
+tar zxvf krew-linux_amd64.tar.gz
+./krew-linux_amd64 install krew
+
+# 查找插件
+kubectl krew search
+# 插件安装
+kubectl krew install ktop
+
+# 插件使用
+kubectl ktop  <-n default>
+
+```
 
 ---
 
