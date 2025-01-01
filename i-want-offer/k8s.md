@@ -344,14 +344,16 @@ server = "http://harbor.baway.org.cn"
 
 
     # 查看快照信息
-    # etcdctl --write-out=table snapshop status xxx.db
+    # etcdutl --write-out=table snapshot status xxx.db
+    # 自 etcd v3.5.x 起，etcdctl snapshot status 已被弃用
+    
 
 
 
 
     ######################################################### etcd 恢复  ############################################################
-    # etcdctl snapshop restore
-
+    # etcdutl snapshop restore
+    # 自 etcd v3.5.x 版本起，使用 etcdctl 进行恢复的功能已被弃用，未来的可能会在 etcd 版本中被移除
     ########################################### 单master k8s
     # 关闭etcd和apiserver
     mv /etc/kubernetes/manifests/{etcd.yaml,kube-apiserver.yaml}  /root/
@@ -361,7 +363,7 @@ server = "http://harbor.baway.org.cn"
 
     # 使用快照进行恢复
     export ETCDCTL_API=3
-    etcdctl \
+    etcdutl \
     --cacert=/etc/kubernetes/pki/etcd/ca.crt \    # etcd的ca证书
     --cert=/etc/kubernetes/pki/etcd/server.crt \  # etcd的
     --key=/etc/kubernetes/pki/etcd/server.key \
@@ -384,7 +386,7 @@ server = "http://harbor.baway.org.cn"
 
     # 使用快照进行恢复,三个节点分别执行
     export ETCDCTL_API=3
-    etcdctl \
+    etcdutl \
     --cacert=/etc/kubernetes/pki/etcd/ca.crt \    # etcd的ca证书
     --cert=/etc/kubernetes/pki/etcd/server.crt \  # etcd的
     --key=/etc/kubernetes/pki/etcd/server.key \
