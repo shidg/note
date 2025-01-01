@@ -2307,9 +2307,6 @@ spec:
 # 查看获取node节点名称
 kubectl get node
 
-# 先停止该节点的调度
-kubectl cordon <node name>
-
 # 命令node节点开始释放所有pod，并将节点设置为SchedulingDisabled
 kubectl drain [node-name] --force --ignore-daemonsets --delete-local-data
 
