@@ -335,7 +335,7 @@ server = "http://harbor.baway.org.cn"
     expofrt ETCDCTL_API=3
     # 备份命令
     etcdctl \
-    --endpoints="https://10.203.43.160:2379" \   # 必须切只需指定任意1个节点
+    --endpoints="https://10.203.43.160:2379" \   # 必须且只需指定任意1个节点
     --cert="/etc/kubernetes/pki/etcd/server.crt" \
     --key="/etc/kubernetes/pki/etcd/server.key" \
     --cacert="/etc/kubernetes/pki/etcd/ca.crt" \
