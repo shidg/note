@@ -133,7 +133,20 @@ exec /sbin/init  # 重启
 ```
 
 ---
+### CentOS 7 永久添加路由
+ip route指令对路由的修改不能永久保存
+把ip route指令写到/etc/rc.local也是徒劳的
+RHEL7 官网文档没有提到/etc/sysconfig/static-routes，经测试此文件已经无效
+/etc/sysconfig/network配置文件仅仅可以提供全局默认网关，语法同 CentOS 6 一样： GATEWAY= 
+永久静态路由需要写到”/etc/sysconfig/network-scripts/route-interface“文件中
+```shell
+cat /etc/sysconfig/network-scripts/route-eth0
+10.18.196.0/255.255.254.0 via 192.168.56.11 dev eth0
 
+nmcli dev disconnect eth0 && nmcli dev connect eth0 # 重启系统或者重新连接网卡生效
+```
+
+---
 ### MySQL索引类型
 
 ---
