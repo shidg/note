@@ -2654,11 +2654,10 @@ net.ipv4.conf.ens33.send_redirects = 0
 # 是否必须双网卡??  否
 
 # /etc/sysctl.d/lvs_nat.conf
-# 打开IP转发，使Director Server充当RS的路由器
-net.ipv4.ip_forward = 0 # 非必须。直接路由模式下，不需要开启IP转发
+net.ipv4.ip_forward = 0 # 非必须。
+# 直接路由模式下，不需要开启IP转发
 # 根据DR模式的原理，调度器只修改请求报文的目的mac
-# 也就是转发是在二层进行，因此调度器和RS
-# 需要在同一个网段，从而ip_forward也不需要开启
+# 也就是转发是在二层进行，因此调度器和RS,需要在同一个网段，从而ip_forward也不需要开启
 
 # 关闭路由重定向。安全考虑，非必须
 net.ipv4.conf.default.send_redirects = 0
@@ -2674,7 +2673,7 @@ net.ipv4.conf.ens33.send_redirects = 0
 echo 1 > /proc/sys/net/ipv4/conf/lo/arp_ignore
 echo 2 > /proc/sys/net/ipv4/conf/lo/arp_announce
 echo 1 >/proc/sys/net/ipv4/conf/all/arp_ignore
-echo 2 >/proc/sys/net/ipv4/conf/all/arp_announce"
+echo 2 >/proc/sys/net/ipv4/conf/all/arp_announce
 
 # step3 为lo接口绑定VIP，必须
 # 命令行方式(临时)
@@ -2727,6 +2726,42 @@ ip route add $VIP dev lo:0
 
     5. RS的系统必须支持隧道
 
+```shell
+#### Director Server #####
+# 是否必须双网卡??  否
+
+# /etc/sysctl.d/lvs_nat.conf
+# 打开IP转发，使Director Server充当RS的路由器
+net.ipv4.ip_forward = 1 # 必须。RS不必和DS在同一网段，三层可达即可。
+
+# 关闭路由重定向。安全考虑，非必须
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.ens33.send_redirects = 0 
+
+
+###### Real Server #######
+
+# step1 加载ipip模块，必须
+modprobe ipip # 加载成功后会多出tunl0网卡
+
+# step2 抑制tunl0接口的arp响应，必须
+echo 1 > /proc/sys/net/ipv4/conf/tunl0/arp_ignore
+echo 2 > /proc/sys/net/ipv4/conf/tunl0/arp_announce
+echo 1 >/proc/sys/net/ipv4/conf/all/arp_ignore
+echo 2 >/proc/sys/net/ipv4/conf/all/arp_announce
+echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
+echo 0 > /proc/sys/net/ipv4/conf/tunl0/rp_filter
+
+# step3 为tunl0接口绑定VIP，必须
+# 命令行方式(临时)
+ip addr add 10.203.43.88/32 dev tunl0  # NETMASK必须设置为255.255.255.255
+
+# step4 添加一条路由，让VIP网段的数据由lo接口处理，非必须
+ip route add $VIP dev lo:0
+
+```
+    
 * [ ] FullNat
   fullnat模式和nat模式比较类似，客户端的请求和响应都会经过lvs，不同的是nat模式下转换仅存在于目的方向，也就是说客户端的发来的请求经过lvs后，请求的目的ip会转化成rs的ip地址，目的端口会转化成rs的目的端口，而在fullnat模式下，客户端发来的请求的源ip和源端口都会被转换成lvs的内网ip地址和端口，同理对于rs回复的响应，nat模式下，响应的目的ip和目的端口均为客户端的，而fullnat模式下，响应的目的ip和目的端口均为lvs内网的，这样lvs收到这个响应后会将源ip和源端口转换成vip的地址和端口，目的ip和目的端口会被转换成客户端的ip地址和端口，也就是说在nat模式下对于客户端的请求仅发生DNAT转换，对于RS的响应仅发生SNAT转换，而fullnat模式下，在请求和响应上都会发生SNAT和DNAT转换；另一点不同是nat模式下要求lvs的内网ip和rs的ip地址在同一物理网络中[必须二层可通]，lvs和rs之间需要二层交换设备，而fullnat对于请求和响应都会发生DNAT和SNAT所以lvs的内网ip地址可以和rs不在同一物理网络[三层可通即可]，这样lvs和rs之间就需要三层交换设备，所以相对于nat模式，fullnat的部署会更加灵活。
 
