@@ -808,7 +808,13 @@ secret
         --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
         --type=kubernetes.io/dockerconfigjson
     ```
+4. [X] kubernetes.io/tls
 
+    ```shell
+    kubectl create secret tls  my-secret \
+        --cert=path/to/cert/file \
+        --key=path/to/key/file
+    ```
 pv/pvc
 pv和pvc是一一对应的绑定关系
 
