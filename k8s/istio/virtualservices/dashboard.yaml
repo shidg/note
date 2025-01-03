@@ -1,14 +1,11 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: mall
+  name: dashboard
   namespace: istio-system
 spec:
   hosts:
-  - mall.baway.org.cn
-  - mall-gateway.baway.org.cn
-  - mall-portal.baway.org.cn
-  - mall-doc.baway.org.cn
+  - dashboard.baway.org.cn
   gateways:
   - baway-gateway-http
   http:
@@ -18,5 +15,5 @@ spec:
     route:
     - destination:
         port:
-          number: 8008
-        host: mall-swarm-admin-web.mall-swarm.svc.cluster.local
+          number: 443
+        host: kubernetes-dashboard.kubernetes-dashboard.svc.cluster.local

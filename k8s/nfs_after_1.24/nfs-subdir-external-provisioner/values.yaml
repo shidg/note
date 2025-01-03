@@ -9,7 +9,7 @@ image:
 imagePullSecrets: []
 
 nfs:
-  server: 172.27.11.210
+  server: 10.203.43.8
   path: /k8s
   mountOptions:
   volumeName: nfs-subdir-external-provisioner-root

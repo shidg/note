@@ -59,7 +59,8 @@ spec:
         persistentVolumeClaim:
           claimName: jenkins-proxy-nginx-data-claim
       - name: nginx-logs
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: jenkins-proxy-nginx-logs-claim
 ---
 apiVersion: v1
 kind: Service

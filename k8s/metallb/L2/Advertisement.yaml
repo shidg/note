@@ -1,0 +1,14 @@
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: example-l2-adv
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - example-pool
+  ipAddressPoolSelectors:
+  - matchLabels:
+      ipaddresspool: demo
+#  nodeSelectors:
+#  - matchLabels:
+#      kubernetes.io/hostname: kind-control-plane

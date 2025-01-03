@@ -1,15 +1,32 @@
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: baway-gateway-tcp
+  name: gateway-tcp-for-gitlab
   namespace: istio-system
 spec:
   selector:
     istio: ingressgateway # use Istio default gateway implementation
   servers:
   - port:
-      number: 31579
-      name: tcp
+      number: 22
+      name: ssh
       protocol: TCP
     hosts:
     - git.baway.org.cn
+---
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: gateway-tcp-for-ldap
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 389
+      name: openldap
+      protocol: TCP
+    hosts:
+    - ldap.baway.org.cn
+---

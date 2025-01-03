@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: ldapadm-https
+  namespace: istio-system
+spec:
+  hosts:
+  - ldapadm.baway.org.cn
+  gateways:
+  - baway-gateway-https
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - ldapadm.baway.org.cn
+    route:
+    - destination:
+        port:
+          number: 443
+        host: openldap.private.svc.cluster.local

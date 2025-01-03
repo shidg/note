@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-service
+  annotations:
+    # 指定lb的地址池
+    metallb.universe.tf/address-pool: example-pool
+spec:
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: false
+  loadBalancerClass: MetalLb # 需要在MetalLb启动时添加--lb-class指定匹配的class名称

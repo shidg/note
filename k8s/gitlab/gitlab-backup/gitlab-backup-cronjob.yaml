@@ -7,10 +7,14 @@ spec:
   schedule: "00 04 * * *"
   failedJobsHistoryLimit: 1
   concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
   suspend: false
   jobTemplate:
     spec:
+      completions: 1
+      parallelism: 1
+      activeDeadlineSeconds: 100
+      ttlSecondsAfterFinished: 30
       template:
         spec:
           serviceAccount: gitlab-private

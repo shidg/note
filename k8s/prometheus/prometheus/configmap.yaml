@@ -12,7 +12,7 @@ data:
     alerting:
       alertmanagers:
         - static_configs:
-          - targets: ["alertmanager:9093"]
+          - targets: ["alertmanager.prometheus:9093"]
     rule_files:
       - /etc/prometheus/rules.yml
     scrape_configs:
@@ -91,42 +91,7 @@ data:
       static_configs:
         - targets:
             - kube-dns.kube-system:9153
-    - job_name: kubernetes-ControllerManager
-      honor_timestamps: true
-      scrape_interval: 30s
-      scrape_timeout: 10s
-      metrics_path: /metrics
-      scheme: https
-      static_configs:
-        - targets:
-            - kube-controller-manager.kube-system:10257
-      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      tls_config:
-        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        insecure_skip_verify: true
-    - job_name: kubernetes-scheduler
-      honor_timestamps: true
-      scrape_interval: 30s
-      scrape_timeout: 10s
-      metrics_path: /metrics
-      scheme: https
-      static_configs:
-        - targets:
-            - kube-scheduler.kube-system:10259
-      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      tls_config:
-        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        insecure_skip_verify: true
 
-    - job_name: kubernetes-etcd
-      honor_timestamps: true
-      scrape_interval: 30s
-      scrape_timeout: 10s
-      metrics_path: /metrics
-      scheme: http
-      static_configs:
-        - targets:
-            - kube-etcd.kube-system:2381
     - job_name: mysql
       params:
       static_configs:
@@ -198,6 +163,21 @@ data:
       static_configs:
         - targets:
           - redis-exporter.prometheus:9121
+
+    - job_name: 'http_200'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+        - targets:
+          - http://nginx-dep.baway:8888
+      relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter.prometheus:9115
 
 
   rules.yml: |

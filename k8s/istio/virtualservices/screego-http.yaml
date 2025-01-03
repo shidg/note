@@ -1,13 +1,13 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: mall-monitor
+  name: screego-http
   namespace: istio-system
 spec:
   hosts:
-  - mall-monitor.baway.org.cn
+  - screego.baway.org.cn
   gateways:
-  - baway-gateway-http
+    - baway-gateway-http
   http:
   - match:
     - uri:
@@ -15,5 +15,5 @@ spec:
     route:
     - destination:
         port:
-          number: 8101
-        host: mall-monitor-service.mall-swarm.svc.cluster.local
+          number: 5050
+        host: screego.private.svc.cluster.local

@@ -1,0 +1,10 @@
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: example
+  namespace: metallb-system
+spec:
+  myASN: 64512
+  peerASN: 65001
+  peerAddress: 10.203.40.1 # 路由器地址，要求路由器支持BGP功能
+  peerPort: 179

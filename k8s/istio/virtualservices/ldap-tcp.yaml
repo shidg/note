@@ -1,18 +1,18 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: gitlab-tcp
+  name: ldap-tcp
   namespace: istio-system
 spec:
   hosts:
-  - git.baway.org.cn
+  - ldap.baway.org.cn
   gateways:
-    - gateway-tcp-for-gitlab
+    - gateway-tcp-for-ldap
   tcp:
   - match:
-    - port: 22
+    - port: 389
     route:
     - destination:
         port:
-          number: 22
-        host: gitlab.private.svc.cluster.local
+          number: 389
+        host: openldap.private.svc.cluster.local

@@ -1,0 +1,11 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: example-pool
+  namespace: metallb-system
+  labels:
+    ipaddresspool: demo
+spec:
+  addresses:
+  - 10.203.43.110-10.203.43.120
+  autoAssign: false

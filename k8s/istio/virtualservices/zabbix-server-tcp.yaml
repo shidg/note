@@ -1,18 +1,18 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: gitlab-tcp
+  name: zabbix-server-tcp
   namespace: istio-system
 spec:
   hosts:
-  - git.baway.org.cn
+    - 10.203.43.230
   gateways:
-    - gateway-tcp-for-gitlab
+    - gateway-tcp-for-zabbix
   tcp:
   - match:
-    - port: 22
+    - port: 10051
     route:
     - destination:
         port:
-          number: 22
-        host: gitlab.private.svc.cluster.local
+          number: 10051
+        host: zabbix-server.default.svc.cluster.local

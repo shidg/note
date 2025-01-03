@@ -488,9 +488,11 @@ spec:
         kiali.io/dashboards: go,kiali
     spec:
       serviceAccountName: kiali
+      imagePullSecrets:
+      - name: shidg-ali-registry
       containers:
-      - image: "quay.io/kiali/kiali:v1.76"
-        imagePullPolicy: Always
+      - image: "registry.cn-hangzhou.aliyuncs.com/shidg/kiali:v1.76"
+        imagePullPolicy: IfNotPresent
         name: kiali
         command:
         - "/opt/kiali/kiali"

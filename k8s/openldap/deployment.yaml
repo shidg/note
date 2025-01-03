@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openldap
+  namespace: private
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ldap
+  template:
+    metadata:
+      labels:
+        app: ldap
+    spec:
+      containers:
+      - name: ldap
+        image: harbor.baway.org.cn/library/openldap:1.4.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: ldap-389
+          containerPort: 389
+          protocol: TCP
+        - name: ldap-636
+          containerPort: 636
+          protocol: TCP
+        env:
+        - name: LDAP_ORGANISATION
+          value: "org.cn" 
+        - name: LDAP_DOMAIN
+          value: "baway.org.cn" 
+
+        volumeMounts:
+        - name: ldap-data
+          mountPath: /var/lib/ldap # 初次启动时该目录必须为空
+        - name: ldap-conf
+          mountPath: /etc/ldap/slapd.d # 初次启动时该目录必须为空
+
+      - name: ldapadmin
+        image: harbor.baway.org.cn/library/phpldapadmin:0.9.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: ldapadmin-443
+          containerPort: 443
+          protocol: TCP
+        env:
+        - name: PHPLDAPADMIN_LDAP_HOSTS
+          value: localhost
+      volumes:
+      - name: ldap-data
+        persistentVolumeClaim:
+          claimName: ldap-data
+      - name: ldap-conf
+        persistentVolumeClaim:
+          claimName: ldap-conf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openldap
+  namespace: private
+spec:
+  selector:
+    app: ldap
+  ports:
+  - name: ldap1
+    port: 389
+    targetPort: ldap-389
+  - name: ldap2
+    port: 636
+    targetPort: ldap-636
+  - name: ldapadmin-443
+    port: 443
+    targetPort: ldapadmin-443

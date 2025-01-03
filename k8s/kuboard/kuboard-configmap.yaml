@@ -4,6 +4,6 @@ metadata:
   name: kuboard
   namespace: private
 data:
-  KUBOARD_ENDPOINT: "http://10.203.43.103:8080"
+  KUBOARD_ENDPOINT: "http://kuboard.baway.org.cn"
   KUBOARD_AGENT_SERVER_UDP_PORT: "10081"
   KUBOARD_AGENT_SERVER_TCP_PORT: "10081"

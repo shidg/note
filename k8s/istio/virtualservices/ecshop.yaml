@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ecshop
+  namespace: istio-system
+spec:
+  hosts:
+  - ecshop.baway.org.cn
+  gateways:
+    - baway-gateway-http
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 8008
+        host: ecshop-svc1.baway.svc.cluster.local

@@ -1,4 +1,4 @@
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: baway-gateway-http
@@ -12,10 +12,12 @@ spec:
       name: http
       protocol: HTTP
     hosts:
+    - screego.baway.org.cn
     - git.baway.org.cn
-    - grafana.baway.org.cn
     - jenkins.baway.org.cn
+    - grafana.baway.org.cn
     - kuboard.baway.org.cn
+    - dashboard.baway.org.cn
     - prometheus.baway.org.cn
     - jumpserver.baway.org.cn
     - zabbix.baway.org.cn
@@ -31,3 +33,37 @@ spec:
     - download.baway.org.cn
     - kiali.baway.org.cn
     - gray.baway.org.cn
+    - ecshop.baway.org.cn
+    - rabbitmq.baway.org.cn
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+    hosts:
+    - screego.baway.org.cn
+    - git.baway.org.cn
+    - jenkins.baway.org.cn
+    - grafana.baway.org.cn
+    - kuboard.baway.org.cn
+    - dashboard.baway.org.cn
+    - prometheus.baway.org.cn
+    - jumpserver.baway.org.cn
+    - zabbix.baway.org.cn
+    - kibana.baway.org.cn
+    - nacos.baway.org.cn
+    - skywalking.baway.org.cn
+    - ceph.baway.org.cn
+    - mall.baway.org.cn
+    - mall-gateway.baway.org.cn
+    - mall-portal.baway.org.cn
+    - mall-monitor.baway.org.cn
+    - mall-doc.baway.org.cn
+    - download.baway.org.cn
+    - kiali.baway.org.cn
+    - gray.baway.org.cn
+    - ecshop.baway.org.cn
+    - rabbitmq.baway.org.cn

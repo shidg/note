@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,7 +20,6 @@ spec:
       nodeName: k8s-node3
       containers:
       - name: kuboard
-      # image: eipwork/kuboard:v3.5.2.6
         image: eipwork/kuboard:v3.5.2.7
         imagePullPolicy: IfNotPresent
         env:
@@ -38,11 +38,46 @@ spec:
             configMapKeyRef:
               name: kuboard
               key: KUBOARD_AGENT_SERVER_TCP_PORT
+        - name: KUBOARD_LOGIN_TYPE
+          value: "ldap"
+        - name: LDAP_HOST
+          value: "openldap:389"
+        - name: LDAP_SKIP_SSL_VERIFY
+          value: "true"
+        - name: LDAP_BIND_DN
+          value: "cn=admin,dc=baway,dc=org,dc=cn"
+        - name: LDAP_BIND_PASSWORD
+          value: "admin"
+        - name: LDAP_BASE_DN
+          value: "dc=baway,dc=org,dc=cn"
+        - name: LDAP_FILTER
+          value: "(objectClass=posixAccount)"
+        - name: LDAP_ID_ATTRIBUTE    # 如果使用用户名登录,这里修改成uid
+          value: "mail"
+        - name: LDAP_USER_NAME_ATTRIBUTE
+          value: "mail"             # 如果使用用户名登录,这里修改成uid
+        - name: LDAP_EMAIL_ATTRIBUTE
+          value: "mail"
+        - name: LDAP_DISPLAY_NAME_ATTRIBUTE
+          value: "cn"
+        - name: LDAP_GROUP_SEARCH_BASE_DN
+          value: "dc=baway,dc=org,dc=cn"
+        - name: LDAP_GROUP_SEARCH_FILTER
+          value: "(objectClass=posixGroup)"
+        - name: LDAP_USER_MACHER_USER_ATTRIBUTE
+          value: "gidNumber"
+        - name: LDAP_USER_MACHER_GROUP_ATTRIBUTE
+          value: "gidNumber"
+        - name: LDAP_GROUP_NAME_ATTRIBUTE
+          value: "cn"
+        - name: KUBOARD_ROOT_USER
+          value: "94586572@qq.com"   # 如果使用用户名登录,这里修改成用户名
+        - name: KUBOARD_DISABLE_AUDIT
+          value: "true"
         ports:
         - containerPort: 80
           name: http
           protocol: TCP
-          hostPort: 8080
         - containerPort: 10081
           name: tcp-api
           protocol: TCP

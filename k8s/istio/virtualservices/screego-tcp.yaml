@@ -1,18 +1,16 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: gitlab-tcp
+  name: screego-tcp
   namespace: istio-system
 spec:
   hosts:
-  - git.baway.org.cn
-  gateways:
-    - gateway-tcp-for-gitlab
+  - screego.baway.org.cn
   tcp:
   - match:
-    - port: 22
+    - port: 443
     route:
     - destination:
         port:
-          number: 22
-        host: gitlab.private.svc.cluster.local
+          number: 5050
+        host: screego.private.svc.cluster.local

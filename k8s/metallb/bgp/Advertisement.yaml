@@ -1,0 +1,14 @@
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: example-bgp-adv
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - example-pool
+  ipAddressPoolSelectors:
+  - matchLabels:
+      ipaddresspool: demo
+#  nodeSelectors:
+#  - matchLabels:
+#      kubernetes.io/hostname: kind-control-plane
