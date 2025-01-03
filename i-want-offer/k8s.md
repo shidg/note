@@ -127,7 +127,7 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
 
 ---
 
-### flannel指定网卡
+### flannel指定网卡、网段
 
 ```yaml
 - name: kube-flannel
@@ -139,10 +139,10 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
         - --kube-subnet-mgr
         - --iface=eth1   # 新增配置，指定网卡
 
-# 网段，与pod cidr一致
+# 网段，与pod cidr一致,且不能和docker的默认网段冲突
 net-conf.json: |
     {
-      "Network": "172.31.0.0/16",
+      "Network": "10.244.0.0/16",
       "EnableNFTables": false,
       "Backend": {
         "Type": "vxlan"     # host-gw
@@ -150,7 +150,7 @@ net-conf.json: |
     }
 ```
 
-### calico指定网卡
+### calico指定网卡、网段
 
 当节点上有多个网卡时，需要为calico指定使用哪块网卡
 
@@ -182,7 +182,7 @@ net-conf.json: |
 # # The default IPv4 pool to create on startup if none exists. Pod IPs will be
   # chosen from this range. Changing this value after installation will have
   # no effect. This should fall within `--cluster-cidr`.
-- name: CALICO_IPV4POOL_CIDR
+- name: CALICO_IPV4POOL_CIDR    # 不能和docker的默认网段冲突
   value: "192.168.0.0/16"
 ```
 
@@ -265,7 +265,7 @@ can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达�
 
 ```
 
-### containerd
+#### containerd
 
 ```shell
 # containerd添加自定义仓库需要修改两个文件
@@ -346,7 +346,7 @@ server = "http://harbor.baway.org.cn"
     # 查看快照信息
     # etcdutl --write-out=table snapshot status xxx.db
     # 自 etcd v3.5.x 起，etcdctl snapshot status 已被弃用
-    
+
 
 
 
@@ -362,19 +362,17 @@ server = "http://harbor.baway.org.cn"
     mv /var/lib/etcd  /var/lib/etcd.old
 
     # 使用快照进行恢复
-    export ETCDCTL_API=3
     etcdutl \
-    --cacert=/etc/kubernetes/pki/etcd/ca.crt \    # etcd的ca证书
-    --cert=/etc/kubernetes/pki/etcd/server.crt \  # etcd的
-    --key=/etc/kubernetes/pki/etcd/server.key \
-    --endpoints 10.203.43.100:2379 \   # master的ip地址
     --name=k8s-master \  # kubectl  get node 看到的mster在集群中的节点名称
     --initial-cluster=k8s-master=https://10.203.43.100:2380 \  # master的节点名称和ip
     --initial-advertise-peer-urls=https://10.203.43.100:2380 \  # master的ip
-    --data-dir=/var/lib/etcd   # 数据恢复路径，和原来的数据目录保持一致
+    --initial-cluster-token \   # 集群标识，可选
+    --data-dir=/var/lib/etcd \  # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
     snapshot restore  /var/backups/xxx.db \
     # 重启etcd和apiserver 
     mv /root/{etcd.yaml,kube-apiserver.yaml}  /etc/kubernetes/manifests/
+    # 重启kubelet
+    systemctl restart kubelet
 
 
     ########################################### 多master k8s
@@ -385,21 +383,18 @@ server = "http://harbor.baway.org.cn"
     mv /var/lib/etcd  /var/lib/etcd.old
 
     # 使用快照进行恢复,三个节点分别执行
-    export ETCDCTL_API=3
     etcdutl \
-    --cacert=/etc/kubernetes/pki/etcd/ca.crt \    # etcd的ca证书
-    --cert=/etc/kubernetes/pki/etcd/server.crt \  # etcd的
-    --key=/etc/kubernetes/pki/etcd/server.key \
+    --name=k8s-master1 \  # kubectl  get node 看到的mster在集群中的节点名称，另外两个节点以此类推
+    --initial-cluster=k8s-master1=https://10.203.43.160:2380,k8s-master2=https://10.203.43.161:2380,k8s-master3=https://10.203.43.162:2380 \  # 所有initial-advertise-peer-urls的合集
+    --initial-advertise-peer-urls=https://10.20.30.31:2380 \  # master1的ip，另外两个节点以此类推
     --initial-cluster-token=etcd-cluster-01       # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
     --data-dir=/var/lib/etcd                      # 数据恢复路径，和原来的数据目录保持一致
-    --initial-cluster=k8s-master1=https://10.203.43.160:2380,k8s-master2=https://10.203.43.161:2380,k8s-master3=https://10.203.43.162:2380 \  # 所有initial-advertise-peer-urls的合集
-    --endpoints=10.203.43.160:2379 \   # master1的ip地址,另外两个节点以此类推
-    --name=k8s-master1 \  # kubectl  get node 看到的mster在集群中的节点名称，另外两个节点以此类推
-    --initial-advertise-peer-urls=https://10.20.30.31:2380 \  # master1的ip，另外两个节点以此类推
     snapshot restore  /var/backups/xxx.db \
 
     # 重启etcd和apiserver 
     mv /root/{etcd.yaml,kube-apiserver.yaml}  /etc/kubernetes/manifests/
+    # 重启kubelet
+    systemctl restart kubelet
 
     ################################################################## 查看etcd信息 ##############################################################
     kubectl  exec -it -n kube-system etcd-xxx -- sh
@@ -817,6 +812,7 @@ secret
         --cert=path/to/cert/file \
         --key=path/to/key/file
     ```
+
 pv/pvc
 pv和pvc是一一对应的绑定关系
 
@@ -1644,6 +1640,11 @@ spec:
        1.1 无头服务
    2. [X] NodePort
    3. [X] Loadbalancer
+
+       ```shell
+       # metallb
+
+       ```
    4. [X] ExternalName #pod跨namespace调用service
    5. [X] 没有选择器的service
 
@@ -1704,6 +1705,55 @@ spec:
 
    1. [X] ingress-nginx
    2. [X] contour
+
+       ```yaml
+       # contour配置https
+       # HTTPProxy
+       apiVersion: projectcontour.io/v1
+       kind: HTTPProxy
+       metadata:
+         name: nginx-ingress
+       spec:
+         ingressClassName: contour
+         virtualhost:
+           fqdn: nginx.baway.org.cn
+           tls:
+             secretName: baway-https
+         routes:
+         - conditions:
+           - prefix: /
+           services:
+           - name: nginx-deployment
+             port: 8080
+
+       # Ingress
+       apiVersion: networking.k8s.io/v1
+       kind: Ingress
+       metadata:
+         name: httpbin
+         annotations:
+           cert-manager.io/cluster-issuer: letsencrypt-staging
+           ingress.kubernetes.io/force-ssl-redirect: "true"
+           kubernetes.io/ingress.class: contour
+           kubernetes.io/tls-acme: "true"
+       spec:
+         tls:
+         - secretName: httpbin
+           hosts:
+           - httpbin.davecheney.com
+         rules:
+         - host: httpbin.davecheney.com
+           http:
+             paths:
+             - pathType: Prefix
+               path: /
+               backend:
+                 service:
+                   name: httpbin
+                   port:
+                     number: 8080
+
+       ```
    3. [X] Traefik
 
 ---
@@ -1818,6 +1868,12 @@ spec:
           host: openldap.private.svc.cluster.local
   ```
 * [X] skywalking
+
+---
+
+### k8s自动https续期
+
+cert-manager
 
 ---
 
