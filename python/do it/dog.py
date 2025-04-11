@@ -1,4 +1,12 @@
-#! /usr/local/python3/bin/python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-#
+'''
+Author: --- shidg ---
+Created at: 2024-12-05 11:11:11
+Version: 
+Modify by: 
+'''
+#! /usr/local/bin/python3
 # -*- coding: utf-8 -*-#
 class Dog():
     """一次模拟小狗的简单尝试"""

@@ -26,4 +26,4 @@ li = Foo('tom',18)
 for i in li:  #调用li对象的__iter__方法，并获取返回值,之后对返回的对象进行循环
     print(i)
 
-list
+#list
