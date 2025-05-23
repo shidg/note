@@ -4,9 +4,29 @@
 
 ---
 
+### Linux欢迎信息
+
+```
+# 本地控制台登录时的欢迎信息(ssh远程登录不显示)，登录前显示
+/etc/issue
+```
+
+```
+# 所有用户登录后都可以看到的欢迎信息，登录后显示
+/etc/motd
+```
+
+```
+# ssh登录时的欢迎信息，只对ssh登录有效，登录后显示
+/etc/ssh/sshd_config
+Banner /etc/ssh/ssh_banner
+```
+
+---
+
 ### Linux 计划任务
 
-* [ ] cron
+* [X] cron
 * [X] anacron
   只能执行每天/每周/每月的任务；
   没有独立的守护进程，仍然是使用crond进程来执行具体任务；
@@ -28,9 +48,9 @@
   START_HOURS_RANGE=3-22
 
   #period in days   delay in minutes   job-identifier   command
-  1	5	cron.daily		nice run-parts /etc/cron.daily
-  7	25	cron.weekly		nice run-parts /etc/cron.weekly
-  @monthly 45	cron.monthly		nice run-parts /etc/cron.monthly
+  1 5 cron.daily  nice run-parts /etc/cron.daily
+  7 25 cron.weekly  nice run-parts /etc/cron.weekly
+  @monthly 45 cron.monthly  nice run-parts /etc/cron.monthly
 
   # anacron的调用链路
   cat /etc/cron.d/0hourly
@@ -105,6 +125,186 @@ ntp
 
 ---
 
+### 查看Linux发行版
+
+```shell
+cat  /etc/os-release
+```
+
+### 服务器网络管理
+
+#### CentOS
+
+systemd-network ,网卡配置文件/etc/sysconfig/network-scripts
+
+修改网卡配置文件，重启network
+
+```shell
+IPADDR=10.203.43.8
+NETMASK=255.255.252.0
+GATEWAY=10.203.40.1
+NM_CONTROLLED=no  # 该网卡不受NetworkManager管理
+PEERDNS=no        # /etc/resolv.conf 在network重启后不会被重写
+DNS1=10.203.43.8
+
+
+systemctl restart network
+```
+
+#### Ubuntu(22.04+)
+
+netplan,网卡配置文件 /etc/netplan/
+
+修改网卡配置文件，执行netplan  apply
+
+```shell
+network:
+  ethernets:
+    ens32:
+      dhcp4: false
+      addresses:
+      - 10.203.43.106/22
+      routes:
+      - to: default
+        via: 10.203.40.1
+      nameservers:
+        addresses:
+        - 10.203.43.8
+
+netplan apply
+```
+
+#### Rocky、Alma Linux
+
+nmcli,网卡配置文件/etc/NetworkManager/system-connections
+
+#### nmcli管理网络
+
+nmcli是NetworkManager组件提供的命令行工具，能够完成以下事情：
+
+* 管理网络接口（启用/禁用）
+* 创建、编辑、查看网络连接（有线、无线、VPN）
+* 查看连接状态、IP、DNS 等
+* 脚本自动化配置网络
+
+  在NM里，有2个维度：连接（connection）和设备（device），这是多对一的关系。想给某个网卡配ip，首先NM要能纳管这个网卡。设备里存在的网卡（即 nmcli d可以看到的），就是NM纳管的。接着，可以为一个设备配置多个连接（即 nmcli c可以看到的），每个连接可以理解为一个ifcfg配置文件。同一时刻，一个设备只能有一个连接活跃。可以通过 nmcli c up切换连接。
+
+```shell
+nmcli device 可简写为nmcli d，有4种状态：
+connected：已被NM纳管，并且当前有活跃的connection
+disconnected：已被NM纳管，但是当前没有活跃的connection
+unmanaged：未被NM纳管
+unavailable：不可用，NM无法纳管，通常出现于网卡link为down的时候（比如ip link set ethX down）
+
+
+nmcli connection,可简写为nmcli c ,有2中状态：
+活跃（带颜色字体）：表示当前该connection生效
+非活跃（正常字体）：表示当前该connection不生效
+
+配置动态ip（相当于配置ifcfg,其中BOOTPROTO=dhcp)
+nmcli c add type ethernet con-name ens33 ifname ens33 ipv4.method auto
+type ethernet：创建连接时候必须指定类型，类型有很多，可以通过nmcli c add type -h看到，这里指定为ethernet。
+con-name eth0 ifname ens33：第一个eth0表示连接（connection）的名字，这个名字可以任意定义，无需和网卡名相同；第二个ens33表示网卡名，这个ens33必须是在nmcli d里能看到的。
+
+
+
+配置静态ip（相当于配置ifcfg,其中BOOTPROTO=static)
+nmcli c add type ethernet con-name eth0 ifname ens33 ipv4.addr 192.168.1.100/24 ipv4.gateway 192.168.1.254 ipv4.dns '8.8.8.8,4.4.4.4' ipv4.method manual
+
+ipv4.method对应ifcfg文件内容的BOOTPROTO，ipv4.method默认为auto，对应为BOOTPROTO=dhcp，这种时候如果指定ip，就可能导致网卡同时有dhcp分配的ip和静态ip。设置为manual表示BOOTPROTO=none，即只有静态ip。
+
+
+nmcli c add   # 为网卡添加新的网络配置(connection)
+nmcli c modify  # 编辑现有的网络配置(connection)
+nmcli c show 查看所有的connection (connections默认位于/etc/NetworkManager/system-connections)
+nmcli c show ethX 查看指定的connection
+nmcli c up/down/delete ethX（connetction name)
+nmcli c reload 重载所有的connection，但不会立即生效
+
+立即使网卡配置文件生效
+nmcli c up eth0 (connection name)
+nmcli d connect ens33 (connection name)
+nmcli d repply ens33 (device name)
+
+
+查看网卡列表
+nmcli d
+
+查看网卡详细信息
+nmcli d show （ethX)
+
+激活网卡
+nmcli d connect eth0
+
+```
+
+#### Linux ip命令
+
+ip是iproute提供的命令行工具,取代由net-tools提供的ifconfig，用法是
+
+```
+ip  [OBJECT] [COMMAND] [OPTIONS]
+
+OBJECT：操作对象（如 addr、link、route 等）
+COMMAND：要执行的操作（如 add、del、show）
+OPTIONS：具体参数
+```
+
+| 对象（OBJECT） | 作用          | 示例                                      |
+| -------------- | ------------- | ----------------------------------------- |
+| link           | 管理网络接口  | ip link show，ip link set eth0 up         |
+| addr           | 管理 IP 地址  | ip addr add 192.168.1.10/24 dev eth0      |
+| route          | 管理路由表    | ip route add default via 192.168.1.1      |
+| neigh          | 管理 ARP 缓存 | ip neigh show                             |
+| rule           | 策略路由规则  | ip rule add from 192.168.1.0/24 table 100 |
+| netns          | 网络命名空间  | ip netns add test                         |
+| maddr          | 多播地址      | ip maddr show                             |
+| link set       | 修改状态/MTU  | ip link set dev eth0 mtu 1400             |
+
+link:网络设备
+
+```shell
+ip link show                     # 显示网络接口信息
+ip link set eth0 up             # 开启网卡
+ip link set eth0 down            # 关闭网卡
+ip link set eth0 promisc on      # 开启网卡的混合模式
+ip link set eth0 promisc offi    # 关闭网卡的混个模式
+ip link set eth0 txqueuelen 1200 # 设置网卡队列长度
+ip link set eth0 mtu 1500        # 设置网卡最大传输单元
+
+```
+
+addr: 设备上的协议地址
+
+```shell
+ip addr show     # 显示网卡IP信息
+ip addr add 192.168.0.1/24 dev eth0 # 设置eth0网卡IP地址192.168.0.1
+ip addr del 192.168.0.1/24 dev eth0 # 删除eth0网卡IP地址
+```
+
+route: 路由表
+
+```shell
+ip route show # 显示系统路由
+ip route add default via 192.168.1.254   # 设置系统默认路由
+ip route list                 # 查看路由信息
+ip route add 192.168.4.0/24  via  192.168.0.254 dev eth0 # 设置192.168.4.0网段的网关为192.168.0.254,数据走eth0接口
+ip route add default via  192.168.0.254  dev eth0        # 设置默认网关为192.168.0.254
+ip route del 192.168.4.0/24   # 删除192.168.4.0网段的网关
+ip route del default          # 删除默认路由
+ip route delete 192.168.1.0/24 dev eth0 # 删除路由
+```
+
+---
+
+### 根据进程查看端口，根据端口查看进程
+
+ss -tnlp
+
+lsof -i:tcpprot
+
+---
+
 ### CentOS 7 单用户模式
 
 ```shell
@@ -133,12 +333,15 @@ exec /sbin/init  # 重启
 ```
 
 ---
+
 ### CentOS 7 永久添加路由
+
 ip route指令对路由的修改不能永久保存
 把ip route指令写到/etc/rc.local也是徒劳的
 RHEL7 官网文档没有提到/etc/sysconfig/static-routes，经测试此文件已经无效
-/etc/sysconfig/network配置文件仅仅可以提供全局默认网关，语法同 CentOS 6 一样： GATEWAY= 
+/etc/sysconfig/network配置文件仅仅可以提供全局默认网关，语法同 CentOS 6 一样： GATEWAY=
 永久静态路由需要写到”/etc/sysconfig/network-scripts/route-interface“文件中
+
 ```shell
 cat /etc/sysconfig/network-scripts/route-eth0
 10.18.196.0/255.255.254.0 via 192.168.56.11 dev eth0
@@ -147,6 +350,7 @@ nmcli dev disconnect eth0 && nmcli dev connect eth0 # 重启系统或者重新�
 ```
 
 ---
+
 ### MySQL索引类型
 
 ---
@@ -159,8 +363,12 @@ MySQL版本5.7.17+
 存储引擎必须是Innodb，并且每张表一定要有主键，用于解决write冲突
 必须打开GTID特性
 binlog日志格式必须设置为ROW   [Statement,ROW,MiXED]
-目前一个MGR集群组最多支持9个节点
+```
 
+[binlog](###MySQLbinlog的格式)
+
+```
+目前一个MGR集群组最多支持9个节点
 
 # 部署过程。docker 运行MySQL8
 # 事先准备好my.cnf和plugin目录下的所有.so文件
@@ -246,8 +454,6 @@ START GROUP_REPLICATION;
 
 # 验证结果
 SELECT * FROM performance_schema.replication_group_members;
-
-
 ```
 
 ---
@@ -260,9 +466,13 @@ truncate table <table_name>
 ```
 
 效率上truncate比delete快，但truncate删除后不记录mysql日志，不可以恢复数据。
-delete的效果有点像将mysql表中所有记录一条一条删除到删完
+delete的效果有点像将mysql表中所有记录一条一条删除到删完，可以回滚
 
 truncate相当于保留mysql表的结构，重新创建了这个表，所有的状态都相当于新表
+
+delete之后自增ID不会归零，需要单独执行 alter table   `tablename`  AUTO_INCREMENT=0;
+
+truncate会将自增ID归零
 
 ---
 
@@ -273,6 +483,39 @@ DDL 数据定义语言  CREATE  ALTER DROP
 DML 数据操作语言  INSERT  DELETE UPDATE SELECT
 
 DCL 数据控制语言  GRANT  REVOKE  DENY
+
+---
+
+### MySQL主从同步的原理？
+
+---
+
+### MySQL binlog的格式
+
+STATEMENT
+
+ROW   [MySQL 5.1.5开始支持，5.7.7开始成为默认值]
+
+MIXED [MySQL 5.1.8开始支持]
+
+| 格式      | 特点                            | 优点                                                                                                          | 缺点                                                                                                                             |
+| --------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| STATEMENT | binlog记录的是SQL语句           | 日志文件小，节约IO，性能不错                                                                                  | 准确性差，当使用系统函数时，slave会产生数据偏差,<br />也就是存在数据不一致的问题<br />master的慢SQL，slave还会再执行一遍，效率低 |
+| ROW       | binlog记录的是变更的实际数据    | 准确性高，master是什么数据，slave就是什么数据<br />master的慢SQL不会在slave上再执行一遍，因为已经具体到数据行 | 日志文件大，磁盘IO压力大，性能相对低一些                                                                                         |
+| MIEXED    | statemenet格式为主，row格式为辅 | 日志文件比较小，数据准确性比较高                                                                              | 存在主从不一致的问题，master的慢SQL，<br />slave还是会再执行一遍                                                                 |
+
+建议值：
+
+MySQL5.7.7之后，建议使用ROW格式，配合binlog_row_image参数
+
+```shell
+binlog-format=ROW
+binlog_row_image=MINIMAL
+```
+
+---
+
+### MySQL主从同步的配置过程？
 
 ---
 
@@ -366,6 +609,16 @@ redis-server /usr/local/redis-cluster/6380/redis_6380.conf
 
 ---
 
+### Redis Cluster为什么至少需要6个节点？
+
+Redis Cluster模式下，其中一个master挂掉之后，它所对应的slave会把记录的集群currentEpoch加1，并广播FALVOER_AUTH_REQUEST,这个广播只有master会响应，判断请求的合法性并回复FAILOVER_AUTH_ACK,对每个epoch只发送一次ack,
+
+尝试failover的slave收集master返回的FAILOVER_AUTH_ACK,必须收到超过半数的master返回的ack，slave才能变成新的master,所以要求master的数量至少是3，如果只有2台master，那么一台master挂掉之后，剩下的一台master是没办法让slave完成failover的
+
+Redis cluster的内部通信协议为gossip，包含meet、ping、pong、fail等多种消息，而且gossip的通信端口是服务端口+10000，所以在部署Redis Cluster的时候要注意防火墙策略，开放服务端口之外，还要开放服务端口+10000的端口号
+
+---
+
 ### Reddis雪崩、击穿和穿透
 
 ![img](img/redis-1.png)
@@ -403,7 +656,7 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 
 ### 容器和镜像的区别
 
-镜像（Image）就是一堆只读层（read-only layer）的统一视角,多个只读层，它们重叠在一起。除了最下面一层，其它层都会有一个指针指向下一层。这些层是Docker内部的实现细节，并且能够在主机（译者注：运行Docker的机器）的文件系统上访问到。统一文件系统（union file system）技术能够将不同的层整合成一个文件系统，为这些层提供了一个统一的视角，这样就隐藏了多层的存在，在用户的角度看来，只存在一个文件系统。我们可以在图片的右边看到这个视角的形式
+镜像（Image）就是一堆只读层（read-only layer）的统一视角,多个只读层，它们重叠在一起。除了最下面一层，其它层都会有一个指针指向下一层。这些层是Docker内部的实现细节，并且能够在主机（译者注：运行Docker的机器）的文件系统上访问到。统一文件系统（union file system）技术能够将不同的层整合成一个文件系统，为这些层提供了一个统一的视角，这样就隐藏了多层的存在，在用户的角度看来，只存在一个文件系统。
 
 容器（container）的定义和镜像（image）几乎一模一样，也是一堆层的统一视角，唯一区别在于容器的最上面那一层是可读可写的
 
@@ -418,6 +671,7 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 ### ps  aux和ps -ef
 
 * [ ] ps  aux  BSD风格
+
   ```shell
   # CPU占用前10的进程
   ps aux | head -1;ps aux | grep -v USER | sort -k3 -nr | head
@@ -461,6 +715,30 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 \+  匹配加号前边的字符或者表达式出现1次或者多次
 
 [^abc]  [^a-c]  取反，匹配不在列表中的字符
+
+\b和\B都是零宽度断言，不匹配任何实际字符，只匹配位置,\b匹配单词边界，\B匹配非单词边界
+
+```shell
+正则表达式 \bword\b 匹配整个单词 "word"，但不匹配 "words" 或 "sword"
+正则表达式 \b\d+\b 匹配一个完整的数字，例如 "123"，但不匹配 "abc123
+正则表达式 \b[A-Z]+\b 匹配一个完整的大写字母单词，例如 "HELLO"，但不匹配 "hello"
+正则表达式 \Bword\B 匹配 "sword1" 中的 "word"，但不匹配 "password" 或 "words"
+正则表达式 \B\d+\B 匹配 "abc123def" 中的 "123"，但不匹配 "123" 或 "abc123"
+正则表达式 \B[A-Z]+\B 匹配 "HELLO WORLD" 中的 "ELL" 和 "ORL"，但不匹配 "HELLO" 或 "WORLD"
+```
+
+---
+
+### 使用rename命令批量修改文件名
+
+```shell
+#rename分C版本和perl版本
+rename --version的回显结果中如果包含util-linux,为C版本，反之则为per版本，CentOS 7默认为C版本
+C版本支持通配符，语法为rename foo foo1 foo*,例如：
+rename dir directory dir* 表示将所有dir开头的文件名中的"dir"修改为"directory"
+
+Perl版本支持正则（替换规则支持正则，文件名匹配时仍是通配符)，语法为rename  's/foo/foo1/' foo[0-9]+\.txt表示将所有foo开头、.txt结尾，中间包含若干个数字的文件中的foo修改为foo1
+```
 
 ---
 
@@ -571,6 +849,207 @@ eval echo \$$#
 
 ---
 
+### Docker有几种网络模式，怎么实现网络隔离？
+
+| 网络模式           | 简介                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Bridge（默认模式） | 此模式会为每一个容器分配、设置IP等，并将容器连接到一个docker0虚拟网桥，通过docker0网桥以及netfilter的 nat表配置与宿主机通信。 |
+| Host               | 容器将不会虚拟出自己的网卡，配置自己的IP等，而是使用宿主机的IP和端口。                                                         |
+| Container          | 创建的容器不会创建自己的网卡，配置自己的IP，而是和一个指定的容器共享IP、端口范围。                                             |
+| None               | 该模式关闭了容器的网络功能，与宿主机、与其他容器都不连通的.                                                                    |
+
+---
+
+### docker的数据持久化
+
+#### 修改docker默认存储路径
+
+```shell
+/etc/docker/daemon.json
+"data-root": "/var/lib/docker"
+```
+
+#### Docker 保存容器数据的方法
+
+* Docker 卷（`Docker Volumes`）：可以将数据保存在 Docker 卷中，这样可以在容器和宿主机之间共享数据，并保证容器中的数据不会因为容器被删除而丢失。Docker 卷可以用来保存应用程序的配置、日志、[数据库](https://so.csdn.net/so/search?q=%E6%95%B0%E6%8D%AE%E5%BA%93&spm=1001.2101.3001.7020)等数据，还可以用于多个容器之间共享数据。
+* Docker 挂载点（`Docker Mounts`）：可以将主机文件系统中的目录或文件挂载到容器中，通过挂载点可以将主机文件系统中的数据共享到容器中，并进行持久化保存。
+* Docker 数据卷容器（`Docker Data Container`）：可以创建一个特殊的容器，专门用来存储数据卷。在其他容器中挂载这个数据卷容器，可以实现数据在不同容器之间的共享。
+* Docker 备份和恢复（`Docker Backup and Restore`）：可以使用 Docker 的备份和恢复功能来保存容器数据。使用 Docker 的命令可以将容器的数据备份到一个 tar 包中，然后将这个 tar 包恢复到另一个容器中。
+
+以上这些方法都可以用来保存 [Docker 容器](https://so.csdn.net/so/search?q=Docker%20%E5%AE%B9%E5%99%A8&spm=1001.2101.3001.7020)中的数据，并进行持久化保存。具体使用哪种方法，需要根据应用场景和需求进行选择。
+
+#### Docker 三种不同的挂载方式
+
+* `bind mount`：将主机的文件或目录直接挂载到容器中。这种挂载方式可以让容器访问主机上的文件系统，也可以让主机访问容器中的文件系统。bind mount 挂载是针对文件或目录进行的，支持读写模式。
+* `volumes`：是 Docker 容器中持久化数据的一种方法，可以将数据保存在 Docker 卷中，并在容器和宿主机之间共享数据。volumes 挂载是针对卷进行的，支持读写模式。
+* `tmpfs mount`：将主机的 tmpfs 文件系统挂载到容器中。tmpfs 文件系统是一个基于内存的文件系统，使用 tmpfs mount 挂载可以在容器中创建一个临时文件系统，这个文件系统的数据将保存在内存中，不会写入主机磁盘。tmpfs mount 挂载也是针对目录进行的，支持读写模式。
+
+总的来说，bind mount 挂载是针对主机文件系统的，而 volumes 和 tmpfs mount 挂载是针对 Docker 卷和内存文件系统的。bind mount 挂载适合用于开发环境和持续集成环境，volumes 和 tmpfs mount 挂载适合用于生产环境和分布式环境。
+
+#### 数据卷的使用
+
+```shell
+-v 和 -mount的区别
+```
+
+-v 只能创建bind mount
+–mount默认情况下用来挂载volume，但也可以用来创建bind mount和tmpfs
+创建bind mount和挂载volume的比较
+
+| 对比项       | bind mount        | volume                   |
+| ------------ | ----------------- | ------------------------ |
+| Source位置   | 用户指定          | /var/lib/docker/volumes/ |
+| Source为空   | 覆盖dest为空      | 保留dest内容             |
+| Source非空   | 覆盖dest内容      | 覆盖dest内容             |
+| Source种类   | 文件或目录        | 只能是目录               |
+| 可移植性     | 一般（自行维护）  | 强（docker托管）         |
+| 宿主直接访问 | 容易（仅需chown） | 受限（需登陆root用户）\* |
+
+#### 匿名挂载和具名挂载
+
+在 Docker 中，可以使用匿名挂载和具名挂载两种方式将主机文件系统或 Docker Volume 挂载到容器中。
+
+##### 匿名挂载
+
+匿名挂载是指在创建容器时，不指定挂载卷的名称，直接将主机文件系统或 Docker Volume 挂载到容器中。匿名挂载的语法格式如下：
+
+```shell
+docker run -v <host-path>:<container-path> image-name
+```
+
+或
+
+```shell
+docker run --mount type=<type>,source=<source>,target=<destination> image-name
+```
+
+这种方式会在容器内创建临时挂载点，其名称是由 Docker 自动生成的。一旦容器被删除，挂载点也会随之被删除。
+
+例如，以下命令将主机上的 /data 目录匿名挂载到容器中的 /mydata 目录：
+
+```shell
+docker run -v /data:/mydata nginx
+```
+
+或
+
+```shell
+docker run --mount type=bind,source=/data,target=/mydata nginx
+```
+
+##### 具名挂载
+
+具名挂载是指在创建容器时，为挂载卷指定一个名称。具名挂载的语法格式如下：
+
+```shell
+docker run -v <volume-name>:<container-path> image-name
+```
+
+或
+
+```shell
+docker run --mount type=<type>,source=<volume-name>,target=<destination> image-name
+```
+
+该方式将主机文件系统或 Docker Volume 挂载到容器中，并在容器内创建一个指定名称的挂载点。一旦容器被删除，挂载点和数据不会被删除，可以在其他容器中继续使用。
+
+例如，以下命令将名为 my-volume 的 Docker Volume 挂载到容器中的 /mydata 目录：
+
+```shell
+docker run -v my-volume:/mydata nginx
+```
+
+或
+
+```shell
+docker run --mount type=volume,source=my-volume,target=/mydata nginx
+```
+
+综上所述，匿名挂载和具名挂载是将主机文件系统或 Docker Volume 挂载到容器中的两种方式。匿名挂载是一种快捷简单的方式，但不方便数据的管理和共享；具名挂载可以方便地对数据进行管理和共享，但需要手动创建和管理 Docker Volume。
+
+#### 卷的备份和还原
+
+在 Docker 中，可以使用 docker volume 命令对数据卷进行备份和还原，以便在需要的时候恢复数据卷中的数据
+
+##### 备份数据卷
+
+使用 docker run 命令创建一个带有 --rm 参数的容器，将要备份的数据卷挂载到容器中，并使用 tar 命令将数据卷中的数据打包成一个 tar 文件（容器挂载目录下）例如，以下命令将名为 my-volume 的数据卷备份到 /backup 目录下：
+
+```shell
+docker run --rm -v my-volume:/data -v /backup:/backup busybox tar czvf /backup/my-volume.tar.gz /data
+```
+
+该命令将创建一个临时容器，在容器中将 my-volume 数据卷挂载到 /data 目录，并将数据卷中的数据打包成一个 tar 文件，保存到主机上的 /backup 目录下。完成备份后，临时容器会被删除。
+
+##### 还原数据卷
+
+如果需要恢复数据卷中的数据，可以使用 docker run 命令创建一个带有 --rm 参数的容器，将备份文件挂载到容器中，并使用 tar 命令解压备份文件到数据卷中。例如，以下命令从 /backup 目录中的 my-volume.tar.gz 文件还原 my-volume 数据卷：
+
+```shell
+docker run --rm -v my-volume:/data -v /backup:/backup busybox tar xzvf /backup/my-volume.tar.gz -C /data
+```
+
+该命令将创建一个临时容器，在容器中将备份文件 /backup/my-volume.tar.gz 挂载到 /backup 目录，并将备份文件中的数据解压到 my-volume 数据卷中。完成数据还原后，临时容器会被删除。
+
+#### 容器间卷的共享
+
+使用 `docker run --volumes-from` 命令来在创建容器时，将一个或多个数据卷从已有的容器中挂载到新容器中，实现容器之间数据的共享和传递。以下是 docker run --volumes-from 命令的使用示例：
+
+首先，假设已经有一个名为 my-container 的容器，该容器使用了一个名为 my-volume 的 Docker Volume，存储了一些数据。现在需要创建一个新的容器，使用 my-volume 数据卷中的数据，可以使用以下命令：
+
+```shell
+docker run --volumes-from my-container --name my-new-container image-name
+```
+
+该命令将创建一个名为 my-new-container 的新容器，并将 my-container 容器中使用的所有数据卷都挂载到 my-new-container 中。这样，在 my-new-container 中就可以使用 my-volume 数据卷中的数据，无需重新创建和初始化数据卷。
+
+除了使用容器名称进行挂载，docker run --volumes-from 命令还支持使用容器 ID、容器名称前缀等方式进行挂载。例如，以下命令将使用 ID 为 123456 的容器中的所有数据卷挂载到新容器中：
+
+```shell
+docker run --volumes-from 123456 --name my-new-container image-name
+```
+
+需要注意的是，使用 docker run --volumes-from 命令挂载数据卷时，**应该确保被挂载的容器和新建的容器都在同一个 Docker 主机上**，否则将无法实现数据的共享和传递。
+
+通过使用 docker run --volumes-from 命令，可以方便地将一个或多个数据卷从已有的容器中挂载到新容器中，实现容器之间数据的共享和传递。这个命令可以避免重复创建数据卷，提高容器的可复用性和可扩展性。
+
+---
+
+### 怎样保证容器的自动启动？（其实考察的是容器的重启策略）docker run --restart
+
+```shell
+docker run --restart always
+
+
+docker-compose 
+
+services:
+  web:
+    image: nginx
+    restart: always  
+
+
+# 容器的重启策略有哪些？
+no               默认策略，在容器退出时不重启容器
+always           在容器非正常退出时（退出状态非0），才会重启容器
+on-failure:3       在容器非正常退出时重启容器，最多重启3次
+unless-stoped    在容器退出时总是重启容器，但是不考虑在Docker守护进程启动时就已经停止了的容器
+
+```
+
+### 怎么实现docker守护进程退出后容器仍保持运行？
+
+```shell
+# vim /etc/docker/daemon.json
+
+{
+  "live-restore": true
+
+}
+```
+
+---
+
 ### 怎样查看docker的运行日志（不是具体哪个容器的日志）
 
 ```shell
@@ -615,7 +1094,14 @@ docker top <container_id>
 {
   "registry-mirrors": ["http://f613ce8f.m.daocloud.io"],
   "log-driver":"json-file",
-  "log-opts": {"max-size":"500m", "max-file":"3"}   
+  "log-opts": {"max-size":"500m", "max-file":"3"},
+  {
+  "storage-driver": "overlay2",  # 指定使用overlay2文件系统
+  "storage-opts": [
+    "overlay2.size=20G",         # 限制单个容器最大使用20G磁盘空间，需要配合xfs的pquota挂载参数
+    "overlay2.override_kernel_check=true"
+  ]
+}
 }
 ```
 
@@ -629,17 +1115,104 @@ max-file=3，意味着一个容器最多有三个日志，分别是：容器id-j
 
 ---
 
-### Linux内核的namespace（docker目前支持前6种）
+### docker的退出状态码
 
-| namespace | 系统调用参数  | 隔离内容                   | 应用意义                                                           |
-| --------- | ------------- | -------------------------- | ------------------------------------------------------------------ |
-| UTS       | CLONE_NEWUTS  | 主机与域名                 | 每个容器在网络中可以被视作一个独立的节点，而非宿主机的一个进程     |
-| Mount     | CLONE_NEWNS   | 挂载点（文件系统）         | 容器间、容器与宿主机之间的文件系统互不影响                         |
-| Network   | CLONE_NEWNET  | 网络设备、网络栈、端口等   | 避免产生容器间、容器与宿主机之间产生端口已占用的问题               |
-| User      | CLONE_NEWUSER | 用户和用户组               | 普通用户（组）在容器内部也可以成为超级用户（组），从而进行权限管理 |
-| PID       | CLONE_NEWPID  | 进程编号                   | 隔离容器间、容器与宿主机之间的进程PID                              |
-| IPC       | CLONE_NEWIPC  | 信号量、消息队列和共享内存 | 隔离容器间、容器与宿主机之间的进程间通信                           |
-| Cgroup    | CLONE_CGROUP  | CGROUP                     | 对Cgroup根目录进行隔离（kernel version >= 4.6）                    |
+![img](img/docker-exit-code.png)
+
+---
+
+### Dockerfile中的RUN、CMD和ENTRYPOINT的区别？
+
+###### RUN 、CMD、ENTRYPOINT
+
+1. RUN 执行命令并创建新的镜像层，经常用于安装软件包。
+2. CMD 设置容器启动后默认执行的命令及其参数，但能够被 `docker run` 后面跟的命令行参数替换。
+3. ENTRYPOINT 配置容器启动时运行的命令
+
+###### Exec、Shell
+
+1. exec
+   `<instruction>` ["executable","param1","param2",...]
+   exec格式下，指令不会被shell解析，直接调用 `<command>`
+
+   1.1 ENTRYPOINT 的 Exec 格式用于设置要执行的命令及其参数，同时可通过 CMD 提供额外的参数，ENTRYPOINT 中的参数始终会被使用，而 CMD 的额外参数可以在容器启动时动态替换掉
+
+   1.2 CMD有一种特殊用法，就是只有参数没有可执行命令，这种情况必须与exec格式的ENTRYPOINT组合使用，用来为ENTRYPOINT提供参数
+2. shell
+   `<instruction> <command>`
+   shell格式下，当执行指令时，会调用/bin/sh -c  `<command>`
+
+   2.1 **Shell 格式的ENTRYPOINT会忽略任何 CMD 或 docker run 提供的参数**
+
+```yaml
+ENV name Cloud Man  
+ENTRYPOINT ["/bin/echo", "Hello, $name"]
+```
+
+以上写法，运行容器将输出 Hello,$name,因为exec格式下指令不会被shell解析
+
+```yaml
+ENV name Cloud Man  
+ENTRYPOINT ["/bin/echo", "Hello, $name"]
+```
+
+若要对$name进行解析，可修改成如下写法：
+
+```yaml
+ENV name Cloud Man  
+ENTRYPOINT ["/bin/sh","-c","echo Hello,$name"]
+```
+
+```yaml
+ENV name Cloud Man  
+ENTRYPOINT echo "Hello,$name"
+```
+
+---
+
+### Dockerfile中的ARG和ENV的区别
+
+`ARG`和 `ENV`指令的最大区别在于它们的作用域。`ARG`指令定义的参数仅在构建镜像期间可用，而 `ENV`指令定义的环境变量在容器运行时可用。因此，你可以使用 `ARG`指令来传递构建参数，而使用 `ENV`指令来设置容器的环境变量。
+
+`ARG`指令可以在 `FROM`指令之前使用，但 `ENV`指令则不能。这是因为 `FROM`指令之前的任何指令都在构建上下文中执行，而 `FROM`指令之后的指令则在新的构建阶段中执行
+
+example：
+
+```shell
+ARG VERSION=1.0
+RUN echo "Version: $VERSION"
+```
+
+在这个例子中，我们定义了一个名为 `VERSION`的构建参数，并在 `RUN`指令中使用它。当我们使用 `docker build`命令构建映像时，可以使用 `--build-arg`选项来传递该参数的值。例如：
+
+```shell
+docker build --build-arg VERSION=2.0 .
+```
+
+`ENV`指令用于定义环境变量。这些变量在容器运行时是可用的，并且可以在容器内部的任何进程中使用。例如：
+
+```shell
+ENV DB_HOST localhost
+```
+
+我们定义了一个名为 `DB_HOST`的环境变量，并将其设置为 `localhost`。在容器运行时，这个环境变量将在整个容器中可用
+
+![作用域](img/arg-env.webp)
+
+---
+
+### Linux内核的namespace（docker目前支持前8种）
+
+| namespace | 系统调用参数    | 隔离内容                   | 应用意义                                                           |
+| :-------- | --------------- | -------------------------- | ------------------------------------------------------------------ |
+| UTS       | CLONE_NEWUTS    | 主机与域名                 | 每个容器在网络中可以被视作一个独立的节点，而非宿主机的一个进程     |
+| Mount     | CLONE_NEWNS     | 挂载点（文件系统）         | 容器间、容器与宿主机之间的文件系统互不影响                         |
+| Network   | CLONE_NEWNET    | 网络设备、网络栈、端口等   | 避免产生容器间、容器与宿主机之间产生端口已占用的问题               |
+| User      | CLONE_NEWUSER   | 用户和用户组               | 普通用户（组）在容器内部也可以成为超级用户（组），从而进行权限管理 |
+| PID       | CLONE_NEWPID    | 进程编号                   | 隔离容器间、容器与宿主机之间的进程PID                              |
+| IPC       | CLONE_NEWIPC    | 信号量、消息队列和共享内存 | 隔离容器间、容器与宿主机之间的进程间通信                           |
+| Cgroup    | CLONE_NEWCGROUP | CGROUP                     | 对Cgroup根目录进行隔离（kernel version >= 4.6）                    |
+| Time      | CLONE_NEWTIME   |                            | Boot and monotonic clocks（启动和单调时钟）(kernel version>=5.6)   |
 
 ---
 
@@ -658,15 +1231,22 @@ max-file=3，意味着一个容器最多有三个日志，分别是：容器id-j
 
 ### 输入输出重定向
 
-- [ ] &ensp; <
-- [ ] &ensp; >
-- [ ] &ensp; >>
+* [ ] &ensp; <
+* [ ] &ensp; >
+* [ ] &ensp; >>
 
 ---
 
-### 提取文件的50~80行
+### sed
 
+```shell
+# 提取文件50~80行
 sed  -n '50,80p'  filename
+
+# 删除每行开个的空格
+sed 's/^ *//'  filename
+sed 's/^[[:space:]]*//' filename
+```
 
 ---
 
@@ -677,6 +1257,27 @@ awk  -F :  '{print  $1}'   filename
 awk  -F :  '{print  $NF}'   filename
 
 awk  'BEGIN{} {} END{}'
+
+---
+
+### tr
+
+```shell
+# "压缩"所有重复的a或者o,只保留第一个
+echo "Helloooo  Javaaaa" | tr -s [ao]
+
+# 删除所有的空格或者tab
+echo "   Hello World  " | tr -d [ \t]
+
+# 大小写替换
+echo "Hello World" | tr [a-z] [A-Z]
+
+# 大小写互换
+echo "Hello World" | tr '[A-Za-z]' '[a-zA-Z]' #大小写互换，输出hELLO wORLD
+
+# 多行合并为一行
+echo -e  "1\n2\n3\n4" | tr -d '\n'
+```
 
 ---
 
@@ -739,10 +1340,15 @@ find ./ -path ./database -prune -or -type f -print
 
 ```shell
 # 查找并批量移动文件
+# -exec 是查找结果一次性发给后续的命令
+# xargs 是将查询结果依次发送给后续命令，默认每次处理一个，可以使用-P参数指定同时处理的文件数
+
 find . -name "aa*" -exec mv {} ~/tmp/
 find . -name "aa*" | xargs -I {} mv {} ~/tmp/ # -I 将查找到的内容逐个赋值给{}
 ls *.sh | xargs -P N -I {} bash {} # -P指定最大同时处理N个文件
 
+删除20天前的目录
+find /home/prestat/bills/test -type d -mtime +20 -exec rm {} \;
 
 ```
 
@@ -1008,8 +1614,6 @@ JAVA_OPTS="-server -Xms256m -Xmx2048m -XX:PermSize=256m -XX:MaxNewSize=1024m -XX
   /etc/security/limits.conf
   * soft nofile 65535  # 文件描述符
   * hard nofile 65535
-  * soft nproc  65535  # 线程数
-  * hard nproc  65535
   ```
 * [ ] [确保足够的虚拟内存](https://www.elastic.co/guide/en/elasticsearch/reference/7.3/vm-max-map-count.html "虚拟内存")
 
@@ -1034,8 +1638,6 @@ vm.max_map_count
 
 ```shell
 # /etc/security/limits.conf
-* soft nofile 65535  # 文件描述符个数
-* hard nofile 65535
 * soft nproc  65535  # 线程数
 * hard nproc  65535
 ```
@@ -1043,6 +1645,10 @@ vm.max_map_count
 jvm优化：
 
     jvm.options主要是进行内存相关配置，elasticsearch默认给的1g，官方建议分配给es的内存不要超出系统内存的50%，
+
+```
+不要直接修改jvm.options文件，而是在jvm.options.d下创建单独的文件
+```
 
     预留一半给Lucene，因为Lucene会缓存segment数据提升检索性能；
 
@@ -1052,7 +1658,7 @@ jvm优化：
 
 ---
 
-### ES集群中的节点类型：
+### ES集群中的节点类型
 
 * [ ] 主节点，master node
 
@@ -1197,7 +1803,7 @@ PUT _ilm/policy/my_policy_test
   "policy": {
     "phases": {
         "hot": {   
-	    #"min_age": "0ms"     # 索引创建后立即进入hot阶段
+     #"min_age": "0ms"     # 索引创建后立即进入hot阶段
             "actions": {
                 "rollover": {           # 索引滚动策略
                     "max_age": "7d",
@@ -1212,14 +1818,14 @@ PUT _ilm/policy/my_policy_test
         "warm": {
             "min_age": "3m",   # 从索引滚动后开始计时，3分钟后，进入到warm阶段
             "actions": {
-		"forcemerge": {
+  "forcemerge": {
                   "max_num_segments": 1    # 段合并，可提升查询效率
                 }, 
                 "shrink": {
                   "number_of_shards": 1    # 主分片数收缩为1
                 }, 
                 "allocate": {
-		    "include": {
+      "include": {
                       "_tier_preference" : "data_warm,data_hot", # 该组属性es会默认添加
                       "box_type" : "hot"   # 这里继承的是index模板的属性
                     },
@@ -1237,7 +1843,7 @@ PUT _ilm/policy/my_policy_test
             "freeze": {},
             "allocate": {
               "require": {
-		"_tier_preference" : "data_cold",   # 在warm阶段，es会给索引添加"_tier_preference"属性，且值为
+  "_tier_preference" : "data_cold",   # 在warm阶段，es会给索引添加"_tier_preference"属性，且值为
                                                     # "data_warm,data_hot"，所以这里要显示设置以覆盖其值
                 "box_type": "cool"  # 覆盖模板自带的"box_type": "hot"
               }
@@ -1387,7 +1993,7 @@ ingest.geoip.downloader.enabled: false
 
 ### ICMP是几层协议
 
-三层
+三层网络层
 
 ---
 
@@ -1417,9 +2023,65 @@ ingest.geoip.downloader.enabled: false
 
 ### 查看块设备信息
 
-lsblk     `<list block> `
+lsblk     `<list block>`
 
 blkid
+
+---
+
+### 分区扩缩容
+
+#### 文件系统类型为ext4
+
+```shell
+# 前提该分区为逻辑卷分区
+
+# 扩容步骤   先扩容物理层面(pv)，再扩容文件系统层面(fs)
+# pvcreate
+pvvreate  /dev/sdc1 
+# vgextend
+vgextend  <vg_name>  <lv_path>
+# lvextend
+lvextend -L 10G <lv_path> # 扩容后lv为10G
+lvextend -L +10G <lv_path> # 扩容后lv增加10G
+# resize2fs
+resize2fs  <lv_path>
+
+# lvextend和lvresize的区别：
+lvextend只能增加逻辑卷大小，lvresize可以增加或减小
+
+
+# 缩容步骤    先缩容文件系统层面(fs)，再扩容物理层面(pv)
+umount  <lvs_path>          # 卸载要执行缩容的分区
+e2fsck -f <lv_path>         # 缩容前强制检查文件大系统
+resize2fs -L 1G  <lv_path>  # 缩减文件系统
+lvreduce -L 1G <lv_path>    # 缩减逻辑卷
+mount <lv_path>             # 重新挂载
+# 检测重新挂载后的分区是否可用
+
+```
+
+#### 文件系统类型为xfs
+
+```shell
+# 前提该分区为逻辑卷分区
+
+# 扩容步骤
+# 与ext4基本相同，最后一步的命令有差异
+xfs_growfs <lv_path>
+
+
+# 缩容步骤
+yum install xfsdump                         # 安装xfs备份工具
+xfsdump -f /opt/backup/home.dump  /home     # 备份分区数据
+umount /home                                # 卸载分区
+lvresize -L 10G /dev/mapper/centos-home     # 分区缩容
+mkfs.xfs /dev/mapper/centos-home            # 重新格式化
+mount /dev/mapper/centos-home /home         # 重新挂载
+xfsrestore -f /opt/backup/home.dump /home   # 恢复数据
+
+
+```
 
 ---
 
@@ -1504,11 +2166,118 @@ git pull == git fetch + git merge
 
 ---
 
-### RAID5的原理是什么？什么是热备盘？
+### 常见的RAID类型及其工作原理
+
+#### RAID0
+
+![img](img/RAID-0.png)
+
+又称为striping(数据粉条)，系统向N(N>=2)块磁盘组成的逻辑硬盘（RAID0 磁盘组）发出的I/O数据请求被转化为N项操作，其中的每一项操作都对应于一块物理硬盘，数据被分条分布到多块磁盘，进行并行读写，所以理论上的读写速度是单块磁盘的N倍
+
+优缺点：
+
+读写性能是所有RAID级别中最高的。
+
+RAID 0的缺点是不提供数据冗余，因此一旦用户数据损坏，损坏的数据将无法得到恢复。RAID0运行时只要其中任一块硬盘出现问题就会导致整个数据的故障。一般不建议企业用户单独使用。
+
+总结：
+
+磁盘空间使用率：100%，故成本最低。
+
+读性能：N*单块磁盘的读性能
+
+写性能：N*单块磁盘的写性能
+
+冗余：无，任何一块磁盘损坏都将导致数据不可用
+
+#### RAID1
+
+![img](img/RAID-1.png)
+
+又称为镜像，在成对的独立磁盘上产生互为备份的数据，当原始数据繁忙时，可直接从镜像拷贝中读取数据，因此RAID 1可以提高读取性能。RAID 1是磁盘阵列中单位成本最高的，但提供了很高的数据安全性和可用性。当一个磁盘失效时，系统可以自动切换到镜像磁盘上读写，而不需要重组失效的数据
+
+优缺点：
+
+RAID1通过硬盘数据镜像实现数据的冗余，保护数据安全，在两块盘上产生互为备份的数据，当原始数据繁忙时，可直接从镜像备份中读取数据，因此RAID1可以提供读取性能。
+RAID1是硬盘中单位成本最高的，但提供了很高的数据安全性和可用性，当一个硬盘失效时，系统可以自动切换到镜像硬盘上读/写，并且不需要重组失效的数据。
+
+总结：
+
+磁盘空间使用率：50%，故成本最高。
+
+读性能：只能在一个磁盘上读取，取决于磁盘中较快的那块盘
+
+写性能：两块磁盘都要写入，虽然是并行写入，但因为要比对，故性能单块磁盘慢。
+
+冗余：只要系统中任何一对镜像盘中有一块磁盘可以使用，甚至可以在一半数量的硬盘出现问题时系统都可以正常运行。
+
+#### RAID5
+
+![img](img/RAID-5.png)
+
+RAID 5是RAID 0和RAID 1的折中方案。RAID 5具有和RAID0相近似的数据读取速度，只是多了一个奇偶校验信息，写入数据的速度比对单个磁盘进行写入操作稍慢。同时由于多个数据对应一个奇偶校验信息，RAID5的磁盘空间利用率要比RAID 1高，存储成本相对较低，是目前运用较多的一种解决方案。
+
+工作原理：
+
+RAID5把数据和相对应的奇偶校验信息存储到组成RAID5的各个磁盘上，并且奇偶校验信息和相对应的数据分别存储于不同的磁盘上，其中任意N-1块磁盘上都存储完整的数据，也就是说有相当于一块磁盘容量的空间用于存储奇偶校验信息。因此当RAID5的一个磁盘发生损坏后，不会影响数据的完整性，从而保证了数据安全。当损坏的磁盘被替换后，RAID还会自动利用剩下奇偶校验信息去重建此磁盘上的数据，来保持RAID5的高可靠性。
+
+做raid 5阵列所有磁盘容量必须一样大，当容量不同时，会以最小的容量为准。 最好硬盘转速一样，否则会影响性能，而且可用空间=磁盘数n-1，Raid 5 没有独立的奇偶校验盘，所有校验信息分散放在所有磁盘上， 只占用一个磁盘的容量。
+
+总结：
+
+磁盘空间利用率：(N-1)/N，即只浪费一块磁盘用于奇偶校验。
+
+读性能：(n-1)*单块磁盘的读性能，接近RAID0的读性能。
+
+写性能：比单块磁盘的写性能要差（这点不是很明白，不是可以并行写入么？）
+
+冗余：只允许一块磁盘损坏。
+
+#### RAID10
+
+![img](img/RAID-10.png)
+
+RAID10也被称为镜象阵列条带。象RAID0一样，数据跨磁盘抽取；象RAID1一样，每个磁盘都有一个镜象磁盘, 所以RAID 10的另一种会说法是 RAID 0+1。RAID10提供100%的数据冗余，支持更大的卷尺寸，但价格也相对较高。对大多数只要求具有冗余度而不必考虑价格的应用来说，RAID10提供最好的性能。使用RAID10，可以获得更好的可靠性，因为即使两个物理驱动器发生故障（每个阵列中一个），数据仍然可以得到保护。RAID10需要4 + 2*N 个磁盘驱动器（N >=0)， 而且只能使用其中一半(或更小, 如果磁盘大小不一)的磁盘用量, 例如 4 个 250G 的硬盘使用RAID10 阵列， 实际容量是 500G。
+
+实现原理：
+
+Raid10其实结构非常简单，首先创建2个独立的Raid1，然后将这两个独立的Raid1组成一个Raid0，当往这个逻辑Raid中写数据时，数据被有序的写入两个Raid1中。磁盘1和磁盘2组成一个Raid1，磁盘3和磁盘4又组成另外一个Raid1;这两个Raid1组成了一个新的Raid0。如写在硬盘1上的数据1、3、5、7，写在硬盘2中则为数据1、3、5、7，硬盘中的数据为0、2、4、6，硬盘4中的数据则为0、2、4、6，因此数据在这四个硬盘上组合成Raid10，且具有raid0和raid1两者的特性。
+虽然Raid10方案造成了50%的磁盘浪费，但是它提供了200%的速度和单磁盘损坏的数据安全性，并且当同时损坏的磁盘不在同一Raid1中，就能保证数据安全性。假如磁盘中的某一块盘坏了，整个逻辑磁盘仍能正常工作的。
+当我们需要恢复RAID10中损坏的磁盘时，只需要更换新的硬盘，按照RAID10的工作原理来进行数据恢复，恢复数据过程中系统仍能正常工作。原先的数据会同步恢复到更换的硬盘中。
+
+总结：
+
+磁盘空间利用率：50%。
+
+读性能：N/2*单块硬盘的读性能
+
+写性能：N/2*单块硬盘的写性能
+
+冗余：只要一对镜像盘中有一块磁盘可以使用就没问题。
 
 ---
 
 ### prometheus的监控原理是什么？
+
+---
+
+### prometheus的核心组件
+
+Prometheus  Server
+
+AlertManager
+
+Exporters
+
+PushGateway
+
+---
+
+### prometheus联邦
+
+---
+
+### thanos    consul
 
 ---
 
@@ -1522,7 +2291,33 @@ alertmanager的分组、抑制和静默
 
 ---
 
-### Docker有几种网络模式，怎么实现网络隔离？
+### prometheus relabel_configs
+
+```shell
+source_labels：源标签，没有经过relabel处理之前的标签名字
+
+target_labels：通过relabel处理之后的标签名字
+
+separator：源标签的值的连接分隔符。默认是";"
+
+module：取源标签值散列的模数
+
+regex：正则表达式，匹配源标签的值。默认是(.*)
+
+replacement：通过分组替换后标签（target_label）对应的值。默认是$1
+
+action：根据正则表达式匹配执行的动作。默认是replace
+
+replace：替换标签值，根据regex正则匹配到原标签值，使用replacement来引用表达式匹配的分组
+keep：满足regex正则条件的实例进行采集，把source_labels中没有匹配到regex正则内容的target实例丢掉，即只采集匹配成功的实例
+drop：满足regex正则条件的实例不采集，把source_labels中没有匹配到regex正则内容的target实例丢掉，即只采集没有匹配成功的实例
+hashmod： 使用hashmod计算source_labels的hash值并进行对比，基于自定义的模数取模，以实现对目标进行分类、重新赋值等功能
+labelmap： 匹配regex所有标签名称，然后复制匹配标签的值进行分组，通过replacement分组引用($1,$2,...)替代
+labeldrop： 匹配regex所有标签名称，对匹配到的实例标签进行删除
+labelkeep： 匹配regex所有标签名称，对匹配到的实例标签进行保留
+```
+
+---
 
 ---
 
@@ -1531,7 +2326,7 @@ alertmanager的分组、抑制和静默
 | 信号编号 | 信号名 | 信号含义                                   |
 | :------: | :----- | ------------------------------------------ |
 |    1    | HUP    | 挂起信号                                   |
-|    2    | INT    | 中断信号                                   |
+|    2    | INT    | 中断信号     CTR+C                      |
 |    3    | QUIT   | 退出信号                                   |
 |    9    | KILL   | 杀死信号                                   |
 |    11    | SEGV   | 段错误信号                                 |
@@ -1579,7 +2374,46 @@ pkill -9 -t pts/1   #强制杀死从pts/1虚拟终端登陆的进程
 
 ---
 
-### 什么是SUID、SGID、Sticky bit
+### 什么是SUID、SGID、Sticky bit，如何设置？
+
+SUID和SGID都可以作用于二进制文件，当用户对该二进制文件拥有x权限时，执行该二进制文件的时候会获得该文件的所有者/所属组的权限
+
+SGID还可以作用于目录，当目录被设置了SGID后：
+
+1. 用户若对此目录具有 r 和 x 权限，该用户能够进入该目录
+2. 用户在此目录下的有效用户组将变成该目录的用户组
+3. 若用户在此目录下拥有 w 权限，则用户所创建的新文件的用户组与该目录的用户组相同
+
+粘贴位(sticky bit)
+
+对目录设置了sticky bit，则所有用户在该目录下只能删除自己创建的文件，如/tmp目录
+
+**如何设置以上特殊权限**
+setuid：chmod u+s xxx
+
+setgid: chmod g+s xxx
+
+stick bit : chmod o+t xxx
+
+或者使用八进制方式，在原先的数字前加一个数字，三个权限所代表的进制数与一般权限的方式类似，如下:
+
+suid   guid    stick bit
+
+  1        1          1
+
+所以：suid的二进制串为：100，换算十进制为：4
+
+guid的二进制串为:010,换算：2
+
+stick bit 二进制串：001，换算：1
+
+于是也可以这样设:setuid:
+
+chmod 4755 xxx
+
+setgid:chmod 2755 xxx
+
+stick bit:chmod 1755 xxx
 
 ---
 
@@ -1639,6 +2473,28 @@ pkill -9 -t pts/1   #强制杀死从pts/1虚拟终端登陆的进程
 
 ---
 
+### ssh端口转发
+
+#### 本地转发
+
+#### 远程转发
+
+#### 动态转发
+
+---
+
+### ssh ProxyJump [OpenSSH 7.3+]
+
+只要能够免密登录跳板机，就能免密登录跳板机可达的任何机器.
+
+这样就不需要在跳板机上保存私钥，降低安全风险
+
+```shell
+ssh -p <port_number> user@target_server -J user@jump_server:<port_number>
+```
+
+---
+
 ### 远程执行命令或脚本
 
 #### 执行远程命令
@@ -1692,15 +2548,107 @@ ssh -t k8s-master "top"
 
 ---
 
+### Nginx做过哪些优化？
+
+```shell
+### 并发能力相关的优化
+worker参数
+worker_processes auto;              # 根据 CPU 核心数自动设置
+worker_connections 65535;          # 每个 worker 支持的最大连接数
+multi_accept on;                   # 尽可能多地接受连接请求
+use epoll;                         # 在 Linux 上使用高效的 I/O 模型
+
+### 吞吐能力与延迟优化
+sendfile on;                 # 零拷贝，提升静态文件读取效率
+tcp_nopush on;               # 减少 TCP 包数量
+tcp_nodelay on;              # 适用于小数据包，避免延迟发送
+gzip on;                     # 开启传输压缩
+gzip_types text/plain text/css application/json application/javascript text/xml;
+
+### 长连接优化
+keepalive_timeout 65;        # 保持连接时间，适中设置可减轻频繁建立 TCP 的开销
+keepalive_requests 1000;     # 每个连接可处理的请求数
+
+### 对静态资源进行缓存
+location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+    expires 30d;
+    add_header Cache-Control "public";
+}
+
+### 对后端接口进行缓存
+proxy_cache_path /tmp/nginx_cache levels=1:2 keys_zone=mycache:10m max_size=1g inactive=60m use_temp_path=off;
+
+location /api/data {
+    proxy_pass http://backend;
+    proxy_cache mycache;
+    proxy_cache_valid 200 302 10m;
+    proxy_cache_valid 404 1m;
+}
+
+### 安全相关优化
+
+server_tokens off;  # 隐藏 Nginx 版本号,防止恶意请求z
+add_header X-Frame-Options DENY;
+add_header X-XSS-Protection "1; mode=block";
+# 限制请求速率
+http {
+    limit_req_zone $binary_remote_addr zone=req_limit_per_ip:10m rate=10r/s;
+    server {
+        location / {
+            limit_req zone=req_limit_per_ip burst=20 nodelay;
+        }
+    }
+}
+# 限制连接数
+http {
+    limit_conn_zone $binary_remote_addr zone=perip:10m;
+    limit_conn_zone $server_name zone=perserver:10m;
+    ...
+    server {
+        ...
+        location /download/ {
+            limit_conn perip 1;
+            limit_conn perserver 100;
+        }
+    }
+}
+
+
+### 反向代理与负载均衡相关的优化
+# 对后端服务器进行健康检查
+upstream backend {
+    server 192.168.0.1 max_fails=3 fail_timeout=30s;
+    server 192.168.0.2 backup;
+    keepalive 32;
+}
+
+location /api/ {
+    proxy_pass http://backend;
+    proxy_next_upstream error timeout http_500 http_502;
+    proxy_set_header Host $host;
+}
+
+# 日志相关的优化
+分离 access log 和 error log，定期归档+压缩
+
+使用 JSON 格式日志，便于收集进 ELK / Loki 等系统中
+
+```
+
 ### nginx重新生成日志  reopen
 
 ```
 nginx -s reopen
+```
 
+---
 
-#  nignx 日志切割实现方案
-1. 自研shell脚本
-2. logrotate
+### Nginx的日志切割
+
+```shell
+# 使用shell脚本
+
+# 使用logrotate
 ```
 
 ---
@@ -1713,6 +2661,71 @@ server {
     ...
     charset utf-8;
 }
+```
+
+---
+
+### Nginx平滑升级以及回滚
+
+原理：
+
+Nginx 自带的信号量机制方便地帮助我们实现了不停机的平滑升级。其原理简单概括，就是：
+
+* 在不停掉旧进程的情况下，启动新进程（向旧的master进程发送USR2信号）
+* 旧进程负责处理仍然没有处理完的请求，但不再接受处理请求。
+* 新进程接受新请求。
+* 旧进程处理完所有请求，关闭所有连接后，停止进程
+
+附：
+
+Nginx主进程支持的信号：
+
+| 信号  | 作用                                                         |
+| ----- | ------------------------------------------------------------ |
+| TERM  | 立即退出                                                     |
+| INT   | 立即退出                                                     |
+| QUIT  | 优雅退出master和worker                                       |
+| KILL  | 强制终止进程                                                 |
+| HUP   | 重新加载配置文件，使用新的配置启动工作进程，并逐步关闭旧进程 |
+| USR1  | 重新打开日志文件                                             |
+| USR2  | 启动新的主进程，实现热升级                                   |
+| WINCH | 让 master 平滑关闭 worker（不退出 master 本身）              |
+
+Nginx工作进程支持的信号
+
+| 信号  | 作用                     |
+| ----- | ------------------------ |
+| TERM  | 立即退出                 |
+| INT   | 立即退出                 |
+| QUIT  | 等待请求处理结束后再退出 |
+| USER1 | 重新打开日志文件         |
+
+```shell
+# 备份当前版本Nginx的配置，主要是nginx.conf
+
+# 拿到当前版本Nginx的编译参数
+nginx -V
+
+# 使用相同的参数对新版本Nginx进行编译安装,可以直接覆盖安装，安装程序会自动将旧版本的二进制文件备份为nginx.old,配置文件也不会被覆盖。保险起见还是先对配置文件进行备份
+
+# 对当前版本Nginx的master进程发送USR2信号
+kill -SIGUSR2  <pid of old nginx master> 
+# 接到USR2信号后，旧的master进程会使用新版本的二进制文件，启动一个新的master进程，此时新旧版本同时在线。新的master进程PID保存在nginx.pid中，原来的nginx.pid会被重命名为nginx.pid.oldbin
+
+# 通过向旧版本的master进程发送WINCH信号，优雅关闭旧版本的worker进程
+kill -SIGWINCH  <pid of old nginx master>
+
+# 此时旧版本只剩master进程，全部请求都已经由新版本nginx来处理
+# 如果新的nginx工作正常,那么发送QUIT信号给旧的master,结束旧版本master进程，升级完毕
+kill  -QUIT <pid of old nginx master>
+
+
+# 回滚
+# 如果新的nginx工作不正常,那么可以发送HUP信号给旧的master,旧master会重新启动worker而且不会重读配置(即保持旧有的配置不变),然后发送QUIT信号给新的master要求退出,也可以直接发送TERM命令给新master,新master退出后旧master会重启worker process.
+kill -HUP <pid of old nginx master>
+kill -QUIT <pid of new nginx master>
+
+
 ```
 
 ---
@@ -1746,7 +2759,7 @@ proxy_next_upstream  off;
 
 ### Nginx节点有效性的探测机制（backup、down、max_fails、fail_timeout、max_conns）
 
-nginx通过设置max_fails（最大尝试失败次数）和fail_timeout（失效时间）
+nginx通过设置max_fails（最大尝试失败次数,默认为1）和fail_timeout（失效时间，默认10s）
 
 在到达最大尝试失败次数后，在fail_timeout的时间范围内节点被置为失效，除非所有节点都失效，否则该时间内，节点不进行恢复;
 
@@ -1836,33 +2849,40 @@ upstream web {
 
 ### Nginx转发websocket
 
+在 Nginx 中配置 WebSocket 支持时，需要特别处理两件事：
+
+1. **保持连接升级（Upgrade）头部**
+2. **维持连接的持久性（Connection: upgrade）**
+
+因为 WebSocket 是从 HTTP 升级而来（基于 HTTP 协议的握手），如果没有正确转发这些头部，WebSocket 将无法正常工作。
+
 ```shell
 # 与websocket相关的主要是两个header头： Upgrade和Connection
 # 如果客户端向Nginx发送的是ws://请求，则会传递Upgrade头，保存到Nginx的$http_upgrade变量中，自定义变量connection_upgrade自然
 # 也就被赋值为"upgrade"，如果客户端向Nginx发送的是http://请求，则$http_upgrade的值为空，connetion_upgrade的值则为"close"
 map $http_upgrade $connection_upgrade { 
-	default upgrade; 
-	'' close; 
+ default upgrade; 
+ '' close; 
 } 
 upstream wsbackend{ 
-	server ip1:port1; 
-	server ip2:port2; 
-	keepalive 1000;
+ server ip1:port1; 
+ server ip2:port2; 
+ keepalive 1000;
 } 
  
 server { 
-	listen 20038; 
-	location /{ 
-		proxy_http_version 1.1; 
-		proxy_pass http://wsbackend; 
-		proxy_redirect off; 
-		proxy_set_header Host $host; 
-		proxy_set_header X-Real-IP $remote_addr; 
-		proxy_read_timeout 3600s; 
-		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
-		proxy_set_header Upgrade $http_upgrade; 
-		proxy_set_header Connection $connection_upgrade; 
-	} 
+ listen 20038; 
+ location /{ 
+  proxy_http_version 1.1;          # WebSocket 需要 HTTP/1.1 才能 Upgrade
+  proxy_pass http://wsbackend; 
+  proxy_redirect off; 
+  proxy_set_header Host $host; 
+  proxy_set_header X-Real-IP $remote_addr; 
+  proxy_read_timeout 3600s;       # 避免连接在空闲时被断开，根据业务设置
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+  proxy_set_header Upgrade $http_upgrade;    # 转发 Upgrade 头（WebSocket 握手关键）
+  proxy_set_header Connection $connection_upgrade;  # 保持连接升级状态
+ } 
 }
 ```
 
@@ -1910,7 +2930,7 @@ $args 是nginx内置变量，就是获取的请求 url 的参数（问号之后�
 
 ### Nginx双向认证 SSL（Secure Sockets Layer，安全套接字协议）
 
-#### 单向认证：
+#### 单向认证
 
     1. 客户端发起 HTTPS 建立连接请求，将客户端支持的 SSL 协议版本号、加密算法种类、生成的随机数等信息发送给服务端。
 
@@ -1932,7 +2952,7 @@ $args 是nginx内置变量，就是获取的请求 url 的参数（问号之后�
 
     6. 在接下来的会话中，客户端和服务端将会使用该对称加密密钥（密钥 K）进行通信，保证通信过程中信息的安全。
 
-#### 双向认证：
+#### 双向认证
 
     1. 客户端发起 HTTPS 建立连接请求，将客户端支持的 SSL 协议版本号、加密算法种类、生成的随机数等信息发送给服务端。
 
@@ -1985,7 +3005,116 @@ server {
 
 ---
 
-### nginx动态加载模块
+### 使用openssl自建https证书
+
+```shell
+## 自建ca证书并使用ca证书签发https证书
+1. 生成服务器私钥
+openssl genrsa -out server.key 2048
+
+2. 生成证书签发请求
+openssl req -new -key server.key -out server.csr
+
+3. 生成ca私钥
+openssl genrsa -out ca.key 2048
+
+4. 生成ca自己的证书申请请求
+openssl req -new -key ca.key -out ca.csr
+
+5. 生成自签名证书，CA机构用自己的私钥和证书申请文件生成自己签名的证书，俗称自签名证书，这里可以理解为根证书
+openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+
+6. 根据CA机构的自签名证书ca.crt或者叫根证书生、CA机构的私钥ca.key、服务器的证书申请文件server.csr生成服务端证书
+openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt
+
+
+## 不使用ca,直接生成证书
+
+1.创建服务器证书密钥文件 server.key：
+openssl genrsa -des3 -out server.key 2048
+输入密码，确认密码，自己随便定义，但是要记住，后面会用到。
+
+2.创建服务器证书的申请文件 server.csr
+openssl req -new -key server.key -out server.csr
+输出内容为：
+Enter pass phrase for root.key: ← 输入前面创建的密码
+Country Name (2 letter code) [AU]:CN ← 国家代号，中国输入CN
+State or Province Name (full name) [Some-State]:BeiJing ← 省的全名，拼音
+Locality Name (eg, city) []:BeiJing ← 市的全名，拼音
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:MyCompany Corp. ← 公司英文名
+Organizational Unit Name (eg, section) []: ← 可以不输入
+Common Name (eg, YOUR name) []: ← 输入域名，如：iot.conet.com
+Email Address []:admin@mycompany.com ← 电子邮箱，可随意填
+Please enter the following ‘extra’ attributes
+to be sent with your certificate request
+A challenge password []: ← 可以不输入
+An optional company name []: ← 可以不输入
+
+3.备份一份服务器密钥文件
+cp server.key server.key.org
+
+4.去除文件口令
+openssl rsa -in server.key.org -out server.key
+
+5.生成证书文件server.crt
+openssl x509 -req -days 3650 -in server.csr -signkey server.key -out server.crt
+
+# 两种证书的区别
+
+如果私钥不小心被恶意获取，私有证书不能被吊销，那么黑客有可能伪装成受信任的服务端与用户进行通信
+如果需要创建多个客户端证书，使用自建签名证书的方法比较合适，只要给所有客户端都安装了CA根证书，那么以该CA根证书签名过的客户端证书都是信任的，不需要重复的安装客户端证书。
+
+不过因为是自建的CA证书，在使用这个临时证书的时候，会在客户端浏览器报一个错误，签名证书授权未知或不受信任(signing certificate authority is unknown and not trusted)，但只要配置正确，继续操作并不会影响正常通信。自签名证书的issuer和subject是一样的
+```
+
+---
+
+### Nginx编译参数
+
+```
+./configure --prefix=/usr/local/nginx \
+--with-pcre=../pcre-8.45 \
+--with-openssl=../openssl-3.5.0 \
+--with-http_sub_module \
+--with-http_ssl_module \
+--with-http_stub_status_module \
+--with-http_realip_module \
+--with-stream \
+--with-compat \    # 支持动态编译加载模块，无需重新编译二进制文件
+--pid-path=/var/run/nginx.pid \
+--add-module=../echo-nginx-module-master 
+```
+
+---
+
+### Nginx systemd file
+
+```
+[Unit]
+Description=nginx(compile) - high performance web server
+Documentation=http://nginx.org/en/docs/
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/nginx.pid
+ExecStartPre=/usr/local/nginx/sbin/nginx -t
+ExecStart=/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf
+ExecReload=/usr/sbin/nginx -s reload
+ExecStop=/usr/sbin/nginx -s stop
+ExecQuit=/usr/sbin/nginx -s quit
+# 管网示例
+#ExecReload=/bin/kill -s HUP $MAINPID
+#ExecStop=/bin/kill -s QUIT $MAINPID
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+---
+
+### Nginx动态加载模块
 
 * [ ] 编译
   以[nginx-module-vts](https://github.com/vozlt/nginx-module-vts)为例
@@ -2110,25 +3239,34 @@ location / {
 
 ---
 
-### Nginx负载均衡算法
+### Nginx内置变量
 
-轮询+weight   默认的
+```shell
+$uri vs $request_uri
+request_uri: full original request URI (with arguments)
+- 请求的整个生命周期里不会变化
+- 携带原始参数的完整的uri
 
-ip_hash : 基于Hash 计算
+uri: current URI in request, normalized
+The value of $uri may change during request processing, e.g. when doing internal redirects, or when using index files.
+- 不携带参数
+- 值是可变的，比如发生内部重定向时， 通过$uri获取的值不一定是原始的请求路径， 因此当发生了内部重定向比如子请求时，要想保持原始的URI，需要使用$request_uri
 
-    应用场景：保持session 一至性
+$http_port vs $proxy_port vs $proxy_host
+$http_port是nginx服务器自身端口，$proxy_port是后端服务器的端口,$proxy_host则是后端服务器的地址+端口
 
-url_hash: (第三方)
+$host vs $http_host vs $server_name
+$host是core模块内部的一个变量
+当请求头里不存在Host属性或者是个空值，$host则等于$server_name，$server_name则表示接受请求的那个server的名称
+如果请求头里有Host属性，那么$host等于Host属性除了端口号的部分，例如Host属性是www.example.com，那么$host就是www.example.com
+$http_host不是一个固定的变量，他其实是$http_HEADER通配后的结果。
+注意，这里的HEADER是一个通配符，通配的是请求头里的header属性，例如$http_content_type表示请求头里content-type属性的值，同理，$http_host指的就是请求头里的host属性。
 
-    应用场景：静态资源缓存,节约存储，加快速度
-
-least_conn 最少链接
-
-least_time 最小的响应时间,计算节点平均响应时间，然后取响应最快的那个，分配更高权重
+```
 
 ---
 
-### Nginx之location匹配规则
+### Nginx之location匹配顺序
 
 = 开头表示精确匹配
 
@@ -2145,6 +3283,86 @@ least_time 最小的响应时间,计算节点平均响应时间，然后取响�
 多个location配置的情况下匹配顺序为：
 
 首先匹配 =，其次匹配^~, 其次是按文件中顺序的正则匹配，最后是交给 / 通用匹配。当有匹配成功时候，停止匹配，按当前匹配规则处理请求
+
+---
+
+### Nginx之server_name匹配顺序
+
+1. 精确匹配
+2. 以*开头的最长通配符名称
+3. 以*结尾的最长通配符名称
+4. 根据在配置文件出现的顺序第一个匹配上的正则表示式名称
+5. 默认配置，在listen指令中指明了default_server的server块，若无，为配置文件中第一个声明的server块
+
+```shell
+    # 这里主要是方便下面输出结果可以直接在浏览器显示
+    default_type  text/plain;
+    # 这里使用geo指令主要是为了输出$,直接在return输出$会报错
+    # 参见https://stackoverflow.com/questions/57466554/how-do-i-escape-in-nginx-variables
+    geo $dollar {
+        default "$";
+    }
+
+    server {
+        listen 80;
+        server_name ~^www\.a\..*$;
+        return 200 "~^www\.a\..*$dollar";
+    }
+
+    server {
+        listen 80;
+        server_name ~^.*a\..*$;
+        return 200 "~^.*a\..*$dollar";
+    }
+
+    server {
+        listen 80;
+        server_name www.code.a.*;
+        return 200 "www.code.a.*";
+    }
+
+    server {
+        listen 80;
+        server_name *.a.com;
+        return 200 "*.a.com";
+    }
+
+    server {
+        listen       80;
+        server_name  www.a.com;
+        return 200 "www.a.com";
+    }
+```
+
+| input                                                                                                                                  | output            | 匹配类型  |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------- |
+| [http://www.a.com](https://link.segmentfault.com/?enc=hV4vK3LmgN2FO3v7%2FnqfVg%3D%3D.VkvaAGuDdT6pC5FKwh95EyxGfoLDqoPaa78pXQRa5Y8%3D)      | <www.a.com>       | 精确匹配  |
+| [http://www.code.a.com](https://link.segmentfault.com/?enc=I4gBgYrauMyXR8uh8qGTyQ%3D%3D.nQD81yrXClNuSSktBKCAHJBpzOl%2FrkJXLQWnH06XVK8%3D) | *.a.com           | 前导*匹配 |
+| [http://www.code.a.cn](https://link.segmentfault.com/?enc=uEJcs5PGy3VCX59ewdV4%2FQ%3D%3D.t8gzMxH3RPy5hMXcN7i1woSlPWm252VE4MdGKTFTk8k%3D)  | <www.code.a>.*    | 后导*匹配 |
+| [http://www.a.oa.com](https://link.segmentfault.com/?enc=StKNBE3vjxA8OxVPRpUdSw%3D%3D.4Zp3FywQqTg3UF4vC2CBRtPPPUGNgy02BpVAwfie9KU%3D)     | `~^www\.a\..*$` | 正则匹配  |
+| [http://dev.a.cn](https://link.segmentfault.com/?enc=pqjdk8Gjrk6chhX%2B302gwQ%3D%3D.Dg%2FBHjH0EUHI3TMoJdxIbw%3D%3D)                       | `~^.*a\..*$`    | 正则匹配  |
+| [http://www.b.com](https://link.segmentfault.com/?enc=rP8agVDpfxKLEMqJnvd%2FBA%3D%3D.qG7pYYxewHYGcGFILWs74NPNNvIGC3TxFuxX%2FAqgUbI%3D)    | `~^www\.a\..*$` | 默认匹配  |
+
+值得说明的是，由于上面的配置没有显示指定默认server,所以会默认匹配到第一个配置,假如我们在配置最后再添加如下配置:
+
+```shell
+    server {
+        listen 80 default_server;
+        server_name _;
+        return 200 "default_server";
+    }
+
+重启后，再访问http://www.b.com ,会输出default_server,其他访问结果不变。注意这里的default_server是配置在listen指令下的
+```
+
+关于listen指令,有几点需要注意的地方:
+
+1. 如果server指令块里没有指定listen指令,则根据运行nginx的用户不同，默认监听的端口也不同,root用户启动默认监听80端口，否则默认监听8000端口
+2. 如果配置了listen且只指定了IP,则监听端口为80,此时操作系统可能会不允许非root用户启动nginx，提示
+
+   ```shell
+   nginx: [emerg] bind() to 127.0.0.1:80 failed (13: Permission denied)
+   ```
 
 ---
 
@@ -2332,7 +3550,7 @@ if (-d $request_filename) {
 }
 ```
 
-#### 总结：
+#### 总结
 
 情形A和情形B进行对比，可以知道 `proxy_pass`后带一个URI,可以是斜杠(/)也可以是其他uri，对后端 `request_uri`变量的影响。
 情形D说明，当location为正则表达式时，`proxy_pass`不能包含URI部分。
@@ -2357,28 +3575,15 @@ if (-d $request_filename) {
    return 301 $scheme://domain.com$request_uri;
    rewrite ^ $scheme//domain.com$uri permanent;
 
-   $uri和$request_uri的区别：
-
-   request_uri: full original request URI (with arguments)
-   - 请求的整个生命周期里不会变化
-   - 携带原始参数的完整的uri
-
-   uri: current URI in request, normalized
-   The value of $uri may change during request processing, e.g. when doing internal redirects, or when using index files.
-
-   - 不携带参数
-   - 值是可变的，比如发生内部重定向时， 通过$uri获取的值不一定是原始的请求路径， 因此当发生了内部重定向比如子请求时，要想保持原始的URI，需要使用$request_uri
-
-
    # http强制跳转https
    server {
        listen 80;
        server_name www.domain.com;
-       return 301 https://www.domain.com$request_uri;
+       return 301 https://$host$request_uri;
    }
 
    if ($scheme != “https”) {
-       rewrite ^ https://www.mydomain.com$uri permanent;
+       rewrite ^(.*) https://server_name$1 permanent;
    }
 
    ```
@@ -2541,45 +3746,55 @@ http {
 
 ### Nginx黑名单
 
-创建IP黑名单
+#### 创建IP黑名单
 
 echo 'deny 192.168.0.132;' >> balck.ip
 
-屏蔽单个ip访问
+#### 屏蔽单个ip访问
 
 deny IP;
 
-允许单个ip访问
+#### 允许单个ip访问
 
 allow IP;
 
-屏蔽所有ip访问
+#### 屏蔽所有ip访问
 
 deny all;
 
-允许所有ip访问
+#### 允许所有ip访问
 
 allow all;
 
-#屏蔽整个段即从123.0.0.1到123.255.255.254访问的命令
+#### 屏蔽整个段即从123.0.0.1到123.255.255.254访问的命令
 
 deny 123.0.0.0/8
 
-#屏蔽IP段即从123.45.0.1到123.45.255.254访问的命令
+#### 屏蔽IP段即从123.45.0.1到123.45.255.254访问的命令
 
 deny 124.45.0.0/16
 
-#屏蔽IP段即从123.45.6.1到123.45.6.254访问的命令
+#### 屏蔽IP段即从123.45.6.1到123.45.6.254访问的命令
 
 deny 123.45.6.0/24
 
-#http 配置块中引入 黑名单文件，也可以在 *server, location, limit_except语句块*
+#### http 配置块中引入 黑名单文件，也可以在 *server, location, limit_except语句块*
 
 include       black.ip;
 
 ---
 
-### Nginx的负载均衡算法
+### Nginx的负载均衡调度算法
+
+#### 轮询（默认）
+
+#### weight(轮询+权重)
+
+#### ip_hash   根据客户端ip进行会话保持
+
+#### fari(第三方,需要添加nginx-upstream-fair模块) 最小响应时间
+
+#### url_hash(nginx1.7.2+) 根据url将请求定向到一台后端服务器，可以提高后端缓存的命中率
 
 ---
 
@@ -2590,27 +3805,26 @@ include       black.ip;
 * [ ] NAT
   工作模式：
 
-    1. 	Client向Director server发送带有 [CIP-VIP] 的请求数据报文，PREROUTING 链接收数据报文发现目标ip是本机ip，随后将报文转发至INPUT链
+  1. Client向Director server发送带有 [CIP-VIP] 的请求数据报文，PREROUTING 链接收数据报文发现目标ip是本机ip，随后将报文转发至INPUT链
+  2. 工作在INPUT链上的IPVS比对数据包请求的服务是否为集群服务，如果是，修改数据包的目标IP:PORT地址为后端服务器IP:PORT，然后将数据包发至POSTROUTING链。
 
-    2. 工作在INPUT链上的IPVS比对数据包请求的服务是否为集群服务，如果是，修改数据包的目标IP地址为后端服务器IP，然后将数据包发至POSTROUTING链。
+  此时报文的源IP为CIP，目标IP为RIP
 
-    此时报文的源IP为CIP，目标IP为RIP
+  3. POSTROUTING发给后端realy server[IP包转发，也就是三层转发，所以需要ip_forward是开启的]，realy server收到数据包发现目标ip是自己，然后向Director响应请求，
 
-    3. POSTROUTING发给后端realy server[IP包转发，也就是三层转发，所以需要ip_forward是开启的]，realy server收到数据包发现目标ip是自己，然后向Director响应请求，
+  此时响应报文中的源IP地址信息为 RIP,目标地址IP为CIP
 
-    此时响应报文中的源IP地址信息为 RIP,目标地址IP为CIP
+  4. Director server在响应Client之前再将报文中ip信息源IP地址改为 VIP，目标IP仍为CIP
 
-    4. Director server在响应Client之前再将报文中ip信息源IP地址改为 VIP，目标IP仍为CIP
+  特点：
 
-    特点：
+  1.**RIP和DIP应在同一个物理网络**，且应使用私网地址；**RS的网关要指向DIP**
 
-    1.**RIP和DIP应在同一个物理网络**，且应使用私网地址；**RS的网关要指向DIP**
+  2. 请求报文和响应报文都必须经由Director转发，Director易于成为系统瓶颈
 
-    2. 请求报文和响应报文都必须经由Director转发，Director易于成为系统瓶颈
+  3.**支持端口映射**，可修改请求报文的目标PORT
 
-    3.**支持端口映射**，可修改请求报文的目标PORT
-
-    4. LVS必须是Linux系统，RS可以是任意OS系统
+  4. LVS必须是Linux系统，RS可以是任意OS系统
 
 ```shell
 ###### Director Server #######
@@ -2638,15 +3852,11 @@ net.ipv4.conf.ens33.send_redirects = 0
 
 * [ ] DR
 
-    1. 当用户请求到达Director Server，此时请求的数据报文会先到内核空间的PREROUTING链。 此时报文的源IP为CIP，目标IP为VIP
-
-    2. PREROUTING检查发现数据包的目标IP是本机，将数据包送至INPUT链
-
-    3. IPVS比对数据包请求的服务是否为集群服务，若是，将请求报文中的源MAC地址修改为DIP的MAC地址，将目标MAC地址修改RIP的MAC地址，然后将数据包发至POSTROUTING链。 此时的源IP和目的IP均未修改，仅修改了源MAC地址为DIP的MAC地址，目标MAC地址为RIP的MAC地址
-
-    4. 由于DS和RS在同一个网络中，所以是通过二层来传输[ip_forward不需要开启]。POSTROUTING链检查目标MAC地址为RIP的MAC地址，那么此时数据包将会发至Real Server。
-
-    5. RS发现请求报文的MAC地址是自己的MAC地址，就接收此报文。处理完成之后，将响应报文通过lo接口传送给eth0网卡然后向外发出。 此时的源IP地址为VIP，目标IP为CIP
+  1. 当用户请求到达Director Server，此时请求的数据报文会先到内核空间的PREROUTING链。 此时报文的源IP为CIP，目标IP为VIP
+  2. PREROUTING检查发现数据包的目标IP是本机，将数据包送至INPUT链
+  3. IPVS比对数据包请求的服务是否为集群服务，若是，将请求报文中的源MAC地址修改为DIP的MAC地址，将目标MAC地址修改RIP的MAC地址，然后将数据包发至POSTROUTING链。 此时的源IP和目的IP、端口均未修改，仅修改了源MAC地址为DIP的MAC地址，目标MAC地址为RIP的MAC地址
+  4. 数据包是根据mac地址进行转发的，也就是通过二层来传输[ip_forward不需要开启]，所以也要求DS和RS在同一个物理网络中，POSTROUTING链检查目标MAC地址为RIP的MAC地址，那么此时数据包将会发至Real Server。
+  5. RS发现请求报文的MAC地址是自己的MAC地址，就接收此报文。处理完成之后，将响应报文通过lo接口传送给eth0网卡然后向外发出。 此时的源IP地址为VIP，目标IP为CIP
 
 特点：
 
@@ -2717,15 +3927,11 @@ ip route add $VIP dev lo:0
 
 * [ ] TUN
 
-    1. 当用户请求到达Director Server，此时请求的数据报文会先到内核空间的PREROUTING链。 此时报文的源IP为CIP，目标IP为VIP 。
-
-    2. PREROUTING检查发现数据包的目标IP是本机，将数据包送至INPUT链
-
-    3. IPVS比对数据包请求的服务是否为集群服务，若是，在请求报文的首部再次封装一层IP报文，封装源IP为为DIP，目标IP为RIP。然后发至POSTROUTING链。 此时源IP为DIP，目标IP为RIP
-
-    4. POSTROUTING链根据最新封装的IP报文，将数据包发至RS（因为在外层封装多了一层IP首部，所以可以理解为此时通过隧道传输）。 此时源IP为DIP，目标IP为RIP
-
-    5. RS接收到报文后发现是自己的IP地址，就将报文接收下来，拆除掉最外层的IP后，会发现里面还有一层IP首部，而且目标是自己的lo接口VIP，那么此时RS开始处理此请求，处理完成之后，通过lo接口送给eth0网卡，然后向外传递。 此时的源IP地址为VIP，目标IP为CIP
+  1. 当用户请求到达Director Server，此时请求的数据报文会先到内核空间的PREROUTING链。 此时报文的源IP为CIP，目标IP为VIP 。
+  2. PREROUTING检查发现数据包的目标IP是本机，将数据包送至INPUT链
+  3. IPVS比对数据包请求的服务是否为集群服务，若是，在请求报文的首部再次封装一层IP报文，封装源IP为为DIP，目标IP为RIP。然后发至POSTROUTING链。 此时源IP为DIP，目标IP为RIP
+  4. POSTROUTING链根据最新封装的IP报文，将数据包发至RS（因为在外层封装多了一层IP首部，所以可以理解为此时通过隧道传输）。 此时源IP为DIP，目标IP为RIP
+  5. RS接收到报文后发现是自己的IP地址，就将报文接收下来，拆除掉最外层的IP后，会发现里面还有一层IP首部，而且目标是自己的lo接口VIP，那么此时RS开始处理此请求，处理完成之后，通过lo接口送给eth0网卡，然后向外传递。 此时的源IP地址为VIP，目标IP为CIP
 
 特点：
 
@@ -2774,7 +3980,7 @@ ip addr add 10.203.43.88/32 dev tunl0  # NETMASK必须设置为255.255.255.255
 ip route add $VIP dev lo:0
 
 ```
-    
+
 * [ ] FullNat
   fullnat模式和nat模式比较类似，客户端的请求和响应都会经过lvs，不同的是nat模式下转换仅存在于目的方向，也就是说客户端的发来的请求经过lvs后，请求的目的ip会转化成rs的ip地址，目的端口会转化成rs的目的端口，而在fullnat模式下，客户端发来的请求的源ip和源端口都会被转换成lvs的内网ip地址和端口，同理对于rs回复的响应，nat模式下，响应的目的ip和目的端口均为客户端的，而fullnat模式下，响应的目的ip和目的端口均为lvs内网的，这样lvs收到这个响应后会将源ip和源端口转换成vip的地址和端口，目的ip和目的端口会被转换成客户端的ip地址和端口，也就是说在nat模式下对于客户端的请求仅发生DNAT转换，对于RS的响应仅发生SNAT转换，而fullnat模式下，在请求和响应上都会发生SNAT和DNAT转换；另一点不同是nat模式下要求lvs的内网ip和rs的ip地址在同一物理网络中[必须二层可通]，lvs和rs之间需要二层交换设备，而fullnat对于请求和响应都会发生DNAT和SNAT所以lvs的内网ip地址可以和rs不在同一物理网络[三层可通即可]，这样lvs和rs之间就需要三层交换设备，所以相对于nat模式，fullnat的部署会更加灵活。
 
@@ -2929,6 +4135,20 @@ Deepin : 武汉深之度，基于Debian
 
 ---
 
+### 什么是CAP定理
+
+    一致性（**C**onsistency） （等同于所有节点访问同一份最新的数据副本）
+
+    可用性（**A**vailability）（每次请求都能获取到非错的响应——但是不保证获取的数据为最新数据）
+
+    分区容错性（**P**artition tolerance）（以实际效果而言，分区相当于对通信的时限要求。系统如果不能在时限内达成数据一致性，就意味着发生了分区的情况，必须就当前操作在C和A之间做出选择
+
+    根据定理，分布式系统只能满足三项中的两项而不可能满足全部三项 。
+
+    理解CAP理论的最简单方式是想象两个节点分处分区两侧。允许至少一个节点更新状态会导致数据不一致，即丧失了C性质。如果为了保证数据一致性，将分区一侧的节点设置为不可用，那么又丧失了A性质。除非两个节点可以互相通信，才能既保证C又保证A，这又会导致丧失P性质
+
+---
+
 ### git的主流分支管理模型有哪些，你们公司的分支策略是什么？
 
 * [ ] Git flow
@@ -2942,7 +4162,21 @@ Deepin : 武汉深之度，基于Debian
 
 ---
 
-### 故障报告怎么写？
+### 故障报告（复盘报告）怎么写？
+
+故障发生的时间
+
+故障的表现
+
+故障的影响范围
+
+故障持续时间
+
+故障修复过程： 谁，通过什么方式进行的修复
+
+故障原因分析：
+
+故障解决方案：（临时解决|永久解决)
 
 ---
 
@@ -2966,6 +4200,47 @@ Deepin : 武汉深之度，基于Debian
 ---
 
 ### iptables 四表五链
+
+#### 五链
+
+iptables命令中设置数据过滤或处理数据包的策略叫做规则，将多个规则合成一个链，叫规则链。 规则链则依据处理数据包的位置不同分类：
+
+* PREROUTING
+* 在进行路由判断之前所要进行的规则(DNAT/REDIRECT)
+* INPUT
+* 处理入站的数据包
+* OUTPUT
+* 处理出站的数据包
+* FORWARD
+* 处理转发的数据包
+* POSTROUTING
+* 在进行路由判断之后所要进行的规则(SNAT/MASQUERADE)
+
+#### 四表
+
+iptables中的规则表是用于容纳规则链，规则表默认是允许状态的，那么规则链就是设置被禁止的规则，而反之如果规则表是禁止状态的，那么规则链就是设置被允许的规则。
+
+* raw表
+* 确定是否对该数据包进行状态跟踪（较少使用）
+* mangle表
+* 为数据包设置标记（较少使用）
+* nat表
+* 修改数据包中的源、目标IP地址或端口
+* filter表
+* 确定是否放行该数据包（过滤）
+
+规则表的先后顺序:raw→mangle→nat→filter
+
+#### 表链优先级
+
+规则链的先后顺序:
+
+* 入站顺序
+* PREROUTING→INPUT
+* 出站顺序
+* OUTPUT→POSTROUTING
+* 转发顺序
+* PREROUTING→FORWARD→POSTROUTING
 
 ![img](img/iptables.png)
 
@@ -3194,7 +4469,7 @@ pipeline {
     }
     parameters {
         choice choices: ['pro','dev'],description: '目标环境',name: 'TARGET_ENV'
-	gitParameter(  // 需要安装Git Parameter插件
+ gitParameter(  // 需要安装Git Parameter插件
                 name: 'BRANCH', 
                 type: 'PT_BRANCH_TAG',
                 branchFilter: 'origin/(.*)',
@@ -3208,10 +4483,10 @@ pipeline {
     stages {
          stage('get code') {
             steps {
-		script {
-			def currentBranch = "${BRANCH}"
-                	git branch: currentBranch, credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
-		}
+  script {
+   def currentBranch = "${BRANCH}"
+                 git branch: currentBranch, credentialsId: '96185bf6-59a0-49f7-9c19-08ebb85b6aaa', url: 'git@git.baway.org.cn:teacher/cicdtest.git'
+  }
             }
         }
         stage('mvn build') {
@@ -3316,7 +4591,7 @@ pipeline {
         )
     }
     stages {
-	 ……
+  ……
     }
 ```
 
@@ -3355,55 +4630,69 @@ Role-based Authorization Strategy插件的配置
 
 # `<font color=red>`*HR部分* `</font>`
 
-### 1. 你上家公司在什么位置？你的通勤方式和通勤时间？
+### 你上家公司在什么位置？你的通勤方式和通勤时间？
 
 ---
 
-### 2. 你上家公司的业务是什么，做什么产品，产品面向的用户是哪些？
+### 你上家公司的业务是什么，做什么产品，产品面向的用户是哪些？
 
 ---
 
-### 3. 你上家公司规模？公司架构？你所在的部门有多少人，你的岗位有多少人？
+### 你上家公司规模？公司架构？你所在的部门有多少人，你的岗位有多少人？
 
 ---
 
-### 4. 你的工作汇报对象是谁？汇报形式，日常工作汇报如何做？
+### 你的工作汇报对象是谁？汇报形式，日常工作汇报如何做？
 
 ---
 
-### 5. 你上家公司用什么即时通讯软件，有没有企业邮箱？请假的流程是什么？请假扣工资吗？
+### 你上家公司用什么即时通讯软件，有没有企业邮箱？请假的流程是什么？请假扣工资吗？
 
 ---
 
-### 6. 你上家公司的待遇？入职的时候多少，离职的时候多少？每月什么时候发工资？实际到手有多少？五险一金缴纳基数是多少？
+### 你上家公司的待遇？入职的时候多少，离职的时候多少？每月什么时候发工资？实际到手有多少？五险一金缴纳基数是多少？
 
 ---
 
-### 7. 你的离职原因是什么，后续的职业规划是什么？
+### 上家公司的薪资结构是怎么样，社保、公积金的基数和比例是多少？
+
+| 险种       | 缴纳比例                   | 作用                                                   |
+| ---------- | -------------------------- | ------------------------------------------------------ |
+| 养老保险   | 公司16%<br />个人8%        | 退休后的养老金<br />目前累计缴纳至少15年               |
+| 医疗保险   | 公司8%<br />个人2%         | 生病后住院医疗费用报销<br />退休后的意料保障           |
+| 生育保险   | 公司0.45%~0.8%             | 产假<br />生育后                                       |
+| 工伤保险   | 公司0.3%~0.6%              | 医疗费用赔偿<br />生活护理费<br />伤残补助金           |
+| 失业保险   | 公司0.5%<br />个人0.5%     | 缴纳满一年，被离职可申请失业保险<br />主动离职没有     |
+| 住房公积金 | 公司5%~12%<br />个人5%~12% | 贷款买房，比商贷的利息低<br />装修<br />租房<br />提取 |
+
+五险的缴费基数一般都是以当地上一年社会平均工资为参考的，最低缴纳基数不得低于上一年社会平均工资的60%，最高不得高于上一年社会平均工资的300%
+
+实际工资在这个范围内的，按照实际工资为缴纳基数，实际工资低于或高于最低或最高标准的，按照最低或最高的缴费基数来缴纳
 
 ---
 
-### 8. 你对我们公司有了解吗？
+### 你的离职原因是什么，后续的职业规划是什么？
 
 ---
 
-### 9. 你的学历是什么？是统招吗？
+### 你对我们公司有了解吗？
 
 ---
 
-### 10. 你现在住哪？
+### 你的学历是什么？是统招吗？
 
 ---
 
-### 11. 假如入职，你打算怎么开展工作？
+### 你现在住哪？
 
 ---
 
-### 12. 之前公司有绩效考核机制吗  具体是怎么进行的？
+### 假如入职，你打算怎么开展工作？
 
 ---
 
-### 13. 驻场过程中能够体现沟通能力的经典场景
+### 之前公司有绩效考核机制吗  具体是怎么进行的？
 
-1.delete from 表名;
-2.truncate table 表名;
+---
+
+### 驻场过程中能够体现沟通能力的经典场景

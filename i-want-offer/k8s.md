@@ -2,8 +2,17 @@
 
 ### k8s组件、作用
 
-* [X] master节点
-* [X] worker节点
+* [ ] master节点
+  apiserver： 集群的统一入口，接收所有 REST 请求并转发给其他组件,所有交互都经过它。也是唯一可以跟etcd通信的组件
+  etcd: 分布式键值存储系统，用来保存集群的元数据(配置数据和状态信息)
+  kube-scheduler: 负责将新创建的 Pod 分配到合适的 Node 节点上（调度器）
+  kube-controller-manager:运行各种控制器（如副本控制器、节点控制器等）来维持集群状态
+* [ ] worker节点
+  kubelet: 负责和 apiserver 通信，管理Pod的生命周期，上报节点的健康状况
+  kube-proxy：负责将Pod注册到CoreDNS， 并为Service 创建ipvs或者iptables转发规则，实现服务发现和负载均衡
+  Container Runtime：容器运行时，比如 Docker、containerd、CRI-O，用于实际拉取镜像并运行容器
+* [ ] 附加组件
+  CoreDNS:集群内的DNS服务
 
 ---
 
@@ -24,6 +33,94 @@
 默认情况下，默认 IP 是第一个非本地主机网络接口和 6443 端口。
 ```
 
+---
+
+### kube-aggregator
+
+kube-aggregator 是 Kubernetes 架构中的一个组件，全称为  **Kubernetes Aggregator Layer** （聚合层），是  **kube-apiserver 内部集成的一个模块** ，并非一个独立进程。它的作用是：
+
+**扩展 Kubernetes API 的能力** ，允许将来自外部的 API 服务（即聚合 API Server）整合进主 API Server，使其表现得就像原生 Kubernetes 资源一样
+
+二者之间的关系：
+
+| kube-apiserver                    | kube-aggregator                        |
+| --------------------------------- | -------------------------------------- |
+| 主 API 服务                       | 其内部集成的聚合模块                   |
+| 处理核心资源（Pod/Deployment 等） | 代理扩展 API（CRDs 或外部 API Server） |
+| 无需单独部署                      | 是 kube-apiserver 的内建模块           |
+| 使用时感知不到 aggregator 存在    | 聚合层“透明地”扩展 API               |
+
+Kubernetes 的核心 API 只提供一组固定的资源（如 Pods、Services、Deployments 等）。但当你想：
+
+* 定义新的复杂资源（如 Istio 的 VirtualService、Prometheus 的监控规则等）；
+* 将自定义控制器作为 API 提供；
+* 拓展 K8s 功能但不修改 kube-apiserver 源码；
+
+这时就可以通过 Aggregator 来“挂载”外部 API 服务，使其像原生 API 一样被统一访问。
+
+**kube-apiserver 的聚合层代理请求：**
+
+kube-apiserver 收到访问 /apis/`<group>` 的请求时，会：
+
+* 先检查自己是否处理该 Group；
+* 如果不是，就由 aggregator 代理转发请求到对应后端；
+* 聚合 API Server 处理后返回结果；
+* 用户端感知不到代理行为，表现得就像访问了 kube-apiserver。
+
+以下是一个示例
+
+```yaml
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.example.my.domain
+spec:
+  group: example.my.domain
+  version: v1alpha1
+  service:
+    name: my-extension-apiserver
+    namespace: default
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+
+# 这段代码的意思是，当有人访问 /apis/example.my.domain/v1alpha1时，把请求代理到 default/my-extension-apiserver这个service
+```
+
+另一个示例是，Metrics Server
+
+```yaml
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  annotations:
+    meta.helm.sh/release-name: prometheus-adapter
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2025-01-16T09:18:31Z"
+  labels:
+    app.kubernetes.io/component: metrics
+    app.kubernetes.io/instance: prometheus-adapter
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: prometheus-adapter
+    app.kubernetes.io/part-of: prometheus-adapter
+    app.kubernetes.io/version: v0.12.0
+    helm.sh/chart: prometheus-adapter-4.11.0
+  name: v1beta1.custom.metrics.k8s.io
+spec:
+  group: custom.metrics.k8s.io
+  groupPriorityMinimum: 100
+  insecureSkipTLSVerify: true
+  service:
+    name: prometheus-adapter
+    namespace: default
+    port: 443
+  version: v1beta1
+  versionPriority: 100
+
+#  当执行kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/nodes的时候，请求被kubeapiserver代理到了default/prometheus-adapter这个service
+```
+
+---
+
 ### k8s集群规模限制
 
 集群是运行 Kubernetes 代理的、 由[控制平面](https://kubernetes.io/zh-cn/docs/reference/glossary/?all=true#term-control-plane)管理的一组 [节点](https://kubernetes.io/zh-cn/docs/concepts/architecture/nodes/)（物理机或虚拟机）。 Kubernetes v1.30 单个集群支持的最大节点数为 5,000。 更具体地说，Kubernetes 旨在适应满足以下**所有**标准的配置：
@@ -32,6 +129,92 @@
 * 节点数不超过 5,000
 * Pod 总数不超过 150,000
 * 容器总数不超过 300,000
+
+---
+
+### k8s版本升级（kubeadm）
+
+1. 添加yum源
+
+   ```shell
+   cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+   [kubernetes]
+   name=Kubernetes
+   baseurl=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/
+   enabled=1
+   gpgcheck=1
+   gpgkey=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key
+   EOF
+   ```
+
+2. 查看可用版本
+
+   ```shell
+   yum list --disablerepo=* --enablerepo="kubernetes"
+   ```
+
+3. 备份重要组件及重要数据
+4. kube-apiserver 静态 pod 会始终处于运行状态。当执行 kubeadm 升级时，其中包括 etcd 的升级，在新的 etcd 启动期间，对kube-apiserver的请求将会卡住，因为etcd的静态 Pod 正在重新启动。作为一种解决方法，可以主动停止 kube-apiserver。在启动 kubeadm upgrade apply 命令之前，请等待几秒钟，以关闭 kube-apiserver 进程。这样可以完成正在进行的请求并关闭现有连接，从而最大限度地减少 etcd 停机的影响。这可以在控制平面节点上按如下方式完成
+
+```shell
+   killall -s SIGTERM kube-apiserver
+   sleep 20
+```
+
+5. 升级顺序为，先升级控制平面再升级工作节点。
+
+   控制平面上安装新版kubeadm
+
+   ```shell
+   yum install kubeadm-1.33.0-150500.1.1 --disableexcludes=kubernetes
+   ```
+
+6. 升级前验证
+
+   ```shell
+   kubeadm upgrade plan
+   ```
+
+7. 应用升级
+
+   ```shell
+   # 升级第一台控制平面
+   kubeadm upgrade apply v1.33.0
+
+   # 输出以下内容代表成功
+   [upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.33.x". Enjoy!
+   [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
+
+   # 升级控制平面上的kubelet（若存在)
+   yum install -y kubelet-'1.33.0-150500.1.1' kubectl-'1.33.0-150500.1.1' --disableexcludes=kubernetes
+
+   systemctl daemon-reload  &&  systemctl restart kubelet
+   ```
+
+8. 升级网络插件(如需要，取决于网络插件和k8s的版本匹配情况)
+9. 升级其他控制平面
+
+   ```
+    kubeadm upgrade apply
+   ```
+
+10. 升级工作节点
+
+    ```shell
+    # 清空节点
+    kubectl drain <node-to-drain> --ignore-daemonsets
+
+    # 升级并重启Kubelet
+    yum install -y kubelet-'1.33.0-150500.1.1' kubectl-'1.33.0-150500.1.1' --disableexcludes=kubernetes
+    systemctl daemon-reload  &&  systemctl restart kubelet
+
+    ```
+
+11. 取消工作节点的污点
+
+    ```
+    kubectl uncordon <node-to-uncordon>
+    ```
 
 ---
 
@@ -56,14 +239,15 @@
         "Network": "10.244.0.0/16",
         "Backend": {
           "Type": "host-gw" 
-  	#"Type": "vxlan"
+   #"Type": "vxlan"
         }
       }
   ```
+
 * [ ] UDP （已废弃）因为存在三次用户态和内核态之间的数据拷贝，导致性能低下
   ![img](img/flannel-udp.png)
 
-##### 优缺点对比：
+##### 优缺点对比
 
 ###### 工作模式
 
@@ -99,11 +283,11 @@ calico的BGP模式下，每一个节点都需要和其他所有建立BGP连接�
 
 flannel的VXLAN模式使用的是overlay网络，也就是在现有的三层物理网络之上，“覆盖”一层虚拟的、由内核 VXLAN 模块负责维护的二层网络，在这个 VXLAN 二层网络上的“主机”（虚拟机或者容器都可以）之间，可以像在同一个局域网（LAN）里那样自由通信。
 
-VXLAN的工作原理是，当pod需要跨节点访问时，源pod所在节点的VTEP 设备(flannel.1)会根据目标pod的ip定位到"下一跳"，也就是目标Pod所在节点的VTEP设备(flannel.1)的mac地址以及目标节点的物理网卡ip（node ip）,源VTEP设备将vxlan的二层数据包封装在四层数据包(UDP)中，将数据包发送到目标节点，目标节点的VTEP设备再进行数据包的“拆解",然后发送给网桥，最终通过绑定在网桥上的Veth Pari设备转发给容器。因为有数据包的封装和拆解，会有一定的性能损耗
+VXLAN的工作原理是，当pod需要跨节点访问时，源pod所在节点的VTEP 设备(flannel.1)会根据目标pod的ip定位到"下一跳"，也就是目标Pod所在节点的VTEP设备(flannel.1)的mac地址以及目标节点的物理网卡ip（node ip）,源VTEP设备将vxlan的二层数据包封装在四层数据包(UDP)中，将数据包发送到目标节点，目标节点的VTEP设备再进行数据包的“拆解",然后发送给网桥(cni0)，最终通过绑定在网桥上的Veth Pari设备转发给容器。因为有数据包的封装和拆解，会有一定的性能损耗
 
-VXLAN模式下，同节点上的容器间通信，直接通过网桥+Veth Pair设备完成，不需要经过flannel.1
+VXLAN模式下，同节点上的容器间通信，直接通过网桥(cni0)+Veth Pair设备完成，不需要经过flannel.1
 
-##### 如何选择：
+##### 如何选择
 
 1、是否需要细粒度网络访问控制？
 
@@ -200,7 +384,7 @@ net-conf.json: |
 
 
 # can-reach=DESTINATION
-can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达提供的目的地。可以使用IP地址或者域名。
+can-reach 方法使用你的本地路由来决定使用哪个IP地址来到达提供的目的地。可以使用IP地址或者域名。
 # e. g.  使用IP
 - name: IP_AUTODETECTION_METHOD
   value: "can-reach=8.8.8.8"
@@ -225,18 +409,26 @@ can-reach 方法使用你的本地路由来决定使用哪个|P 地址来到达�
 
 ---
 
-### k8s pod启动流程[以Deployment为例]
+### k8s pod启动流程
 
-* [X] pod创建流程
+#### Pod被控制器管理[以Deployment为例]
 
 1. 用户向APIServer发送创建请求[kubectl  或其他web客户端如kuboard、rancher] ；
-2. APIServer对请求进行认证、鉴权和准入检查后，把数据存储到ETCD，创建Deployment资源并初始化；
+2. APIServer对请求进行认证、鉴权和准入检查后，创建Deployment资源并初始化，写入ETCD中(/registry/deployments/default/my-deploy)；
 3. controller-manager通过list-watch机制，检查到新的Deployment，将资源加入到内部工作队列，然后检查发现资源没有关联的pod和replicaset，启用Deployment controller创建replicaset资源，再通过replicaset controller创建pod。
-4. controller-manager创建完成后将Deployment，replicaset，pod的信息通过apiserver更新存储到etcd；
-5. scheduler通过list-watch机制，监测发现新的pod，并通过预选及优选策略算法，来计算出pod最终可调度的node节点，并通过APIServer将数据更新至etcd；
+4. controller-manager创建完成后将Deployment，replicaset，pod的信息通过apiserver更新存储到etcd(/registry/pods/default/my-deploy-xxx-xxx)；
+5. scheduler通过list-watch机制，监测发现新的pod，并通过预选及优选策略算法，来计算出pod最终可调度的node节点(.spec.nodeName)，并通过APIServer将数据更新至etcd；
 6. kubelet 每隔20s（可以自定义）向APIServer通过NodeName获取自身Node上所要运行的pod清单,通过与自己内部缓存进行比较，如果有新的资源则触发钩子调用CNI接口给pod创建pod网络，调用CRI接口去启动容器，调用CSI进行存储卷的挂载.kubelet会将Pod的运行状态上报给apiserver；
 7. kube-proxy为新创建的pod注册动态DNS到CoreOS,给pod的service添加iptables/ipvs规则，用于服务发现和负载均衡；
 8. Controller通过control loop（控制循环）将当前pod状态与用户所期望的状态做对比，如果当前状态与用户期望状态不同，则controller会将pod修改为用户期望状态，实在不行会将此pod删掉，然后重新创建pod。
+
+#### 没有控制器管理的Pod(裸Pod)
+
+1. 用户向APIServer发送创建请求[kubectl  或其他web客户端如kuboard、rancher] (POST /api/v1/namespaces/default/pods)；
+2. APIServer对请求进行认证、鉴权和准入检查后，初始化Pod对象并把数据存储到ETCD(/registry/pods/default/`<podname>`)；
+3. scheduler通过list-watch机制，监测发现新的pod，并通过预选及优选策略算法，来计算出pod最终可调度的node节点(.spec.nodeName)，并通过APIServer将数据更新至etcd；
+4. kubelet 每隔20s（可以自定义）向APIServer通过NodeName获取自身Node上所要运行的pod清单,通过与自己内部缓存进行比较，如果有新的资源则触发钩子调用CNI接口给pod创建pod网络，调用CRI接口去启动容器，调用CSI进行存储卷的挂载.kubelet会将Pod的运行状态上报给apiserver；
+5. kube-proxy为新创建的pod注册动态DNS到CoreOS,给pod的service添加iptables/ipvs规则，用于服务发现和负载均衡；
 
 ---
 
@@ -386,7 +578,7 @@ server = "http://harbor.baway.org.cn"
     etcdutl \
     --name=k8s-master1 \  # kubectl  get node 看到的mster在集群中的节点名称，另外两个节点以此类推
     --initial-cluster=k8s-master1=https://10.203.43.160:2380,k8s-master2=https://10.203.43.161:2380,k8s-master3=https://10.203.43.162:2380 \  # 所有initial-advertise-peer-urls的合集
-    --initial-advertise-peer-urls=https://10.20.30.31:2380 \  # master1的ip，另外两个节点以此类推
+    --initial-advertise-peer-urls=https://10.203.43.160:2380 \  # master1的ip，另外两个节点以此类推
     --initial-cluster-token=etcd-cluster-01       # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
     --data-dir=/var/lib/etcd                      # 数据恢复路径，和原来的数据目录保持一致
     snapshot restore  /var/backups/xxx.db \
@@ -428,6 +620,7 @@ server = "http://harbor.baway.org.cn"
     [Install]
     WantedBy=multi-user.target
     ```
+
 2. [X] yaml文件备份
 3. [X] 镜像备份
 4. [X] 共享存储
@@ -447,12 +640,44 @@ server = "http://harbor.baway.org.cn"
 
 ---
 
-### pod处于Pending状态，可能得原因：
+### pod处于Pending状态，可能得原因
 
 1. [X] 等待拉取镜像
 2. [X] 没有可用节点
 3. [X] 等待PV就绪
 4. [X] 分配不到IP地址
+
+---
+
+### pod反复重启可能是哪些原因造成？
+
+容器进程异常退出
+
+* 应用崩溃（`Segmentation fault`、异常退出码等）；
+* 程序缺少依赖、配置错误、路径错误；
+* 启动后无服务、快速退出。
+
+内存/CPU限制导致容器被杀死
+
+* 超过 `resources.limits.memory` → OOMKilled；
+* 容器被 kubelet 杀掉（即使资源充足）；
+
+探针检测失败
+
+* 配置了探针（如 HTTP 检查、TCP 端口），但容器没及时响应；
+* kubelet 判定容器不健康 → 重启。
+
+镜像错误
+
+* 容器镜像缺失、构建错误；
+* ENTRYPOINT 或 CMD 配置不正确；
+* 无可执行文件或权限错误。
+
+配置或挂载失败
+
+* 挂载 ConfigMap/Secret 错误；
+* 持久卷（PVC）未绑定、挂载失败；
+* 环境变量错误
 
 ---
 
@@ -477,16 +702,27 @@ server = "http://harbor.baway.org.cn"
   ```shell
   kubeadm certs check-expiration
   ```
+
 * [X] 证书续期
 
   ```shell
+  1. 更新控制平面证书
   kubeadm renew all
   # Done renewing certificates. You must restart the kube-apiserver, kube-controller-manager, 
   # kube-scheduler and etcd, so that they can use the new certificates
-  # 执行完此命令之后需要重启控制面Pod,并且如果是HA集群，需要在每个控制平面都执行同样的操作
+  # 执行完此命令之后需要重启控制面Pod,并且如果是HA集群，
+  # 多master的集群需要在每个控制平面都执行同样的操作，不可以将一份证书同步到其他节点，因为证书中包含节点IP、主机名等信息，不能通用
 
-  # 以上操作不包含kubelet证书，需要手动对kubelet证书进行更新
+  2. 更新KUBECONFIG
+  cp /etc/kubernetes/admin.conf ~/.kube/config
 
+  3. 查看证书是否更新成功
+  ll /var/lib/kubelet/pki
+  kubelet-client-current.pem  # 查看该文件是否指向了最新的证书文件
+
+  # 注意： 以上操作不包含kubelet证书，kubelet证书默认会在到期前30天~120天自动续期（10%~30%生命周期)，无需手动更新
+
+  # 如果特殊情况必须手动更新kubelet证书，操作方法如下：
   # 备份kubelet配置文件（/etc/kubernetes/kubelet.conf)
   mv /etc/kubernetes/kubelet.conf{,.back}
   # 重新生成kubelet.conf
@@ -502,12 +738,10 @@ server = "http://harbor.baway.org.cn"
   # 重启kubelet服务
   systemctl  restart kubelet
 
-  # 查看证书是否更新成功
-  ll /var/lib/kubelet/pki
-  kubelet-client-current.pem  # 查看该文件是否指向了最新的证书文件
-
-  # 更新KUBECONFIG
-  cp /etc/kubernetes/admin.conf ~/.kube/config
+  # 单独生成客户端证书
+  kubeadm kubeconfig user --org system:masters --client-name kubernetes-admin > ~/.kube/config
+  kubeadm kubeconfig user --client-name system:kube-controller-manager > /etc/kubernetes/controller-manager.conf
+  kubeadm kubeconfig user --client-name system:kube-scheduler > /etc/kubernetes/scheduler.conf
   ```
 
 ---
@@ -669,6 +903,7 @@ ip adr # 此时看到的是容器ip
           maxSurge: 1
           maxUnavailable: 0
     ```
+
 2. [X] 常用命令
 
     ```bash
@@ -686,6 +921,7 @@ ip adr # 此时看到的是容器ip
 ### k8s数据持久化
 
 * [X] hostPath (pod.spec.volumes:)
+
   ```yaml
   volumes:
   - name: ngx-log
@@ -694,6 +930,7 @@ ip adr # 此时看到的是容器ip
       type: DirectoryOrCreate  # 目录不存在则自动创建,默认选项
       type: Directory # 目录必须提前创建
   ```
+
 * [X] emptyDir
 * [X] configMap
 * [X] subPath
@@ -774,49 +1011,57 @@ spec:
 
 ```
 
-secret
+* [X] secret
 
-1. [X] opaque
-2. [X] kubenetes.io/Service Account
+opaque
 
-    ```yaml
-    apiVersion: v1
-    kind: Secret
-    # 表示这个 secret 类型
-    type: kubernetes.io/service-account-token
-    metadata:
-      name: mycontroller
-      namespace: kube-system
-      annotations:
-        # service account 名称
-        kubernetes.io/service-account.name: "mycontroller"
-    ```
-3. [X] kubernetes.io/dockerconfigjson
+kubenetes.io/Service Account
 
-    ```shell
-    kubectl create secret docker-registry  docker-tiger \
-        --docker-server="harbor.baway.org.cn:8000" \
-        --docker-username="admin" \
-        --docker-password="Harbor12345"
-    ```
+```yaml
+apiVersion: v1
+kind: Secret
+# 表示这个 secret 类型
+type: kubernetes.io/service-account-token
+metadata:
+  name: mycontroller
+  namespace: kube-system
+  annotations:
+    # service account 名称
+    kubernetes.io/service-account.name: "mycontroller"
 
-    ```shell
-    kubectl create secret generic docker-auth \
-        --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
-        --type=kubernetes.io/dockerconfigjson
-    ```
-4. [X] kubernetes.io/tls
 
-    ```shell
-    kubectl create secret tls  my-secret \
-        --cert=path/to/cert/file \
-        --key=path/to/key/file
-    ```
+#  创建临时token
+kubectl create token  <sa_name>   #要求k8s版本1.24+，包括kubectl的版本
+```
 
-pv/pvc
-pv和pvc是一一对应的绑定关系
+kubernetes.io/dockerconfigjson
 
-1. [ ] hostPath
+```shell
+kubectl create secret docker-registry  docker-tiger \
+    --docker-server="harbor.baway.org.cn:8000" \
+    --docker-username="admin" \
+    --docker-password="Harbor12345"
+```
+
+```shell
+kubectl create secret generic docker-auth \
+    --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
+    --type=kubernetes.io/dockerconfigjson
+```
+
+kubernetes.io/tls
+
+```shell
+kubectl create secret tls  my-secret \
+    --cert=path/to/cert/file \
+    --key=path/to/key/file
+```
+
+bootstrap.kubernetes.io/token
+
+* [ ] pv/pvc
+  pv和pvc是一一对应的绑定关系
+
 2. [X] nfs:
 3. [ ] ceph
 4. [ ] local
@@ -897,6 +1142,7 @@ pv和pvc是一一对应的绑定关系
         - mountPath: "/usr/share/nginx/html"
           name: pv-hostpath
     ```
+
 5. [X] pv的访问模式、回收策略、状态各有哪些？
     访问模式：
 
@@ -947,6 +1193,7 @@ pv和pvc是一一对应的绑定关系
           #    timeoutSeconds: 3 #超时时间设置
           #    successThreshold: 1 #检查成功为1次表示就绪
     ```
+
 2. [X] 就绪
 
     ```yaml
@@ -961,6 +1208,7 @@ pv和pvc是一一对应的绑定关系
             #  timeoutSeconds: 3 #超时时间设置
             #  successThreshold: 1 #检查成功1次表示就绪
     ```
+
 3. [X] 存活
 
     ```yaml
@@ -1306,13 +1554,13 @@ kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/{namespace_n
 
 1. [X] Guaranteed
 
-    Pod 里的每个容器都必须有内存/CPU 限制和请求，而且值必须相等
+    Pod 里的**每个容器,包含初始化容器**都必须**同时**设置了内存、CPU 的上、下限，而且值必须相等
 2. [X] Burstable
 
-    Pod 里至少有一个容器有内存或者 CPU 请求且不满足 Guarantee 等级的要求，即内存/CPU 的值设置的不同
+    Pod 里**至少有一个**容器设置了内存**或**CPU的上限**或**下限，但是又不满足 Guarantee 等级的要求
 3. [X] BestEffort
 
-    容器必须没有任何内存或者 CPU 的限制或请求
+    容器必须没有任何一个容器设置了内存或者 CPU 的上限或下限
 
 ---
 
@@ -1594,9 +1842,39 @@ spec:
 
 ---
 
+### k8s日志路径
+
+#### 结论：不管容器运行时是docker还是containerd，kubelet最终都会把原始的日志文件软链接到
+
+```shell
+/var/log/containers/<pod_name>_<namespace>_<container_name>-<container_id>.log
+```
+
+* [ ] docker
+
+  ```shell
+  # 日志由docker管理，原始文件路径：
+  /var/lib/docker/containers/<container_id>/container_id-json.log
+
+  # kubelet先把原始的日志文件通过软链接连接到/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/[0-9]+\.log
+  # 然后再使用软链接把/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/[0-9]+\.log链接到
+  /var/log/containers/<pod_name>_<namespace>_<container_name>-<container_id>.log
+  ```
+
+* [ ] containerd
+
+  ```shell
+  # 日志由kubelet管理，原始日志文件路径：
+  /var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/[0-9]+\.log
+
+  # kubelet会把原始的日志文件通过软链接连接到：
+  /var/log/containers/<pod_name>_<namespace>_<container_name>-<container_id>.log
+
+  ```
+
 ### k8s日志定制
 
-1. [X] docker
+1. [ ] docker
 
     ```shell
     # vim /etc/docker/daemon.json
@@ -1608,7 +1886,8 @@ spec:
       "data-root": "/home/xxx"    # 默认存储目录
     }
     ```
-2. [X] containerd
+
+2. [ ] containerd
     kubelet的配置文件中，添加如下配置：
 
     ```shell
@@ -1645,7 +1924,20 @@ spec:
        # metallb
 
        ```
+
    4. [X] ExternalName #pod跨namespace调用service
+
+       ```yaml
+       apiVersion: v1
+       kind: Service
+       metadata:
+         name: my-service
+         namespace: prod
+       spec:
+         type: ExternalName
+         externalName: my.database.example.com
+       ```
+
    5. [X] 没有选择器的service
 
        缺陷： 这种类型的svc对自定义的endpoint没有健康检查机制
@@ -1701,9 +1993,37 @@ spec:
             # 定义端口的名称，必须与 service 中的 ports.name 一致
             name: http-80
        ```
+
 2. ingress
 
    1. [X] ingress-nginx
+
+       ```yaml
+       # ingress-nginx 配置https
+       apiVersion: networking.k8s.io/v1
+       kind: Ingress
+       metadata:
+         name: ingress-nginx
+         namespace: default
+       spec:
+         tls:
+         - hosts:
+             - baway.com
+           secretName: tls-ingress
+         rules:
+         - host: baway.com
+           http:
+             paths:
+             - path: /
+               pathType: Prefix
+               backend:
+                 service:
+                   name: nginx
+                   port:
+                     number: 8080
+         ingressClassName: nginx
+       ```
+
    2. [X] contour
 
        ```yaml
@@ -1754,6 +2074,7 @@ spec:
                      number: 8080
 
        ```
+
    3. [X] Traefik
 
 ---
@@ -1867,6 +2188,7 @@ spec:
             number: 443    # https协议连接后端，所以要求后端必须开启了https监听
           host: openldap.private.svc.cluster.local
   ```
+
 * [X] skywalking
 
 ---
@@ -1957,6 +2279,7 @@ spec:
 2. ClusterFirst:  该参数的默认值。与配置的集群域后缀不匹配的任何 DNS 查询（例如 "www.kubernetes.io"） 都会由 DNS 服务器转发到上游名称服务器。集群管理员可能配置了额外的存根域和上游 DNS 服务器。
 3. ClusterFirstWithHostNet: 对于以 hostNetwork 方式运行的 Pod，应将其 DNS 策略显式设置为 "ClusterFirstWithHostNet"。否则，以 hostNetwork 方式和 "ClusterFirst" 策略运行的 Pod 将会做出回退至 "Default" 策略的行为。注意：这在 Windows 上不支持。
 4. None: 此设置允许 Pod 忽略 Kubernetes 环境中的 DNS 设置。Pod 会使用其 dnsConfig 字段所提供的 DNS 设置。
+
    ```yaml
    apiVersion: v1
    kind: Pod
@@ -2076,6 +2399,13 @@ spec:
 
 1. [X] nodeSelector `<pod.spec.nodeSelector>`
 2. [X] nodeName `<pod.spec.nodeName>`
+
+    ```shell
+    nodeName和nodeSelector的区别：
+    nodeName使用节点名称匹配节点,nodeSelector使用节点的标签进行匹配
+    nodeName可以忽略污点,nodeSelector不能
+    ```
+
 3. [X] taints & tolerations (污点和容忍度) `<pod.spec.tolerations>`
 
     ```yaml
@@ -2097,7 +2427,8 @@ spec:
     # 表示这个容忍度与任意的 key、value 和 effect 都匹配，即这个容忍度能容忍任何污点。
 
     ```
-4. [X] 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )` <pod.spec.affinity>`
+
+4. [X] 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )`<pod.spec.affinity>`
     4.1 node亲和性
 
     ```yaml
@@ -2277,7 +2608,7 @@ ADMIN_WEB_PC_TEST_PORT_80_TCP_PROTO=tcp
 * [ ] 自愿干扰
 * [ ] 非自愿干扰
 
-用最简单的话描述，`Pod Disruption Budgets(PDB)`是 K8s 中的一项功能，可以确保在进行维护、升级或扩展集群等自愿操作时，不会影响应用程序的稳定性，从而提高可用性。
+用最简单的话描述，`Pod Disruption Budgets(PDB)`是 K8s 中的一项功能，只对自愿干扰起作用，可以确保在进行维护、升级或扩展集群等自愿操作时，不会影响应用程序的稳定性，从而提高可用性。
 
 一个 PodDisruptionBudget 有 3 个字段：
 
@@ -2311,7 +2642,8 @@ spec:
 
 1. 用户在同一个 `PodDisruptionBudget` 中只能够指定 `maxUnavailable` 和 `minAvailable` 中的一个。
 2. `maxUnavailable` 只能够用于控制存在相应控制器的 Pod 的驱逐（即不受控制器控制的 Pod 不在 `maxUnavailable` 控制范围内）。
-3. 如果将 `maxUnavailable` 的值设置为 0%（或 0）或设置 minAvailable 值为 100%（或等于副本数） 则会阻止所有的自愿驱逐。将无法成功地腾空(drain )运行其中一个 Pod 的节点.
+3. 如果将 `maxUnavailable` 的值设置为 0%（或 0）或设置 minAvailable 值为 100%（或等于副本数） 则会阻止所有的自愿驱逐。将无法成功地腾空(drain )运行其中一个 Pod 的节点。
+4. 如果
 
 ---
 
@@ -2376,6 +2708,30 @@ kubectl uncordon [node-name]
 
 ---
 
+### kubectl get pod -o
+
+#### wide
+
+#### yaml
+
+#### json
+
+#### jsonpath
+
+```shell
+kubectl get pod -o jsonpath='{.metada.name}'
+
+# 对比docker inspect -f
+docker inspect <pod_id> -f '{{.State.Pid}}'
+docker inspect <pod_id> -f '{{index .Config.Labels "io.kubernetes.pod.name"}}'
+```
+
+#### custom-columns
+
+```shell
+kubectl get pod -o custom-columns=NodeName:.spec.nodeName,PodName:.metadata.name,PodUid:.metadata.uid
+```
+
 ### kubectl 管理多个集群
 
 ```shell
@@ -2410,13 +2766,13 @@ contexts:
 
 ```shell
 # 设置cluster
-kubectl config --kubeconfig=config set-cluster develepment --server=https://1.2.3.4:6443 --certificate-authority=<ca.crt for this cluster>
-kubectl config --kubeconfig=config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster>
+kubectl config --kubeconfig=config set-cluster develepment --server=https://1.2.3.4:6443 --certificate-authority=<ca.crt for this cluster> --embed-certs
+kubectl config --kubeconfig=config set-cluster test --server=https://5.6.7.8:6443 --certificate-authority=<ca.crt for this cluster> --embed-certs
 
 # 设置用户
-kubectl config --kubeconfig=config set-credentials developer --client-certificate=<dev.crt> --client-key=<dev.key>
+kubectl config --kubeconfig=config set-credentials developer --client-certificate=<dev.crt> --client-key=<dev.key> --embed-certs
 
-kubectl config --kubeconfig=config set-credentials tester --client-certificate=<tester.crt> --client-key=<tester.key>
+kubectl config --kubeconfig=config set-credentials tester --client-certificate=<tester.crt> --client-key=<tester.key> --embed-certs
 
 # 设置cluster和用户的时候都可以使用--embed-certs=true选项在kubeconfig配置文件中嵌入客户端证书/key
 
@@ -2487,81 +2843,3 @@ kubectl ktop  <-n default>
 ```
 
 ---
-
-### Dockerfile中的RUN、CMD和ENTRYPOINT的区别？
-
-###### RUN 、CMD、ENTRYPOINT
-
-1. RUN 执行命令并创建新的镜像层，经常用于安装软件包。
-2. CMD 设置容器启动后默认执行的命令及其参数，但能够被 `docker run` 后面跟的命令行参数替换。
-3. ENTRYPOINT 配置容器启动时运行的命令
-
-###### Exec、Shell
-
-1. exec
-   `<instruction>` ["executable","param1","param2",...]
-   exec格式下，指令不会被shell解析，直接调用 `<command>  `
-
-   1.1 ENTRYPOINT 的 Exec 格式用于设置要执行的命令及其参数，同时可通过 CMD 提供额外的参数，ENTRYPOINT 中的参数始终会被使用，而 CMD 的额外参数可以在容器启动时动态替换掉
-
-   1.2 CMD有一种特殊用法，就是只有参数没有可执行命令，这种情况必须与exec格式的ENTRYPOINT组合使用，用来为ENTRYPOINT提供参数
-2. shell
-   `<instruction> <command>`
-   shell格式下，当执行指令时，会调用/bin/sh -c  `<command>`
-
-   2.1 **Shell 格式的ENTRYPOINT会忽略任何 CMD 或 docker run 提供的参数**
-
-```yaml
-ENV name Cloud Man  
-ENTRYPOINT ["/bin/echo", "Hello, $name"]
-```
-
-以上写法，运行容器将输出 Hello,$name,因为exec格式下指令不会被shell解析
-
-```yaml
-ENV name Cloud Man  
-ENTRYPOINT ["/bin/echo", "Hello, $name"]
-```
-
-若要对$name进行解析，可修改成如下写法：
-
-```yaml
-ENV name Cloud Man  
-ENTRYPOINT ["/bin/sh","-c","echo Hello,$name"]
-```
-
-```yaml
-ENV name Cloud Man  
-ENTRYPOINT echo "Hello,$name"
-```
-
----
-
-### Dockerfile中的ARG和ENV的区别：
-
-`ARG`和 `ENV`指令的最大区别在于它们的作用域。`ARG`指令定义的参数仅在构建镜像期间可用，而 `ENV`指令定义的环境变量在容器运行时可用。因此，你可以使用 `ARG`指令来传递构建参数，而使用 `ENV`指令来设置容器的环境变量。
-
-`ARG`指令可以在 `FROM`指令之前使用，但 `ENV`指令则不能。这是因为 `FROM`指令之前的任何指令都在构建上下文中执行，而 `FROM`指令之后的指令则在新的构建阶段中执行
-
-example：
-
-```shell
-ARG VERSION=1.0
-RUN echo "Version: $VERSION"
-```
-
-在这个例子中，我们定义了一个名为 `VERSION`的构建参数，并在 `RUN`指令中使用它。当我们使用 `docker build`命令构建映像时，可以使用 `--build-arg`选项来传递该参数的值。例如：
-
-```shell
-docker build --build-arg VERSION=2.0 .
-```
-
-`ENV`指令用于定义环境变量。这些变量在容器运行时是可用的，并且可以在容器内部的任何进程中使用。例如：
-
-```shell
-ENV DB_HOST localhost
-```
-
-我们定义了一个名为 `DB_HOST`的环境变量，并将其设置为 `localhost`。在容器运行时，这个环境变量将在整个容器中可用
-
-![作用域](img/arg-env.webp)
