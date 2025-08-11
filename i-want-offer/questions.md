@@ -1,4 +1,4 @@
-`<font color=red>` *Linux基础知识部分* `</font>`
+ `<font color=red>` *Linux基础知识部分* `</font>`
 
 ### linux runlevel
 
@@ -122,6 +122,223 @@ chronyc makestep
 ```
 
 ntp
+
+---
+
+### DNS解析流程
+
+#### DNS服务器概念
+
+根DNS服务器：全球共13组，维护顶级域的指向信息（如 `.com`、`.cn`）
+
+顶级域DNS服务器：为 `.com`、`.org`、`.cn`等提供对应域的权威服务器信息
+
+权威DNS服务器：最终存储域名与IP对应关系的地方，如 `example.com` 的A记录、MX记录等
+
+递归DNS服务器：由运营商或企业提供，帮客户端查询最终的IP地址
+
+#### DNS解析流程（以www.example.com为例）
+
+##### **本地缓存查询**
+
+* 客户端（浏览器或操作系统） **首先查本地缓存** （浏览器DNS缓存、系统DNS缓存等）是否已有该域名的解析记录（A记录）。
+* 如果找到了，直接使用， **不再发起网络请求** 。
+
+##### 本地DNS服务器（通常由ISP或企业提供，也就是递归DNS服务器）查询
+
+如果递归DNS服务器有缓存则直接返回结果，不会再走下边的流程
+
+如果递归DNS服务器也没有缓存，它会按以下流程依次发起查询：
+
+##### **请求根DS服务器** ：`www.example.com` 的解析权归哪个顶级域（这里是 `.com`）
+
+  → 返回 `.com` 顶级域DNS服务器地址
+
+##### **请求.com 的顶级域DNS服务器** ：`example.com` 的权威DNS服务器在哪？
+
+  → 返回 `example.com` 对应权威DNS服务器地址
+
+##### **请求权威DNS服务器** ：请告诉我 `www.example.com` 的IP地址
+
+  → 返回A记录，如 `93.184.216.34`
+
+##### **递归DNS服务器缓存结果** ：保存解析结果一段时间（根据TTL）
+
+  → 返回客户端使用
+
+#### 查询流程图解
+
+![img](img/DNS QUERY.png)
+
+---
+
+### Linux时间配置
+
+#### date
+
+* 查看日期并格式化显示， date +"`<format参数>`"
+
+```shell
+## 常用format参数
+%Y   年
+%m   月份(01..12)
+%d   日(01..31)
+
+%H   小时(00..23)
+%M   分钟(00..59)
+%S   秒(00..60)
+
+%F   完整的日期；等价于%Y-%m-%d
+%D   日期，等价于%m/%d/%y
+%T   时间;等价于%H:%M:%S
+
+%s   自1970-01-0100:00:00 UTC 到现在的秒数(时间戳)
+
+# 其他format参数
+%y   年份后两位数字(00..99)
+%I   小时(01..12)
+%j   一年中的第几天(001..366)
+%k   小时，使用空格填充(0..23);等价于%_H
+%l   小时,使用空格填充(1..12);等价于%_I
+%n   新的一行，换行符
+%N   纳秒(000000000..999999999)
+%p   用于表示当地的AM或PM，如果未知则为空白
+%P   类似%p,但是是小写的
+%r   本地的12小时制时间(例如11:11:04 PM)
+%R   24小时制的小时与分钟;等价于%H:%M
+%t   插入水平制表符 tab
+%u   一周中的一天(1..7);1表示星期一
+%U   一年中的第几周，周日作为一周的起始(00..53)
+%V   ISO 标准计数周，该方法将周一作为一周的起始(01..53)
+%w   一周中的一天（0..6），0代表星期天
+%W   一年中的第几周，周一作为一周的起始（00..53）
+%x   本地的日期格式（例如，12/31/99）
+%X   本地的日期格式（例如，23:13:48）
+%z   +hhmm 格式的数值化时区格式（例如，-0400）
+%:z  +hh:mm 格式的数值化时区格式（例如，-04:00）
+%::z  +hh:mm:ss格式的数值化时区格式（例如，-04:00:00）
+%:::z  数值化时区格式，相比上一个格式增加':'以显示必要的精度（例如，-04，+05:30）
+%Z  时区缩写（如 EDT）
+%%输出字符%
+%a   星期几的缩写(Sun..Sat)
+%A   星期的完整名称(Sunday..Saturday)。 
+%b   缩写的月份名称（例如，Jan）
+%B   完整的月份名称（例如，January）
+%c   本地日期和时间（例如，ThuMar323:05:252005）
+%C   世纪，和%Y类似，但是省略后两位（例如，20）
+%e   一月中的一天，格式使用空格填充，等价于%_d
+%g   ISO 标准计数周的年份的最后两位数字
+%G   ISO 标准计数周的年份，通常只对%V有用
+%h   等价于%b
+```
+
+-s  --set   时间设置
+
+```shell
+ # 设置当前时间，只有root权限才能设置，其他只能查看
+# 设置具体时间，不更改日期
+date -s 01:01:01   
+
+# 设置日期,不更改具体时间 
+date -s 20120523# 设置成20120523，这样会把具体时间设置成00:00:00
+
+# 设置全部时间
+date -s "01:01:01 2012-05-23"
+date -s "01:01:01 20120523"
+date -s "2012-05-23 01:01:01"
+date -s "20120523 01:01:01"
+```
+
+* -d   --date  日期计算
+
+```shell
+date +%Y%m%d                   # 显示年月日
+date -d "+1 day"+%Y%m%d       # 显示后一天的日期
+date -d "-1 day"+%Y%m%d       # 显示前一天的日期
+date -d "-1 month"+%Y%m%d     # 显示上一月的日期
+date -d "+1 month"+%Y%m%d     # 显示下一月的日期
+date -d "-1 year"+%Y%m%d      # 显示前一年的日期
+date -d "+1 year"+%Y%m%d      # 显示下一年的日期
+```
+
+* -u  --utc 查看UTC时间(世界标准时间，比北京时间落后8个小时)
+
+#### timedatectl
+
+```shell
+timedatectl 是一个较新的命令,主要在使用 systemd 的系统中提供
+它不仅能显示和设置日期时间，还能管理系统时区、启用或禁用 NTP（网络时间协议）服务，以及检查当前的时间同步状态。
+timedatectl 是一个系统级别的工具，能够与 systemd 的时间管理功能集成，提供更强大的时间管理功能。
+```
+
+显示当前时间、时区、NTP 状态等
+
+```shell
+timedatectl
+
+Local time: 三 2025-05-28 14:34:18 CST
+  Universal time: 三 2025-05-28 06:34:18 UTC
+        RTC time: 三 2025-05-28 14:34:17
+       Time zone: Asia/Shanghai (CST, +0800)
+     NTP enabled: yes
+NTP synchronized: yes
+ RTC in local TZ: yes
+      DST active: n/a
+```
+
+设置时区
+
+```shell
+timedatectl set-timezone Asia/Shanghai
+```
+
+启用或禁用 NTP 时间同步
+
+```shell
+timedatectl set-ntp true | false
+```
+
+设置系统时间
+
+```shell1
+timedatectl set-time '2025-06-10 14:35:00'
+```
+
+#### 时间相关的几个概念
+
+Local time
+
+本地系统时间
+
+UTC (Coordinated Universal Time)
+
+```shell
+UTC（Coodinated Universal Time），协调世界时，又称世界统一时间、世界标准时间、国际协调时间。由于英文（CUT）和法文（TUC）的缩写不同，作为妥协，简称UTC
+
+# 和GMT的关系
+UTC 是现在全球通用的时间标准，全球各地都同意将各自的时间进行同步协调。UTC 时间是经过平均太阳时（以格林威治时间GMT为准）、地轴运动修正后的新时标以及以秒为单位的国际原子时所综合精算而成
+GMT是前世界标准时，UTC是现世界标准时。
+UTC 比 GMT更精准，以原子时计时，适应现代社会的精确计时。
+但在不需要精确到秒的情况下，二者可以视为等同。
+每年格林尼治天文台会发调时信息，基于UTC
+```
+
+RTC (Real-Time Clock)
+
+```shell
+# RTC默认使用UTC,可以使用以下命令设置是否使用本地时间
+timedatectl set-local-rtc true | false
+
+# 可以使用以下命令将系统时间同步给RTC或者做相反操作
+hwclock --systohc
+hwclock --hctosys
+```
+
+Unix时间戳 (Unix timestamp)
+
+```shell
+从1970年1月1日（UTC/GMT的午夜）开始所经过的秒数
+```
 
 ---
 
@@ -355,7 +572,122 @@ nmcli dev disconnect eth0 && nmcli dev connect eth0 # 重启系统或者重新�
 
 ---
 
-### MySQL组复制（MGR  MySQL Group Replication）
+### MySQL二进制部署[MySQL Community Server  8.4.5]
+
+```shell
+#  下载二进制安装包并解压
+tar zxvf mysql-8.4.5-linux-glibc2.17-x86_64.tar.gz -C /usr/local/
+cd  /usr/local && ln -s  mysql-8.4.5-linux-glibc2.17-x86_64/  ./mysql
+
+# 准备所需目录并修改目录权限
+mkdir  {/var/run/mysql,/var/lib/mysql,var/log/mysql}
+useradd  mysql && chown -R mysql:mysql {/var/run/mysql,/var/lib/mysql,var/log/mysql}
+
+# 生成配置文件
+cat > /etc/my.cnf << -EOF
+[mysqld]
+skip-grant-tables
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+server-id = 1
+#开启二进制日志
+log_bin = db1.binlog
+# 配置自增主键从一开始
+auto_increment_offset=1
+# 配置自增主键每隔一进一，以防止主键自增的冲突
+auto_increment_increment=2
+# 不需要同步的数据库
+binlog-ignore-db = mysql
+binlog_ignore_db = information_schema
+binlog_ignore_db = performation_schema
+binlog_ignore_db = sys
+
+init_connect='SET NAMES utf8'
+character-set-server=utf8mb4
+collation-server=utf8mb4_general_ci
+max_allowed_packet=256M
+
+skip-external-locking
+key_buffer_size = 16M
+table_open_cache = 64
+sort_buffer_size = 512K
+net_buffer_length = 8K
+read_buffer_size = 256K
+read_rnd_buffer_size = 512K
+
+
+[client]
+default-character-set=utf8mb4
+
+[mysqld_safe]
+log-error = /var/log/mysql/mysql.log
+pid-file = /var/run/mysql/mysql.pid
+
+#
+# include all files from the config directory
+#
+!includedir /etc/my.cnf.d
+EOF
+
+# 初始化
+/usr/local/mysql//bin/mysqld --defaults-file=/etc/my.cnf --initialize --console
+# 初始化成功后会为root生成一个临时密码,和初始化过程一起记录到errorlog中[log-error参数指定的文件]
+
+# MySQL启动
+cp support-files/mysql.server /etc/init.d/mysqld && service mysqld start
+
+# 使用临时密码登录MySQL
+# 修改临时密码。临时密码只能用来登录MySQL，但不允许执行任何操作，所以第一步是修改临时密码
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'admincp';
+
+
+```
+
+---
+
+### MySQL8和MySQL5在密码验证机制方面的差异
+
+MySQL8默认的密码验证插件和MySQL5是不同的，区别如下：
+
+| 比较点   | MySQL 5.7                 | MySQL 8.0                  |
+| -------- | ------------------------- | -------------------------- |
+| 默认插件 | `mysql_native_password` | `caching_sha2_password`  |
+| 安全性   | SHA1，较弱                | SHA256，较强，支持加密传输 |
+| 向后兼容 | 较好                      | 需要注意旧客户端连接问题   |
+| 密码策略 | 基本支持                  | 更完善的策略和插件支持     |
+
+由于插件变化，MySQL 8 的新用户默认使用 `caching_sha2_password`，这可能会导致 **旧客户端（如 MySQL 5.x 的连接库）无法连接 MySQL 8 服务器** ，报错示例如下：
+
+```shell
+Authentication plugin 'caching_sha2_password' cannot be loaded
+```
+
+解决方法：
+
+使用 MySQL 8 的客户端连接；
+
+或者将用户认证插件手动改回 `mysql_native_password`：
+
+```shell
+ALTER USER 'user'@'host' IDENTIFIED WITH mysql_native_password BY 'password';
+```
+
+如何修改MySQL8的默认密码认证插件：
+
+```
+在MySQL配置文件中添加以下配置
+default-authentication-plugin=caching_sha2_password | mysql_native_password
+```
+
+---
+
+### MySQL高可用方案
+
+#### MHA
+
+#### PXC
+
+#### MySQL组复制（MGR  MySQL Group Replication）
 
 ```shell
 # 前提条件
@@ -365,12 +697,14 @@ MySQL版本5.7.17+
 binlog日志格式必须设置为ROW   [Statement,ROW,MiXED]
 ```
 
-[binlog](###MySQLbinlog的格式)
-
 ```
 目前一个MGR集群组最多支持9个节点
 
-# 部署过程。docker 运行MySQL8
+# 部署过程 
+
+############################################################ 单主模式  ##################################################################
+
+docker 运行MySQL8
 # 事先准备好my.cnf和plugin目录下的所有.so文件
 
 docker run -d --name mysql \
@@ -395,7 +729,7 @@ my.cnf内容如下:
 skip-host-cache
 skip-name-resolve
 datadir=/var/lib/mysql
-socket=/var/run/mysqld/mysqld.sock
+socket=/dev/shm/mysqld.sock
 secure-file-priv=/var/lib/mysql-files
 user=mysql
 disabled_storage_engines="MyISAM,BLACKHOLE,FEDERATED,ARCHIVE,MEMORY" # 禁用InnoDB之外的存储引擎
@@ -407,12 +741,12 @@ enforce_gtid_consistency=ON
 master_info_repository=TABLE
 relay_log_info_repository=TABLE
 log_bin=binlog
-binlog_format=ROW
-log_slave_updates=ON
-binlog_checksum=NONE
+binlog_format=ROW       # MySQL 8.4之后该参数已删除
+log_replica_updates=ON  # 也就是8.0.26之前的log_slave_updates
+binlog_checksum=CRC32      # MySQL 8.0.21+的默认值, MySQL 8.0.20及之前的值NONE
 transaction_write_set_extraction=XXHASH64
 loose-group_replication_recovery_use_ssl=ON
-loose-group_replication_group_name="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"  #组id,自定义，内容随意，格式正确即可ß
+loose-group_replication_group_name="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"  #组id,自定义，内容随意，格式正确即可
 loose-group_replication_start_on_boot=OFF
 loose-group_replication_local_address= "db1:33061"   # 主机名和ip的对应关系要写入/etc/hosts，端口号自定义
 loose-group_replication_group_seeds= "db1:33061,db2:33061,db3:33061"
@@ -420,8 +754,10 @@ loose-group_replication_bootstrap_group=OFF
 loose-group_replication_member_weight=50   # 优先级越高，越被优先选举为新master
 loose-group_replication_single_primary_mode=TRUE  # 开启单主模式
 loose-group_replication_enforce_update_everywhere_checks=FALSE  # 关闭多主模式
+relay-log = db1-relay-bin   # relay-log前缀，文件名由MySQL根据主机名自动生成
 
-pid-file=/var/run/mysqld/mysqld.pid
+
+pid-file=/dev/shm/mysqld.pid
 [client]
 socket=/var/run/mysqld/mysqld.sock
 
@@ -454,7 +790,274 @@ START GROUP_REPLICATION;
 
 # 验证结果
 SELECT * FROM performance_schema.replication_group_members;
+
+############################################################ 多主模式  ##################################################################
+
+# 基于MySQL 8.4.5，二进制方式安装
+
+# 配置文件
+[mysqld]
+user = mysql
+datadir = /var/lib/mysql
+socket = /dev/shm/mysql.sock
+pid-file = /dev/shm/mysql.pid
+
+# MGR相关配置
+server-id = 1    # 不能冲突
+gtid_mode = ON
+enforce_gtid_consistency = ON
+log_bin = db1.binlog
+log_replica_updates=ON  # 也就是8.0.26之前的log_slave_updates
+binlog_checksum=CRC32    # MySQL 8.0.21+的默认值, MySQL 8.0.20及之前的值NONE
+loose-group_replication_recovery_use_ssl=ON
+loose-group_replication_group_name="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+loose-group_replication_start_on_boot=OFF
+loose-group_replication_local_address= "db1:33061"   # 本机主名
+loose-group_replication_group_seeds= "db1:33061,db2:33061,db3:33061"
+loose-group_replication_bootstrap_group=OFF
+loose-group_replication_member_weight=50
+loose-group_replication_single_primary_mode=OFF    # 关闭单主模式
+loose-group_replication_enforce_update_everywhere_checks=ON   # 开启多主模式
+relay-log = db1-relay-bin   # relay-log前缀，文件名由MySQL根据主机名自动生成
+
+# 配置自增主键从一开始
+auto_increment_offset=1
+# 配置自增主键每隔一进一，以防止主键自增的冲突
+auto_increment_increment=3
+
+init_connect='SET NAMES utf8'
+character-set-server=utf8mb4
+collation-server=utf8mb4_general_ci
+max_allowed_packet=256M
+
+skip-external-locking
+key_buffer_size = 16M
+table_open_cache = 64
+sort_buffer_size = 512K
+net_buffer_length = 8K
+read_buffer_size = 256K
+read_rnd_buffer_size = 512K
+
+log-error = /var/log/mysql/mysql.log
+
+[client]
+default-character-set=utf8mb4
+socket=/dev/shm/mysql.sock
+
+
+#
+# include all files from the config directory
+#
+!includedir /etc/my.cnf.d
+
+
+# 创建同步账号，3台服务器均执行
+mysql>CREATE USER rpl_user@'%' IDENTIFIED BY 'qaz123456!';
+mysql>GRANT REPLICATION SLAVE ON *.* TO rpl_user@'%';
+mysql>FLUSH PRIVILEGES;
+mysql>RESET BINARY LOGS AND GTIDS;   # MySQL8.4开始不再有RESET MASTER命令
+# 因为刚才Binglog包含创建用户这种高权限操作，用于主从同步的账户没有权限执行,RelayLog重放无法正确执行，导致从属服务器卡死在"RECEVERING"状态
+# RESET BINARY LOGS AND GTIDS删除这些无法执行的binlog
+
+
+# 安装mrg插件，3台服务器均执行
+mysql> INSTALL PLUGIN group_replication SONAME 'group_replication.so';
+
+# 第一台主机开启组复制
+SET GLOBAL group_replication_bootstrap_group=ON;
+START GROUP_REPLICATION;
+SET GLOBAL group_replication_bootstrap_group=OFF;
+
+# 剩余主机开启主复制
+START GROUP_REPLICATION;
+
+# 查看MGR状态
+SELECT * FROM performance_schema.replication_group_members;
+
+# 所有节点都是PRIMARY
++---------------------------+--------------------------------------+-------------+-------------+--------------+-------------+----------------+----------------------------+
+| CHANNEL_NAME              | MEMBER_ID                            | MEMBER_HOST | MEMBER_PORT | MEMBER_STATE | MEMBER_ROLE | MEMBER_VERSION | MEMBER_COMMUNICATION_STACK |
++---------------------------+--------------------------------------+-------------+-------------+--------------+-------------+----------------+----------------------------+
+| group_replication_applier | 5b713306-402b-11f0-88b9-000c29a28c54 | db2         |        3306 | ONLINE       | PRIMARY     | 8.4.5          | XCom                       |
+| group_replication_applier | c343f5f4-402c-11f0-b45d-000c29849bec | db3         |        3306 | ONLINE       | PRIMARY     | 8.4.5          | XCom                       |
+| group_replication_applier | e39ec12b-3fbe-11f0-b80c-000c29534d0b | db1         |        3306 | ONLINE       | PRIMARY     | 8.4.5          | XCom                       |
++---------------------------+--------------------------------------+-------------+-------------+--------------+-------------+----------------+----------------------------+
+
+
+## 节点或者节点上的MySQL重启之后需要重新执行START GROUP_REPLICATION来加入组复制
 ```
+
+---
+
+### mysqldump的使用
+
+#### 如何避免锁表
+
+方法一
+
+```
+mysqldump --single-transaction -u root -p mydb > mydb.sql
+
+在导出开始时创建一个事务快照；
+不会加锁表，不会阻止读写；
+只适用于 InnoDB 表；
+对大库导出非常友好，不会影响线上业务。
+⚠️ 要求表 必须是 InnoDB；MyISAM 不支持事务，仍会被锁
+```
+
+方法二：
+
+```
+mysqldump --single-transaction --skip-lock-tables --quick -u root -p mydb > mydb.sql
+
+--single-transaction   启动事务快照，避免锁表（InnoDB 专用）
+--skip-lock-tables     不显式加 `LOCK TABLES`（对某些引擎更友好）
+--quick                一行一行读取，避免内存爆炸，适合大数据表 
+```
+
+方法三：
+
+```
+SELECT table_schema, table_name, engine
+FROM information_schema.tables
+WHERE table_schema = 'your_db' AND engine != 'InnoDB';
+
+如果输出结果非空，说明你的库中有非 InnoDB 表，使用 --single-transaction 仍然会加锁这些表；
+推荐提前转成 InnoDB，或分离导出
+```
+
+推荐的mysqldump参数：
+
+```
+mysqldump \
+  --single-transaction \
+  --quick \
+  --skip-lock-tables \
+  --routines \
+  --events \
+  --triggers \
+  -u root -p mydb > mydb.sql
+
+```
+
+参数解释：
+
+| 参数                     | 作用                                                                                       | 是否推荐生产使用        |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ----------------------- |
+| `--single-transaction` | 开始导出时开启一个一致性事务快照，**避免锁表** ，确保导出数据一致（仅适用于 InnoDB） | ✅ 强烈推荐             |
+| `--quick`              | 一行一行读取数据，而不是一次性加载到内存（使用流式输出）适合大表导出                       | ✅ 强烈推荐             |
+| `--skip-lock-tables`   | 跳过显式执行 `LOCK TABLES`， **避免对 MyISAM 表加锁** （已弃用 MyISAM 时无副作用） | ✅ 推荐搭配使用         |
+| `--routines`           | 包含存储过程（Stored Procedures）                                                          | ✅ 如数据库中使用了过程 |
+| `--events`             | 包含事件调度器（Event Scheduler）中的事件                                                  | ✅ 如数据库中启用了事件 |
+| `--triggers`           | 包含触发器（Triggers），防止逻辑缺失                                                       | ✅ 一般都需要           |
+| `-u root`              | 指定连接用户名                                                                             | ✅                      |
+| `-p`                   | 提示输入密码（会在执行后让你输入密码）                                                     | ✅                      |
+| `mydb`                 | 要导出的数据库名                                                                           | ✅                      |
+| `> mydb.sql`           | 将输出内容重定向到文件中                                                                   | ✅                      |
+
+#### 开启了GTID的MySQL，在使用mysqldump导出导入数据的时候需要注意什么？
+
+主要是避免引发 GTID 错误、主从复制中断、数据冲突等问题
+
+##### 数据导出，建议使用以下组合参数
+
+```shell
+mysqldump \
+  --single-transaction \
+  --set-gtid-purged=OFF \
+  --routines \
+  --events \
+  --triggers \
+  -u root -p mydb > mydb.sql
+```
+
+参数解释：
+
+| 参数                                       | 作用                                                                   |
+| ------------------------------------------ | ---------------------------------------------------------------------- |
+| `--single-transaction`                   | 保证数据一致性，避免锁表（前提：表是 InnoDB 引擎）                     |
+| `--set-gtid-purged=OFF`                  | **最关键** ，避免导出文件中包含 `SET @@GLOBAL.GTID_PURGED`指令 |
+| `--routines`/`--events`/`--triggers` | 保证函数、事件、触发器被完整导出                                       |
+
+##### 数据导入
+
+**普通导入：**
+
+```
+mysql -u root -p mydb < mydb.sql
+
+如果你导出的 SQL 文件中 没有包含 GTID_PURGED（即设置为 OFF），可以放心导入；
+导入过程中的语句会生成新的 GTID 事务
+```
+
+**导入到主从复制环境中（尤其是MGR,异步复制）**
+
+```
+不要导入含有 SET @@GLOBAL.GTID_PURGED 的 SQL 文件，否则会引起 GTID 冲突或跳过已有事务；
+使用 --set-gtid-purged=OFF 导出；
+导入时如需要保持事务一致性，应确保没有其他写入并使用 --single-transaction。
+```
+
+**特殊情况，恢复主库**
+
+如果需要恢复主库，并想保留 GTID，可以这样操作：
+
+```
+# 数据导出
+mysqldump --set-gtid-purged=ON ...
+
+# 数据导入
+RESET MASTER;  清除当前服务器的 GTID,这会清空当前 server 的 GTID 集，必须 慎用，适用于恢复到一个干净的新节点。(8.4之后是RESET BINARY LOGS AND GTIDS)
+mysql -u root -p mydb < mydb.sql
+```
+
+##### 总结
+
+| 操作场景              | 推荐设置                                                |
+| --------------------- | ------------------------------------------------------- |
+| 普通数据导出导入      | `--set-gtid-purged=OFF`                               |
+| 复制环境（从库）导入  | `--set-gtid-purged=OFF`，避免 GTID 冲突               |
+| 恢复主库，迁移原 GTID | `--set-gtid-purged=ON`，但导入前必须 `RESET MASTER` |
+| 目标是备份而非迁移    | `--set-gtid-purged=OFF`即可                           |
+
+---
+
+### MySQL快速备份数据表
+
+```
+或者
+CREATE TABLE <new tables> LIKE <old table>;
+或者
+SHOW CREATE TABLE <old table>;#拿到旧表的建表语句，然后手动执行创建新表
+```
+
+复制旧表的数据到新表
+
+```
+# 表结构一样
+CREATE TABLE <new table> AS SELECT * FROM <old table>
+
+# INSERT INTO 
+# INSERT INTO 不能自动创建数据表
+CREATE TABLE <new tables> LIKE <old table>;
+INSERT INTO <new table>  SELECT * FROM <old table>  
+
+# 表结构不一样
+CREATE TABLE <new table> (column1 datatype,column2 datatype……)
+INSERT INTO <new table>(column1,column2,……) SELECT column1,column2,…… FROM <old table>
+```
+
+总结：
+
+| 特性                            | `SELECT INTO`          | `INSERT INTO ... SELECT`   |
+| ------------------------------- | ------------------------ | ---------------------------- |
+| 是否插入表                      | ❌ 不能插入表            | ✅ 插入数据到目标表          |
+| 赋值作用                        | ✅ 赋值给变量            | ❌ 不能用于变量赋值          |
+| 多行支持                        | ❌ 只支持单行            | ✅ 支持插入多行              |
+| 使用场景                        | 存储过程、脚本、单值查询 | 数据迁移、历史归档、批量插入 |
+| 是否会创建新表（SQL Server 中） | ⚠️ MySQL 不支持        | ❌ 不创建新表                |
+
+PS: 有的数据库（如 SQL Server 或 PostgreSQL）中 `SELECT INTO new_table ...` 是创建新表并填充数据的语法，**但 MySQL 不支持这种用法**
 
 ---
 
@@ -619,6 +1222,34 @@ Redis cluster的内部通信协议为gossip，包含meet、ping、pong、fail等
 
 ---
 
+### Redis Cluster模式下，slve是怎么被选举为master的
+
+1. **slave 会定期向 master 节点发送 PING，检测其存活性**
+2. 如果 slave 发现自己的 master 无响应，它会标记为疑似下线（`PFAIL`）
+3. **其他 master 节点也会检测该 master 状态**
+4. 如果超过一定数量（默认 2 个以上的 master）判断该节点为故障（`FAIL`），此时集群进入“主观下线” + “客观下线”的共识机制
+5. 如果有符合条件的 slave（处于正常状态、数据不落后太多），**它会被选举为新的 master**
+
+选举条件
+
+| 条件                     | 说明                                                      |
+| ------------------------ | --------------------------------------------------------- |
+| slave 状态正常           | 即 `CLUSTER`状态良好，没有断开                          |
+| 和旧 master 同步情况良好 | `replication offset`越接近的 slave 优先                 |
+| slave priority 设置较高  | 配置项 `slave-priority`值越小优先级越高（0 表示不参与） |
+| 得到大多数 master 投票   | 默认是集群中一半以上 master 同意，才能执行提升            |
+
+总结：
+
+| 问题                           | 答案                                                                |
+| ------------------------------ | ------------------------------------------------------------------- |
+| slave 是自动提升为 master 吗？ | ✅ 是的                                                             |
+| 是自己决定的还是集群选举的？   | ❌ 不是自己决定，是由**其他健康的 master 节点投票选举出来**的 |
+| 需要多少节点投票？             | 默认需要集群中**一半以上 master 的同意**                      |
+| slave 如何优先被选中？         | 数据最新、优先级高（replica-priority 小）、状态良好                 |
+
+---
+
 ### Reddis雪崩、击穿和穿透
 
 ![img](img/redis-1.png)
@@ -679,7 +1310,20 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
   # 内存占用前10的进程
   ps aux | head -1;ps aux | grep -v USER | sort -k4 -nr | head
   ```
+
 * [ ] ps  -ef   system V风格
+
+### Linux  ss命令
+
+ss的Recv-Q和Send-Q字段的含义随着State字段的值不同(也就是socket的连接状态不同)而有所变化：
+
+| State 状态                     | Recv-Q 的含义                                                                    | Send-Q 的含义                                                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **LISTEN**               | 这个监听 socket 当前排队的**连接请求数** （已经完成三次握手，等待 accept） | **允许排队的最大连接数** （即 backlog，受 `listen(fd, backlog)`和 `somaxconn`影响） |
+| **ESTABLISHED**          | 内核中收到但**尚未被应用程序读取**的数据大小（单位：字节）                 | 应用写入但**尚未发送完毕**或**等待对方确认**的数据大小（单位：字节）              |
+| **CLOSE-WAIT**           | 与 ESTABLISHED 类似，表示还有未读的数据                                          | 通常为 0，表示对方已关闭连接，我方无法再发送                                                  |
+| **SYN-SENT / SYN-RECV**  | 通常都为 0（因为连接还未完全建立）                                               | 通常为 0 或很小，表示 SYN 包尚未完全确认                                                      |
+| **TIME-WAIT / FIN-WAIT** | 一般为 0（等待状态，无需收发数据）                                               | 一般为 0                                                                                      |
 
 ---
 
@@ -793,6 +1437,7 @@ Perl版本支持正则（替换规则支持正则，文件名匹配时仍是通�
   # 尽量使用[[ ... ]]条件判断结构，而不是[ ... ]，能够防止脚本中的许多逻辑错误
   # 比如，&&、||、<和> 操作符能够正常存在于[[ ]]条件判断结构中
   ```
+
 * [ ] ( )
 
 1. **命令组** 。括号中的命令将会新开一个子shell顺序执行，所以括号中的变量不能够被脚本余下的部分使用。括号中多个命令之间用分号隔开，最后一个命令可以没有分号，各命令和括号之间不必有空格。
@@ -1228,6 +1873,7 @@ ENV DB_HOST localhost
 * [ ] -A   打印匹配行及其后的N行
 * [ ] -B   打印匹配行及其前的N行
 * [ ] -C   打印匹配行及前后各N行
+* [ ] -H  在输出时始终显示文件名 ，即使只查一个文件也显示
 
 ### 输入输出重定向
 
@@ -1369,6 +2015,55 @@ find /home/prestat/bills/test -type d -mtime +20 -exec rm {} \;
 
 ---
 
+### 常见的服务器磁盘类型
+
+| 类型                   | 接口协议                    | 描述说明                                                                   |
+| ---------------------- | --------------------------- | -------------------------------------------------------------------------- |
+| **SATA盘**       | SATA                        | 成本低、性能中等，常用于大容量存储。适合冷数据、归档等。                   |
+| **SAS盘**        | SAS（Serial Attached SCSI） | 企业级接口，比SATA更稳定、更快，支持多任务并发。常用于业务主盘、数据库等。 |
+| **SCSI盘**       | 并行 SCSI（已过时）         | 较老的技术，现在被SAS取代。仍有历史命名保留。                              |
+| **NVMe盘**       | NVMe over PCIe              | 高性能固态盘，直连PCIe总线，I/O性能远超SAS/SATA。                          |
+| **SSD盘**        | 可用 SATA / SAS / NVMe      | 固态硬盘，不是接口而是一种存储介质。                                       |
+| **光纤盘（FC）** | Fiber Channel               | 主要用于SAN存储，通过光纤网络连接，带宽高。                                |
+
+---
+
+### 操作系统的SCSI总线是什么？
+
+**是一个通用术语，指内核中的一种设备抽象和访问机制** ，负责管理和调度连接到 SCSI/SAS/SATA 总线的块设备
+
+```
+/sys/class/scsi_host/hostX 表示 SCSI Host 控制器
+
+/sys/class/scsi_device 显示每个 SCSI 设备
+
+/dev/sdX 设备就是通过 SCSI 层管理的块设备（不管是 SATA 还是 SAS）
+```
+
+---
+
+### 新增的磁盘操作系统不识别，如何处理
+
+```
+# 原理：触发SCSI总线重新扫描
+# 1. 让系统识别新硬件（常用于虚拟机或热插拔场景）
+echo "- - -" > /sys/class/scsi_host/hostX/scan  # X 是主机号，可遍历所有 host
+# 例如：
+for host in /sys/class/scsi_host/host*; do
+    echo "- - -" > "$host/scan"
+done
+
+# 2. 或者重扫整个 SCSI 总线（更直接）
+rescan-scsi-bus
+
+# 3. 检查新磁盘是否出现
+lsblk
+fdisk -l
+
+```
+
+---
+
 ### 文件删除后磁盘不释放
 
 lsof | grep delete
@@ -1423,7 +2118,7 @@ FIFO也是一种特殊的文件类型，它主要的目的是，解决多个程�
 
 ### 快速删除大量的小文件
 
-rsync -auz   a/  b/   --delete
+rsync -avz   --delete a/  b/
 
 ---
 
@@ -1432,6 +2127,21 @@ rsync -auz   a/  b/   --delete
 ---
 
 ### TCP全连接队列和半连接队列
+
+| 名称       | 队列别名         | 状态            | 说明                                                       |
+| ---------- | ---------------- | --------------- | ---------------------------------------------------------- |
+| 半连接队列 | `SYN Queue`    | `SYN_RECV`    | 存放收到客户端 SYN 后回复了 SYN+ACK，但还没收到 ACK 的连接 |
+| 全连接队列 | `Accept Queue` | `ESTABLISHED` | 存放三次握手完成、等待 `accept()`的连接                  |
+
+客户端状态                                                                          服务器状态                                                           队列变化（服务器端）
+───────────────          ────────────────             ────────────────────────────────
+CLOSED                                                                      LISTEN                                                               空
+
+SYN-SENT ────  SYN ───▶                       SYN-RECV                                           半连接队列 +1（进入 SYN Queue）
+
+    ◀─── SYN+ACK ──
+
+ESTABLISHED ─── ACK ───▶                     ESTABLISHED                                     半连接队列 -1，转入全连接队列 +1（Accept Queue）
 
 ```shell
 # 当前系统的半连接队列长度
@@ -1597,6 +2307,152 @@ JAVA_OPTS="-server -Xms256m -Xmx2048m -XX:PermSize=256m -XX:MaxNewSize=1024m -XX
 
 ---
 
+### ES CRUD 常用操作
+
+* 查看集群健康状态
+
+```bash
+curl -X GET http://<es>:9200/_cluster/health?pretty
+```
+
+* 查看分片状态
+
+```
+curl -X GET http://<es>:9200/_cat/shards?v
+```
+
+* 查看未分配的分片
+
+```
+curl -X GET http://<es>:9200/_cat/shards | grep UNASSIGNED
+```
+
+* es创建索引：
+
+```
+curl -X PUT http://<es>:9200/<index>
+```
+
+* es创建索引的同时指定分片数：
+
+```
+curl -X PUT http://<es>:9200/<index>
+{
+    "settings": {
+    "number_of_shards": 2,    #主分片数,一旦创建之后不能修改
+    "number_of_replicas": 1   #副本分片数，创建之后也可以修改
+    }
+}
+```
+
+* es创建索引的同时指定分片数和mapping:
+
+```
+curl -X PUT http://<es>:9200/<index>
+{
+    "settings": {
+    "number_of_shards": 2,    #主分片数,一旦创建之后不能修改
+    "number_of_replicas": 1   #副本分片数，创建之后也可以修改
+    }
+    "mapping": {
+        "properties": {
+        "music": {
+                "type": "text"
+            },
+            "author": {
+                "type": "text"
+            },
+            "create_time":{
+                "type": "date"
+        }
+     }
+    }
+}
+```
+
+* es插入文档
+
+```
+curl -X POST http://<es>:9200/<index>/_doc
+{
+  "music": "青花瓷",
+  "author": "周杰伦",
+  "create_time": "2000-10-10"
+}
+```
+
+* es修改文档
+
+```
+curl -X POST http://<es>:9200/<index>/_update/id     #修改指定字段
+{
+    "doc": {
+        "filed": "字段值"
+    }
+}
+
+# 如果不调用_update接口，像以下这样，修改的是整条文档，且修改后的值值保留最后一次提交的字段，其他字段清空
+curl -X POST http://<es>:9200/<index>/_doc/id
+{
+    "field": "字段值"
+}
+```
+
+* es查询索引下的所有文档：
+
+```
+curl -X GET http://<es>:9200/<index> #只显示索引的元信息，配置信息，不显示具体文档
+
+
+curl -X GET http://<es>:9200/<index>/_search # 显示索引下的所有文档
+
+```
+
+* es查询索引下的某条文档：
+
+```
+curl -X GET http://<es>:9200/<index>/_doc/id
+
+```
+
+* es查询按照字段值来查询文档：
+
+```
+curl -X GET http://<es>:9200/xiaoshuo1/_search?pretty
+{
+  "query": {
+    "match": {
+      "filed": "TEXT"
+    }
+  }
+}
+```
+
+* es删除索引下的某条文档
+
+```
+curl -X DELETE http://<es>:9200/<index>/_doc/id
+```
+
+* es删除索引下的所有文档,但是保留索引
+
+```
+curl -X POST http://<es>:9200/index/_delete_by_query
+{
+    "query": {
+    "match_all": {}
+    }
+}
+```
+
+* es删除整个索引
+
+```bash
+curl -X DELETE http://<es>:9200/<index>
+```
+
+---
+
 ### ES 优化
 
 系统优化
@@ -1608,6 +2464,7 @@ JAVA_OPTS="-server -Xms256m -Xmx2048m -XX:PermSize=256m -XX:MaxNewSize=1024m -XX
 
   /etc/fstab
   ```
+
 * [ ] [增加文件描述符](https://www.elastic.co/guide/en/elasticsearch/reference/7.3/file-descriptors.html "文件描述符")
 
   ```shell
@@ -1615,6 +2472,7 @@ JAVA_OPTS="-server -Xms256m -Xmx2048m -XX:PermSize=256m -XX:MaxNewSize=1024m -XX
   * soft nofile 65535  # 文件描述符
   * hard nofile 65535
   ```
+
 * [ ] [确保足够的虚拟内存](https://www.elastic.co/guide/en/elasticsearch/reference/7.3/vm-max-map-count.html "虚拟内存")
 
   Elasticsearch 默认使用  mmapfs 目录存储其索引。
@@ -1660,53 +2518,113 @@ jvm优化：
 
 ### ES集群中的节点类型
 
-* [ ] 主节点，master node
+#### 1. 主节点，Master Node
 
-  ```shell
+```shell
   node.master: true
   node.data: false
-  ```
+```
 
-  负责创建索引、删除索引、分配分片、追踪集群中的节点状态等工作。Elasticsearch 中的主节点的工作量相对较轻。
+负责管创建索引、删除索引、分配分片、追踪集群中的节点状态(节点的注册和退出)等工作。**每个集群中最多只有一个主节点处于激活状态（其余为候选）**
 
-  用户的请求可以发往任何一个节点，并由该节点负责分发请求、收集结果等操作，而并不需要经过主节点转发。
+用户的请求可以发往任何一个节点，并由该节点负责分发请求、收集结果等操作，而并不需要经过主节点转发。
 
-  通过在配置文件中设置 node.master=true 来设置该节点成为候选主节点
+通过在配置文件中设置 node.master=true 来设置该节点成为候选主节点
 
-  （但该节点不一定是主节点，主节点是集群在候选节点中选举出来的），
+但该节点不一定是主节点，主节点是集群在候选节点中选举出来的），
 
-  在 Elasticsearch 集群中只有候选节点才有选举权和被选举权。其他节点是不参与选举工作的
-* [ ] 数据节点  data node
+在 Elasticsearch 集群中只有候选节点才有选举权和被选举权。其他节点是不参与选举工作的
+
+#### 2. 数据节点  Data Node
 
 ```shell
 node.master: false
 node.data: true
 ```
 
-    负责数据的存储和相关具体操作，比如索引数据的创建、修改、删除、搜索、聚合。
+负责数据的存储和相关具体操作，比如索引数据的创建、修改、删除、搜索、聚合。
 
-    数据节点对机器配置要求比较高，首先需要有足够的磁盘空间来存储数据，
+数据节点对机器配置要求比较高，首先需要有足够的磁盘空间来存储数据，
 
-    其次数据操作对系统 CPU、Memory 和 I/O 的性能消耗都很大。
+其次数据操作对系统 CPU、Memory 和 I/O 的性能消耗都很大。
 
-    需要增加更多的数据节点来提高可用性时，通过在配置文件中设置 node.data=true 来设置该节点成为数据节点。
+需要增加更多的数据节点来提高可用性时，通过在配置文件中设置 node.data=true 来设置该节点成为数据节点。
 
-* [ ] 客户端节点 client node
+#### 3. 协调节点 Coordinating Node
 
-  ```shell
-  node.master: false
-  node.data: false
-  ```
+```shell
+node.master: false
+node.data: false
+node.ingest: false
+```
 
-  就是既不做候选主节点也不做数据节点的节点，只负责请求的分发、汇总等，也就是下面要说到的协调节点的角色。
+仅负责接收客户端请求，拆分转发至各个数据节点,并聚合查询结果并返回给客户端.本质上是“负载均衡 + 分布式协调器”
 
-  其实任何一个节点都可以完成这样的工作，单独增加这样的节点更多地是为了提高并发性
+其实任何一个节点都可以完成这样的工作，单独增加这样的节点更多地是为了提高并发性
 
-#### [参考资料](https://www.cnblogs.com/davis12/p/15500158.html)
+#### 4. 索引预处理节点 Ingest Node
+
+```
+node.ingest: true
+
+```
+
+执行 Ingest Pipelines，即在写入前对文档进行预处理（如解析、转换、添加字段等）,使用 grok 解析日志、添加地理位置字段、格式化时间戳等
+
+#### 总结
+
+| 节点类型   | 推荐角色组合                     | 说明                |
+| ---------- | -------------------------------- | ------------------- |
+| 主节点     | `node.master: true` 其他 false | 不存数据、轻量部署  |
+| 数据节点   | `node.data: true`              | 支持主分片/副本分片 |
+| 协调节点   | 所有设为 false                   | 接收请求、聚合查询  |
+| Ingest节点 | `node.ingest: true`            | 写入前处理数据      |
 
 ---
 
 ### es的master选举机制
+
+master节点的选举有两个典型场景：新集群创建、Master切换，自 7.x 起，Elasticsearch 引入了新的基于 Raft 的 Zen2 选举机制，比旧的 Zen Discovery 更健壮
+
+#### 一、新集群创建
+
+**触发条件：**
+
+* 一个 Elasticsearch 新集群首次启动时
+* 所有节点之间能通信，开始组建集群
+* 至少达到 quorum（多数节点）后，开始选主
+
+**选举机制：**
+
+| 项目                                     | 描述                                                               |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| **discovery.seed\_hosts**          | 指定初始节点列表，供集群发现其他节点                               |
+| **cluster.initial\_master\_nodes** | **（仅第一次启动时需要）** 指定可能成为 master 的节点名      |
+| **node.master: true**              | 节点是否具备参与 master 选举的资格                                 |
+| **quorum（法定票数）**             | 至少要有 `N/2 + 1` 个 master-eligible 节点通信成功，才可进行选举 |
+
+> **注意** cluster.initial_master_nodes 只在首次启动新集群时使用一次，之后必须移除，否则重启集群可能引发错误的分裂（split brain）。
+
+#### 二、Master发生切换
+
+**触发条件：**
+
+* 当前 master 节点宕机、网络隔离、或主动下线
+* 剩余的节点检测到 master 消失（通过 ping）
+
+**选举机制：**
+
+* 剩余的 master-eligible 节点 发起新一轮选举；
+* 谁赢得多数节点的支持（quorum），谁就成为新的 master；
+* 新 master 会重新发布集群状态，保持一致性。
+
+#### 影响选主优先级的因素
+
+| 优先级依据   | 描述                                           |
+| ------------ | ---------------------------------------------- |
+| 节点加入时间 | 越早加入的节点越优先                           |
+| 节点 ID      | ID 较小者优先（在时间相同情况下）              |
+| 票数法定数   | 必须满足多数节点在线，避免 split-brain（脑裂） |
 
 #### [参考资料](https://juejin.cn/post/7074157612752699406)
 
@@ -1983,6 +2901,51 @@ ingest.geoip.downloader.enabled: false
 
 ---
 
+### ES和Kafka的一些对比
+
+#### 数据与分片/Partition的对应关系
+
+| 特性     | Kafka                             | Elasticsearch              |
+| -------- | --------------------------------- | -------------------------- |
+| 数据单位 | 一条消息                          | 一条文档                   |
+| 存储分片 | Partition                         | Shard（主分片）            |
+| 写入策略 | 每条消息只进一个 Partition        | 每条文档只进一个主分片     |
+| 并发能力 | 多 Partition 并发写入             | 多主分片并发写入           |
+| 读取方式 | 每条消息从一个 Partition 顺序读取 | 每条文档从一个分片随机读取 |
+
+#### 分片之间的关系
+
+| 特性                    | Elasticsearch 主分片        | Kafka Partition                       |
+| ----------------------- | --------------------------- | ------------------------------------- |
+| 是否保存不同数据子集？  | ✅ 是                       | ✅ 是                                 |
+| 分片/分区之间是否同步？ | ❌ 否                       | ❌ 否                                 |
+| 主 → 副本是否同步？    | ✅ 是（主分片 → 副本分片） | ✅ 是（Leader Partition → Follower） |
+| 副本的用途              | 高可用、查询负载均衡        | 容错、Leader挂掉可切换                |
+
+#### 节点角色对比
+
+| 对比项               | Elasticsearch                      | Kafka                                                       |
+| -------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| 控制节点             | Master 节点（可多个，1 active）    | Controller Broker（自动选主）                               |
+| 数据节点             | Data 节点                          | Broker（按分区分布消息）                                    |
+| 存储结构             | 索引 → 分片 → 文档               | Topic → Partition → 消息                                  |
+| 节点职责是否可复合   | ✅（一个节点可以同时担任多个角色） | ❌（每个 broker 动态承担不同 partition 的 leader/follower） |
+| 是否依赖额外协调系统 | ❌（内部选主）                     | ✅（2.x 使用 ZooKeeper；3.x 可用 KRaft）                    |
+| 客户端类型           | Coordinating、Ingest Node          | Producer、Consumer                                          |
+| 分布式一致性机制     | Zen Discovery / Raft-like 机制     | ISR（In-Sync Replicas）机制                                 |
+
+#### 主分片、Leader Partition的选举机制
+
+| 特性                     | Elasticsearch 分片                                   | Kafka Partition                            |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------ |
+| 主副配置                 | 主分片 + 副本分片（`number_of_replicas`）          | Leader + Follower（replication factor）    |
+| 是否需多个副本才能选主？ | ❌ 不需要，只要一个副本即可接管                      | ❌ 不需要，只要 ISR 中有一个 follower 即可 |
+| 选主机制                 | 集群 Master 发起主分片切换，优先 fully synced 的副本 | Kafka Controller 从 ISR 中挑选新的 leader  |
+| 副本要求                 | 副本需处于 available 状态                            | 副本必须在 ISR 中                          |
+| 多副本好处               | 提高查询吞吐、冗余备份                               | 容灾能力更强、提升可靠性                   |
+
+---
+
 ### TPS、QPS、pv、uv , 并发
 
 ---
@@ -2029,7 +2992,53 @@ blkid
 
 ---
 
-### 分区扩缩容
+### Linux的lvm是什么，有哪些基本概念？
+
+#### lvm的定义：Linux 的逻辑卷管理器（Logical Volume Manager)
+
+#### PV（Physical Volume，物理卷）
+
+```
+定义：PV 是 LVM 的基本存储单元，它对应着系统中实际的物理存储设备，比如硬盘分区（如 /dev/sda1 ）或者整个物理硬盘（如 /dev/sda ）。通过将物理存储设备初始化为物理卷，LVM 才能对其进行管理和使用。
+作用：物理卷为 LVM 提供了底层的存储空间。在创建物理卷时，会在物理存储设备上写入特定的元数据，这些元数据记录了物理卷的相关信息，例如所属的卷组、物理块的分配情况等，使得 LVM 能够识别和操作该存储设备。
+创建方式：使用 pvcreate 命令可以将一个或多个物理存储设备初始化为物理卷。例如，要将 /dev/sdb1 分区初始化为物理卷，可以执行以下命令:
+```
+
+```
+pvcreate /dev/sdb1
+```
+
+#### VG（Volume Group，卷组）
+
+```
+定义：VG 是由一个或多个物理卷组成的集合，它可以看作是一个存储池，将多个分散的物理卷整合在一起，为逻辑卷的创建和管理提供了一个统一的空间。
+作用：通过卷组，LVM 实现了对物理存储资源的抽象和管理。它屏蔽了底层物理存储设备的差异，使得用户可以像使用一个大的存储设备一样使用卷组中的存储空间。在卷组中，LVM 可以灵活地分配和调整存储空间，满足不同的存储需求。此外，卷组还提供了一定的扩展性，当需要增加存储容量时，可以方便地将新的物理卷添加到卷组中。
+创建方式：使用 vgcreate 命令来创建卷组。例如，要创建一个名为 myvg 的卷组，并将 /dev/sdb1 和 /dev/sdc1 这两个物理卷添加到该卷组中，可以执行以下命令：
+```
+
+```
+vgcreate myvg /dev/sdb1 /dev/sdc1
+```
+
+#### LV（Logical Volume，逻辑卷）
+
+```
+定义：LV 是从卷组中划分出来的逻辑存储单元，它建立在卷组之上，可以像普通的存储设备（如硬盘分区）一样被格式化、挂载，并用于存储数据。逻辑卷可以根据实际需求动态地调整大小。
+作用：逻辑卷为用户提供了灵活的存储解决方案。它可以根据应用程序的需求创建不同大小的逻辑卷，并且在使用过程中，如果发现存储空间不足，可以通过扩展逻辑卷的大小来满足需求，而不需要重新调整底层的物理存储设备。同时，逻辑卷的删除和重新分配也非常方便，使得存储资源的管理更加高效。
+创建方式：使用 lvcreate 命令来创建逻辑卷。例如，要在 myvg 卷组中创建一个名为 mylv ，大小为 5GB 的逻辑卷，可以执行以下命令：
+```
+
+```
+lvcreate -L 5G -n mylv myvg
+```
+
+#### 总结
+
+PV 是基础的物理存储资源，VG 将多个 PV 整合起来形成一个统一的存储池，而 LV 则是从 VG 这个存储池中划分出来的、供用户实际使用的逻辑存储单元。通过这三个概念，LVM 实现了对物理存储资源的高效管理和灵活分配，满足了不同场景下对存储的各种需求。
+
+---
+
+### lvm分区扩缩容
 
 #### 文件系统类型为ext4
 
@@ -2162,13 +3171,38 @@ git pull == git fetch + git merge
 
 ---
 
-### Linux的lvm是什么，有哪些基本概念？
-
 ---
 
 ### 常见的RAID类型及其工作原理
 
-#### RAID0
+#### 1. RAID0
+
+至少需要两块盘，数据被分为N片(N代表磁盘数量)，并在多块盘上并行读写，所以性能是所有RAID中最高的
+但是没有数据冗余，只要一块盘损坏则所有数据丢失
+磁盘使用率100%
+
+#### 2. RAID1
+
+至少需要2块盘，也可以使用多块，但是通常使用2块，性价比最高
+数据安全性高，只要有一块盘正常数据就能够使用
+多块盘并行读写，但是数据不分片，写性能接近单盘，读性能比单盘高
+磁盘使用率50%
+
+#### 3. RAID5
+
+至少需要3块盘,会有一块盘的容量用来存储校验数据，只允许一块盘损坏
+数据分片写入多块磁盘，但是因为要写校验数据，所以写性能可能比单盘还要差，但是读取性能高，适合读多写少的场景
+磁盘使用率N-1
+
+#### 4. RAID10
+
+至少需要4块盘，实际上是把两组RAID1组成RAID0 ，允许每组RAID1中有1块盘损坏
+数据被分片写入两组RAID1，读写性能是单盘的2倍，兼顾了性能和数据冗余，但是成本也比较高
+磁盘使用率50%
+
+#### 以下为详细讲解
+
+##### RAID0
 
 ![img](img/RAID-0.png)
 
@@ -2190,7 +3224,7 @@ RAID 0的缺点是不提供数据冗余，因此一旦用户数据损坏，损�
 
 冗余：无，任何一块磁盘损坏都将导致数据不可用
 
-#### RAID1
+##### RAID1
 
 ![img](img/RAID-1.png)
 
@@ -2211,7 +3245,7 @@ RAID1是硬盘中单位成本最高的，但提供了很高的数据安全性和
 
 冗余：只要系统中任何一对镜像盘中有一块磁盘可以使用，甚至可以在一半数量的硬盘出现问题时系统都可以正常运行。
 
-#### RAID5
+##### RAID5
 
 ![img](img/RAID-5.png)
 
@@ -2233,7 +3267,7 @@ RAID5把数据和相对应的奇偶校验信息存储到组成RAID5的各个磁�
 
 冗余：只允许一块磁盘损坏。
 
-#### RAID10
+##### RAID10
 
 ![img](img/RAID-10.png)
 
@@ -2257,31 +3291,188 @@ Raid10其实结构非常简单，首先创建2个独立的Raid1，然后将这�
 
 ---
 
-### prometheus的监控原理是什么？
+### Prometheus的监控原理是什么？
 
 ---
 
-### prometheus的核心组件
+### Prometheus的核心组件
 
-Prometheus  Server
-
-AlertManager
-
-Exporters
-
-PushGateway
-
----
-
-### prometheus联邦
-
----
-
-### thanos    consul
+| 组件名称                         | 作用简介                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Prometheus Server**      | 主核心组件，负责抓取（scrape）监控目标暴露的指标数据并存储在本地时间序列数据库中。              |
+| **Exporter**               | 指标数据暴露者，通常以 HTTP 接口形式提供被监控系统的指标（如 node_exporter、mysqld_exporter）。 |
+| **Pushgateway**            | 用于支持“推送”模式的组件，适用于短生命周期任务（如批处理 Job）上报指标。                      |
+| **Alertmanager**           | 告警管理器，接收 Prometheus 发出的告警规则并进行告警通知（如邮件、Slack、Webhook）。            |
+| **Web UI / HTTP API**      | 提供可视化界面和 API 查询接口，用于查看数据、查询语句调试等。                                   |
+| **PromQL（查询语言）**     | Prometheus 的强大查询语言，用于从时间序列数据库中提取和聚合监控数据。                           |
+| **TSDB（本地时序数据库）** | Prometheus 自带的存储引擎，用于高效存储抓取到的指标数据。                                       |
+| **Service Discovery**      | 服务发现模块，动态发现需要监控的目标，如通过 Kubernetes、Consul、静态配置等。                   |
 
 ---
 
-### prometheus的报警实现原理说一下，如何抑制报警风暴？
+### Prometheus高可用
+
+#### Thanos
+
+原理与作用：
+
+**Sidecar** ：每个 Prometheus 实例旁边部署 Thanos Sidecar，它实时暴露 Prometheus 的查询接口，把 Prometheus 写好的 TSDB blocks 上传到对象存储；
+
+**Querier** ：统一的查询层，可以从多个 Prometheus（通过 Sidecar）和对象存储（通过 Store Gateway）中读取数据；
+
+**Store Gateway** ：对接对象存储中的历史数据；
+
+**Compactor** ：进行数据合并、压缩和保留策略清理；
+
+**Ruler（可选）** ：支持跨 Prometheus 实例的规则评估和告警。
+
+#### 联邦
+
+原理与作用：
+
+**核心原理** ：Prometheus 的联邦是一种  **层级查询机制** ，高层的 Prometheus（称为“联邦节点”）可以通过 HTTP API（/federate）从多个下层 Prometheus 节点拉取部分聚合数据或指标。
+
+**数据拉取** ：联邦节点定期拉取子节点暴露的 `/federate` 接口上的指标数据。
+
+**数据选择** ：可以通过配置 `match[]` 参数，控制只拉取指定的 metrics（如 `job=~"web.*"`）。
+
+两种方式的对比：
+
+| 项目               | Prometheus 联邦部署            | Prometheus + Thanos               |
+| ------------------ | ------------------------------ | --------------------------------- |
+| 高可用             | ❌ 单点故障可能丢数据          | ✅ 支持 Prometheus 多副本         |
+| 长期存储           | ❌ 不支持                      | ✅ 支持对象存储如 S3/OSS          |
+| 查询统一性         | ⚠️ 有限支持，需手工配置      | ✅ Querier 全局统一查询接口       |
+| 历史数据回查       | ❌ 无法查老数据                | ✅ 支持任意时间范围查询           |
+| 系统复杂度         | ✅ 简单，部署维护轻            | ❌ 相对复杂，组件较多             |
+| 多租户、跨集群支持 | ⚠️ 可手工配置 match 标签支持 | ✅ 天然支持去重、合并、多集群     |
+| 适合场景           | 中小型系统、数据聚合展示       | 大规模监控系统，需高可用/长期存储 |
+
+选型建议：
+
+* 如果是一个 **中等规模** 的集群，需求主要是  **中心化查询和展示** ，但数据保留期不长，不要求高可用， **联邦部署已经足够**
+* 如果是一个  **大型企业或云平台** ，需要：
+
+  * Prometheus 高可用（双实例去重）；
+  * 长时间（如 1 年）数据存储；
+  * 跨区域统一查询；
+  * 面向租户的指标平台；
+
+  那么  **Prometheus + Thanos 是更推荐的架构** 。
+
+---
+
+### Prometheus自动发现
+
+### consul
+
+---
+
+### prometheus的报警实现原理说一下
+
+触发告警的流程：
+
+1.Prometheus Server监控目标主机上暴露的http接口（这里假设接口A），通过上述Promethes配置的'scrape_interval'定义的时间间隔，定期采集目标主机上监控数据。
+
+2.当接口A不可用的时候，Server端会持续的尝试从接口中取数据，直到"scrape_timeout"时间后停止尝试。这时候把接口的状态变为"DOWN"。
+
+3.Prometheus同时根据配置的"evaluation_interval"的时间间隔，定期（默认1min）的对Alert Rule进行评估；当到达评估周期的时候，发现接口A为DOWN，即UP=0为真，激活Alert，进入“PENDING”状态，并记录当前active的时间；
+
+4.当下一个alert rule的评估周期到来的时候，发现UP=0继续为真，然后判断警报Active的时间是否已经超出rule里的"for" 持续时间，如果未超出，则进入下一个评估周期；如果时间超出，则alert的状态变为"FIRING"；同时调用Alertmanager接口，发送相关报警数据。
+
+5.AlertManager收到报警数据后，会将警报信息进行分组，然后根据alertmanager配置的"group_wait"时间先进行等待。等wait时间过后再发送报警信息。
+
+6.属于同一个Alert Group的警报，在等待的过程中可能进入新的alert，如果之前的报警已经成功发出，那么间隔"group_interval"的时间间隔后再重新发送报警信息。比如配置的是邮件报警，那么同属一个group的报警信息会汇总在一个邮件里进行发送。
+
+7.如果Alert Group里的警报一直没发生变化并且已经成功发送，等待"repeat_interval"时间间隔之后再重复发送相同的报警邮件；如果之前的警报没有成功发送，则相当于触发第6条条件，则需要等待group_interval时间间隔后重复发送。
+
+8.同时最后至于警报信息具体发给谁，满足什么样的条件下指定警报接收人，设置不同报警发送频率，这里有alertmanager的route路由规则进行配置。
+
+```yaml
+# prometheus 报警规则示例
+# /usr/local/prometheus/rules/node.yml
+
+groups:
+- name: node.rules
+  rules:
+  - alert: NodeFilesystemUsage
+    expr: 100 - (node_filesystem_free_bytes{fstype=~"ext4|xfs"} / node_filesystem_size_bytes{fstype=~"ext4|xfs"} * 100) > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{$labels.instance}}: {{$labels.mountpoint }} 分区使用过高"
+      description: "{{$labels.instance}}: {{$labels.mountpoint }} 分区使用大于 80% (当前值: {{ $value }})"
+  - alert: NodeMemoryUsage
+    expr: 100 - (node_memory_MemFree_bytes+node_memory_Cached_bytes+node_memory_Buffers_bytes) / node_memory_MemTotal_bytes * 100 > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{$labels.instance}}: 内存使用过高"
+      description: "{{$labels.instance}}: 内存使用大于 80% (当前值: {{ $value }})"
+  - alert: NodeCPUUsage
+    expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance) * 100) > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{$labels.instance}}: CPU使用过高"
+      description: "{{$labels.instance}}: CPU使用大于 80% (当前值: {{ $value }})"
+```
+
+```yaml
+# alertmanager示例文件#全局配置
+global:
+  resolve_timeout: 5m #处理超时时间，默认为5min
+  smtp_smarthost: 'smtp.126.com:465' # 邮箱smtp服务器代理
+  smtp_from: '****.com' # 发送邮箱名称
+  smtp_auth_username: '****.com' # 邮箱名称
+  smtp_auth_password: '****' # 邮箱密码或授权码 
+  smtp_require_tls: false
+
+
+#路由配置
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'email'      #所有报警均发邮件
+  routes:  #路由正则
+    - match_re: 
+       severity: warning  #如果是warning告警，接收者是webhook1
+      receiver: webhook1
+    - match_re:
+       severity: critical   #如果是error告警，接收者是webhook2
+      receiver: webhook2
+#接收人信息
+receivers:
+  - name: 'email' # 警报
+    email_configs: # 邮箱配置
+    - to: ****@qq.com'  # 接收警报的email配置
+  - name: 'webhook1'
+    webhook_configs:
+       send_resolved: false
+       url: http://localhost:8060/dingtalk/webhook1/send
+
+  - name: 'webhook2'
+    webhook_configs
+       send_resolved: true
+       url: http://localhost:8060/dingtalk/webhook2/send
+
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+```
+
+---
+
+### 如何抑制报警风暴？
 
 alertmanager的分组、抑制和静默
 
@@ -2291,7 +3482,7 @@ alertmanager的分组、抑制和静默
 
 ---
 
-### prometheus relabel_configs
+### Prometheus relabel_configs
 
 ```shell
 source_labels：源标签，没有经过relabel处理之前的标签名字
@@ -2317,7 +3508,41 @@ labeldrop： 匹配regex所有标签名称，对匹配到的实例标签进行�
 labelkeep： 匹配regex所有标签名称，对匹配到的实例标签进行保留
 ```
 
----
+示例：
+
+```
+# labelmap
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+ 
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+ 
+    static_configs:
+      - targets: ["localhost:9090"]
+ 
+  - job_name: "nodes"
+    static_configs:
+      - targets:
+        - 192.168.88.201:9100
+        labels:
+          __hostname__: node01
+          __region_id__: "shanghai"
+          __zone__: a
+      - targets:
+        - 192.168.88.202:9100
+        labels:
+          __hostname__: node02
+          __region_id__: "beijing"
+          __zone__: b
+    relabel_configs:
+    - regex: "__(.*)__"
+      action: labelmap
+# 最终效果如下：
+```
+
+![img](img/relabelmap.png)
 
 ---
 
@@ -2477,9 +3702,68 @@ stick bit:chmod 1755 xxx
 
 #### 本地转发
 
+工作原理：
+
+本地端口转发会在客户端本地开启一个端口，SSH 客户端把通过这个端口的数据，转发给 SSH 服务器，由 SSH 服务器再转发到目标地址
+
+使用场景：
+
+* 访问内网服务（如数据库）；
+* 穿越防火墙访问 SSH 服务器能访问但本地无法访问的服务
+
+示例：
+
+```
+# host2的80端口映射到本地的50000端口，前提是待登录主机host1上可以正常连接到host2的80端口
+ssh -L 0.0.0.0:50000:host2:80 user@host1
+
+ssh -L 0.0.0.0:3307:10.203.43.101:30036 <-p port>  root@10.203.43.8
+# 本地访问 localhost:3307，相当于访问远程服务器10.203.43.101的3306端口
+```
+
 #### 远程转发
 
+工作原理：
+
+远程端口转发会在 SSH 服务器上监听一个端口，所有访问这个端口的数据都会被转发回 SSH 客户端，再由客户端发送给目标主机。
+
+使用场景：
+
+* 把本地服务暴露给远程用户；
+* 反向隧道连接（比如远程访问在防火墙后、NAT 后的设备）
+
+示例：
+
+```
+# host2的80端口映射到待登录主机host1的8080端口，前提是本地主机可以正常连接host2的80端口
+ssh -R 0.0.0.0:8080:host2:80 user@host1
+## sshd_config里要打开AllowTcpForwarding选项，否则-R远程端口转发会失败。
+## 默认转发到远程主机上的端口绑定的是127.0.0.1，如要绑定0.0.0.0需要打开sshd_config里的GatewayPorts选项。
+## 这个选项如果由于权限没法打开也有办法，可配合ssh -L将端口绑定到0.0.0.0
+
+ssh -R 0.0.0.0:8080:127.0.0.1:80 user@remote-server
+
+远程服务器访问 localhost:8080，就相当于访问 SSH 客户端上的 127.0.0.1:80
+```
+
 #### 动态转发
+
+工作原理：
+
+本地开启一个 SOCKS 代理端口，SSH 客户端会根据实际请求动态决定目的地，并通过 SSH 隧道转发请求
+
+使用场景：
+
+* 构建一个 SOCKS5 代理（浏览器、curl、其他程序可以用）；
+* 访问被墙网站或测试跨网络访问
+
+示例：
+
+```
+ssh -D 50000 user@host1
+# 创建一个SOCKS代理，所有通过该SOCKS代理发出的数据包将经过host1转发出去
+
+```
 
 ---
 
@@ -2548,6 +3832,78 @@ ssh -t k8s-master "top"
 
 ---
 
+### 常见的http状态码及其含义
+
+✅ 1xx：信息响应（了解即可）
+
+| 状态码 | 含义                | 触发场景                                                           |
+| ------ | ------------------- | ------------------------------------------------------------------ |
+| 100    | Continue            | 客户端发送了请求头，服务器允许继续发送请求体（通常用于大文件上传） |
+| 101    | Switching Protocols | 通常用于 WebSocket 协议升级时                                      |
+
+✅ 2xx：成功响应（表示一切正常）
+
+| 状态码 | 含义       | 触发场景                                             |
+| ------ | ---------- | ---------------------------------------------------- |
+| 200    | OK         | 请求成功，返回所请求的数据                           |
+| 201    | Created    | 成功创建了一个资源（如 POST 请求创建用户）           |
+| 202    | Accepted   | 请求已接受，但还未处理完（异步任务）                 |
+| 204    | No Content | 请求成功，但服务器没有返回内容（常用于 DELETE 请求） |
+
+⚠️ 3xx：重定向（需客户端进一步操作）
+
+| 状态码 | 含义              | 触发场景                                     |
+| ------ | ----------------- | -------------------------------------------- |
+| 301    | Moved Permanently | 请求的资源永久移动到了新地址（SEO 优化常见） |
+| 302    | Found             | 请求的资源临时移动（例如登录后跳转）         |
+| 304    | Not Modified      | 客户端缓存的内容未过期，可直接使用缓存       |
+
+❗ 4xx：客户端错误（请求有问题）
+
+| 状态码 | 含义               | 触发场景                                               |
+| ------ | ------------------ | ------------------------------------------------------ |
+| 400    | Bad Request        | 请求格式错误、参数错误、或含有敏感内容（你遇到的错误） |
+| 401    | Unauthorized       | 未提供有效身份验证信息（如未带 token）                 |
+| 403    | Forbidden          | 拒绝访问，权限不足，即使登录了也无权访问               |
+| 404    | Not Found          | 请求的资源不存在（如拼错 URL）                         |
+| 405    | Method Not Allowed | 请求方法不被允许（如用 POST 请求了只允许 GET 的接口）  |
+| 408    | Request Timeout    | 客户端发送请求超时或未及时发送数据                     |
+| 409    | Conflict           | 请求与服务器资源当前状态冲突（如重复创建）             |
+| 413    | Payload Too Large  | 请求体过大（上传文件超限）                             |
+| 429    | Too Many Requests  | 请求频率太高，触发限流机制（常见于接口防刷）           |
+
+🔥 5xx：服务器错误（不是你的错）
+
+| 状态码 | 含义                  | 触发场景                           |
+| ------ | --------------------- | ---------------------------------- |
+| 500    | Internal Server Error | 服务器内部错误，如程序崩溃、空指针 |
+| 501    | Not Implemented       | 服务器不支持当前请求方法           |
+| 502    | Bad Gateway           | 作为网关或代理时，接收到无效响应   |
+| 503    | Service Unavailable   | 服务临时不可用（维护、过载）       |
+| 504    | Gateway Timeout       | 网关或代理超时未收到上游响应       |
+
+📌 特别说明：你遇到的 400 错误
+400 Bad Request 意味着请求格式合法，但内容不被接受。
+
+在大模型或 API 服务中，这种错误常见于：
+
+输入内容中包含 敏感词、非法字符、格式异常
+
+请求参数缺失或类型错误
+
+JSON 格式错误
+
+🧠 小技巧：如何快速排查 HTTP 错误
+
+| 状态码前缀 | 分类说明   | 常见原因                       |
+| ---------- | ---------- | ------------------------------ |
+| 2xx        | 成功       | 一切正常                       |
+| 3xx        | 重定向     | URL 发生了跳转                 |
+| 4xx        | 客户端问题 | 请求格式、权限、资源等问题     |
+| 5xx        | 服务器问题 | 程序异常、服务崩溃、依赖异常等 |
+
+---
+
 ### Nginx做过哪些优化？
 
 ```shell
@@ -2583,7 +3939,21 @@ location /api/data {
     proxy_cache mycache;
     proxy_cache_valid 200 302 10m;
     proxy_cache_valid 404 1m;
+    add_header X-Proxy-Cache $upstream_cache_status;
 }
+
+# 参数作用
+proxy_cache_path：定义缓存路径和参数。
+/tmp/nginx_cache：缓存文件存储目录。
+levels=1:2：文件夹层级，用于存放缓存文件。
+keys_zone=mycache:10m：分配一块共享内存作为缓存区索引。
+max_size=1g：最大缓存空间。
+inactive=60m：60 分钟未访问则清除。
+proxy_cache mycache：指定使用哪个缓存区。
+proxy_cache_valid：指定响应码的缓存时间。
+X-Proxy-Cache：可用于调试，查看是否命中缓存（HIT, MISS, BYPASS）。
+
+
 
 ### 安全相关优化
 
@@ -3005,6 +4375,35 @@ server {
 
 ---
 
+### ACME自动获取ssl证书并自动续期
+
+#### acme.sh
+
+```shell
+# acme.sh安装
+curl https://get.acme.sh | sh -s email=94586572@qq.com
+
+# 如果网络有问题，可以使用以下方式安装
+git clone https://gitee.com/neilpang/acme.sh.git
+cd acme.sh &&  acme.sh --install -m 94586572@qq.com
+
+# 默认安装到~/.acme.sh目录下，并会在~/.bashrc下新增相关配置，可能需要手动重载一下~/.bashrc来使安装生效
+
+
+# 申请证书
+acme.sh  --issue -d example.com  -d '*.example.com'  --dns dns_ali  --server letsencrypt
+
+# 安装证书
+acme.sh --installcert -d cmt004.com --key-file /usr/local/nginx/conf/certs/cmt004.com.key --fullchain-file /usr/local/nginx/conf/certs/cmt004.com.pem --reloadcmd "nginx -s reload"
+
+# 自动更新证书
+
+acme.sh会自动添加计划任务，每天零点检查证书有效期
+
+```
+
+#### certbot
+
 ### 使用openssl自建https证书
 
 ```shell
@@ -3028,7 +4427,7 @@ openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
 openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt
 
 
-## 不使用ca,直接生成证书
+## 不使用ca,直接生成证书,自签名证书
 
 1.创建服务器证书密钥文件 server.key：
 openssl genrsa -des3 -out server.key 2048
@@ -3065,6 +4464,38 @@ openssl x509 -req -days 3650 -in server.csr -signkey server.key -out server.crt
 如果需要创建多个客户端证书，使用自建签名证书的方法比较合适，只要给所有客户端都安装了CA根证书，那么以该CA根证书签名过的客户端证书都是信任的，不需要重复的安装客户端证书。
 
 不过因为是自建的CA证书，在使用这个临时证书的时候，会在客户端浏览器报一个错误，签名证书授权未知或不受信任(signing certificate authority is unknown and not trusted)，但只要配置正确，继续操作并不会影响正常通信。自签名证书的issuer和subject是一样的
+
+
+######################################################   扩展内容  ############################################################
+SAN，中文译为 主题备用名称，是 SSL/TLS 证书中一个非常重要的扩展字段。它在现代网络通信中几乎是必不可少的，因为它解决了早期证书仅支持一个域名的问题
+
+# csr.conf
+[ req ]
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+prompt = no
+
+[ req_distinguished_name ]
+countryName = CN
+stateOrProvinceName = Beijing
+localityName = Beijing
+organizationName = My Company
+commonName = www.example.com
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = www.example.com
+DNS.2 = example.com
+DNS.3 = blog.example.com
+IP.1 = 192.168.1.1
+
+# 证书签发请求
+openssl req -new -config csr.cnf -key server.key -out server.csr
+
+# 签发证书
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256 -extfile csr.cnf -extensions req_ext # 重点是后两个参数
 ```
 
 ---
@@ -3126,6 +4557,7 @@ WantedBy=multi-user.target
   make modules
   # 在objs目录下会生成ngx_http_vhost_traffic_status_module.so
   ```
+
 * [ ] 加载
 
   ```shell
@@ -3143,6 +4575,7 @@ WantedBy=multi-user.target
       vhost_traffic_status_display_format html;
   }
   ```
+
 * [ ] prometheus监控
 
   镜像地址：sophos/nginx-vts-exporter:latest
@@ -3649,6 +5082,125 @@ redirect：大家公认的信息，临时重定向。请求日志中的状态码
 
 ---
 
+### Nginx缓存管理
+
+#### 开启缓存
+
+Nginx缓存静态文件有两种方式，浏览器缓存和Nginx本地磁盘缓存，两者可以同时使用
+
+**浏览器缓存**
+
+通过向浏览器发送特定的Header实现
+
+```shell
+server {
+    listen 80;
+    server_name example.com;
+
+    location /static/ {
+        root /var/www/html;
+
+        # 设置缓存头
+        expires 30d;  # 告诉浏览器缓存30天
+        add_header Cache-Control "public";
+    }
+}
+# expires 是 Nginx 提供的简写方式，实质是设置 Expires 和 Cache-Control。
+# Cache-Control: public 表示允许任何缓存服务器缓存该响应
+```
+
+**本地磁盘缓存**
+
+使用的是proxy_module的内置功能
+
+```
+proxy_cache_path /tmp/nginx_cache levels=1:2 keys_zone=static_cache:10m max_size=1g inactive=60m use_temp_path=off;
+server {
+        listen          80;
+        server_name     img.baway.org.cn;
+
+
+        location /img {
+            proxy_pass http://10.203.43.180;
+            proxy_set_header Host $host;
+            proxy_cache static_cache;
+            proxy_cache_key "$scheme$request_method$host$request_uri";
+            proxy_cache_valid 200 302 20m;
+            proxy_cache_valid 404 1m;
+            add_header X-Proxy-Cache $upstream_cache_status;
+        }
+        access_log off;
+}
+# 参数解释
+proxy_cache_path：定义缓存路径和参数。
+/tmp/nginx_cache：缓存文件存储目录。
+levels=1:2：文件夹层级，用于存放缓存文件。
+keys_zone=static_cache:10m：分配一块共享内存作为缓存区索引。
+max_size=1g：最大缓存空间。
+inactive=60m：60 分钟未访问则清除。
+proxy_cache static_cache：指定使用哪个缓存区。
+proxy_cache_valid：指定响应码的缓存时间。
+X-Proxy-Cache：可用于调试，查看是否命中缓存（HIT, MISS, BYPASS）
+```
+
+**第三方模块实现的缓存 [ngx_slowfs_cache](https://github.com/FRiCKLE/ngx_slowfs_cache)**
+
+```
+# 核心思想就是把慢盘上的数据缓存到快盘上，所以如果缓存路径和源文件所在位置相同，没有意义
+http {
+    slowfs_cache_path  /tmp/cache levels=1:2 keys_zone=fastcache:10m;
+    slowfs_temp_path   /tmp/temp 1 2;
+
+    server {
+        location / {
+            root                /var/www;
+            slowfs_cache        fastcache;
+            slowfs_cache_key    $uri;
+            slowfs_cache_valid  1d;
+        }
+   }
+}
+```
+
+#### 缓存清理
+
+基于第三方模块 [ngx_cache_purge](https://github.com/FRiCKLE/ngx_cache_purge)
+
+```shell
+proxy_cache_path /tmp/nginx_cache levels=1:2 keys_zone=static_cache:10m max_size=1g inactive=7d use_temp_path=off;
+server {
+        listen          80;
+        server_name     img.baway.org.cn;
+
+
+        location /img {
+            proxy_pass http://10.203.43.180;
+            proxy_set_header Host $host;
+            proxy_cache static_cache;
+            proxy_cache_key "$scheme$request_method$host$request_uri";
+            proxy_cache_valid 200 302 20m;
+            proxy_cache_valid 404 1m;
+            add_header X-Proxy-Cache $upstream_cache_status;
+        }
+
+        location ~ /purge(/.*) {
+            proxy_cache_purge static_cache "$scheme$request_method$host$1";
+            allow 127.0.0.1;
+            deny all;
+        }
+        access_log off;
+}
+# 清理方法
+curl --interface 127.0.0.1 http://img.baway.org.cn/purge/img/xxx.png
+
+# 注意事项
+proxy_cache_key 必须与 proxy_cache_purge 使用的 key 一致
+ngx_cache_purge 默认只能清除命中的缓存 key，如果 key 算法不一致就无法删除
+proxy_cache_purge 必须在 location ~ /purge 中使用，不能用于常规的缓存位置
+```
+
+---
+
 ### Nginx防盗链
 
 防盗链是指本站内图片、CSS等资源只有本站点可以访问，不允许其它站点打开
@@ -3693,6 +5245,68 @@ location /download {
     limit_conn perserver 100;
 }
 }
+```
+
+---
+
+### Nginx上传限制
+
+Nginx 默认情况下 **没有硬性限制** 上传文件的大小，理论上可以接受任意大小的文件，直到：
+
+* 服务器磁盘空间耗尽
+* 客户端或网络中断
+
+但实际上会受到以下因素影响：
+
+#### 客户端限制
+
+* **浏览器** ：不同浏览器可能有自己的默认限制（通常几MB到几十MB）
+* **HTTP客户端库** ：如curl、Postman等可能有自己的限制
+
+#### 服务器配置限制
+
+虽然默认无限制，但常见需要配置的参数：
+
+| `client_max_body_size`     | 1m     | 客户端请求体最大大小     |
+| :--------------------------- | :----- | :----------------------- |
+| `client_body_buffer_size`  | 8k/16k | 请求体缓冲区大小         |
+| `client_body_temp_path`    | /tmp   | 临时文件存储路径         |
+| `client_body_in_file_only` | off    | 是否始终将请求体存入文件 |
+
+#### 建议的配置
+
+```
+# 小型文件上传
+client_max_body_size 10m; 
+
+# 中型文件上传
+client_max_body_size 100m;
+client_body_buffer_size 256k;
+
+# 大型文件上传
+client_max_body_size 1024m;
+client_body_buffer_size 1m;
+client_body_temp_path /data/nginx/temp 1 2;
+```
+
+#### 注意事项
+
+##### **代理服务器场景**
+
+* 如果Nginx作为反向代理，需要在**两个地方**都设置：
+  * 接收客户端请求的server块
+  * 向后端转发请求的location块
+
+##### **PHP等后端限制**
+
+* 即使Nginx允许大文件上传，还需检查：
+  * PHP的 `upload_max_filesize`和 `post_max_size`
+  * 其他后端语言的相关配置
+
+##### **临时目录权限**
+
+```
+chown -R nginx:nginx /var/nginx/client_body_temp
 ```
 
 ---
@@ -3744,6 +5358,8 @@ http {
 }
 ```
 
+---
+
 ### Nginx黑名单
 
 #### 创建IP黑名单
@@ -3784,17 +5400,129 @@ include       black.ip;
 
 ---
 
-### Nginx的负载均衡调度算法
+### Nginx的负载均衡调度算法及其应用场景
 
 #### 轮询（默认）
 
+```
+upstream backend {
+    server 192.168.0.101;
+    server 192.168.0.102;
+}
+# 每个请求依次轮流转发给后端服务器 
+# 简单、高效、不依赖请求内容
+```
+
+应用场景：
+
+    后端节点性能相近、请求处理时间均匀
+
+    无状态应用，如静态资源服务、API 接口服务等
+
 #### weight(轮询+权重)
+
+```
+upstream backend {
+    server 192.168.0.101 weight=3;
+    server 192.168.0.102 weight=1;
+}
+# 按权重分配请求，权重越高，分配请求越多
+# 默认权重是 1
+```
+
+* 后端节点性能差异明显（如一台 8 核，一台 2 核）
+* 服务处理能力不同，需要按比例分发流量
 
 #### ip_hash   根据客户端ip进行会话保持
 
-#### fari(第三方,需要添加nginx-upstream-fair模块) 最小响应时间
+```
+upstream backend {
+    ip_hash;
+    server 192.168.0.101;
+    server 192.168.0.102;
+}
+# 以客户端 IP 哈希值确定后端节点
+# 相同 IP 总是命中同一台服务器（除非节点挂了）
+```
+
+* 需要“会话保持”的应用（如不使用共享 Session 的 Web 服务）
+* 后端没有实现 Session 跨节点同步
+
+#### 最小连接数
+
+```
+upstream backend {
+    least_conn;
+    server 192.168.0.101;
+    server 192.168.0.102;
+}
+# 将请求分配给当前活跃连接数最少的后端节点
+```
+
+* 后端服务处理时间不均，连接生命周期差异大
+* 比如文件下载、视频流、长连接服务（WebSocket）
 
 #### url_hash(nginx1.7.2+) 根据url将请求定向到一台后端服务器，可以提高后端缓存的命中率
+
+```
+upstream backend {
+    hash $request_uri consistent;
+    server 192.168.0.101;
+    server 192.168.0.102;
+}
+# hash $request_uri：对 URL 进行哈希
+# consistent：启用一致性哈希（避免节点变动引发大规模重新分布）
+```
+
+* 缓存命中优化、CDN 分发、一致性服务映射
+
+#### fari(第三方,需要添加nginx-upstream-fair模块) 最小响应时间
+
+```
+upstream backserver { 
+fair; 
+server 192.168.0.14; 
+server 192.168.0.15; 
+} 
+```
+
+#### sticky(第三方，需要添加nginx-sticky-module)，根据cookie进行会话保持
+
+```
+upstream zyi {
+    #使用sticky，不设置expires则浏览器关闭时结束会话
+    sticky domain=zy.csxiuneng.com path=/;
+    server localhost:9001;
+}
+sticky [name=route] [domain=.foo.bar] [path=/] [expires=1h] 
+       [hash=index|md5|sha1] [no_fallback] [secure] [httponly];
+    [name=route]　　　　　　　设置用来记录会话的cookie名称
+    [domain=.foo.bar]　　　　设置cookie作用的域名
+    [path=/]　　　　　　　　  设置cookie作用的URL路径，默认根目录
+    [expires=1h] 　　　　　　 设置cookie的生存期，默认不设置，浏览器关闭即失效
+    [hash=index|md5|sha1]   设置cookie中服务器的标识是用明文还是使用md5值，默认使用md5
+    [no_fallback]　　　　　　 设置该项，当sticky的后端机器挂了以后，nginx返回502 (Bad Gateway or Proxy Error) ，而不转发到其他服务器，不建议设置
+    [secure]　　　　　　　　  设置启用安全的cookie，需要HTTPS支持
+    [httponly]　　　　　　　  允许cookie不通过JS泄漏，没用过
+# 工作原理
+1.客户端首次发起访问请求，nginx接收后，发现请求头没有cookie，则以轮询方式将请求分发给后端服务器。
+2.后端服务器处理完请求，将响应数据返回给nginx。
+3.此时nginx生成带route的cookie，返回给客户端。route的值与后端服务器对应，可能是明文，也可能是md5、sha1等Hash值
+4.客户端接收请求，并保存带route的cookie。
+5.当客户端下一次发送请求时，会带上route，nginx根据接收到的cookie中的route值，转发给对应的后端服务器
+```
+
+#### 表格总结
+
+| 算法                              | 特点                                                                                   | 适用场景                                                                                         |
+| --------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| round-robin(轮询)                 | 默认算法<br />每个请求依次轮流转发给后端节点<br />简单、高效、不依赖请求内容           | <br />后端节点性能相近、请求处理时间均匀;<br />无状态应用，如静态资源服务、API 接口服务等        |
+| weighted round-robin（轮询+权重） | 支持权重<br />按权重分配请求，权重越高，分配请求越多                                   | 后端节点性能差异明显（如一台 8 核，一台 2 核）;<br />服务处理能力不同，需要按比例分发流量        |
+| ip_hash(ip哈希)                   | <br />以客户端 IP 哈希值确定后端节点<br />相同 IP 总是命中同一台服务器（除非节点挂了） | 需要会话保持的 Web 应用(如不使用共享 Session 的 Web 服务）;<br />后端没有实现 Session 跨节点同步 |
+| least_conn（最小连接数）          | 将请求分配给当前活跃连接数最少的后端节点                                               | 后端服务处理时间不均，连接生命周期差异大;<br />文件下载、视频流、长连接服务（WebSocket）         |
+| url_hash(url哈希)                 | 对 URL 进行哈希，同一个URL总是分配到同一台后端节点                                     | 需要优化缓存命中，比如CDN 分发、一致性服务映射                                                   |
+| fari（最小响应时间)               | 非Nginx内置，需要第三方模块nginx-upstream-fair<br />把请求发送给响应最快的后端节点     | 后端节点性能差异较大；<br />能够提升后端节点的综合利用率，提升吞吐能力                           |
+| sticky（）                        | 非Nginx内置，需要第三方模块nginx-sticky-module<br />基于Cookie进行会话保持             | 更精准绑定用户会话                                                                               |
 
 ---
 
@@ -3866,7 +5594,7 @@ net.ipv4.conf.ens33.send_redirects = 0
 
     3.**RS和director必须在同一物理网络中，RS的网关不能指向DIP**
 
-    4. 请求报文有director调度，但响应报文不一定经由director
+    4. 请求报文由director调度，但响应报文不一定经由director
 
     5.**不支持端口映射**
 
@@ -4005,111 +5733,7 @@ ip route add $VIP dev lo:0
 
 ---
 
-### Prometheus报警
-
-触发告警的流程：
-
-1.Prometheus Server监控目标主机上暴露的http接口（这里假设接口A），通过上述Promethes配置的'scrape_interval'定义的时间间隔，定期采集目标主机上监控数据。
-
-2.当接口A不可用的时候，Server端会持续的尝试从接口中取数据，直到"scrape_timeout"时间后停止尝试。这时候把接口的状态变为"DOWN"。
-
-3.Prometheus同时根据配置的"evaluation_interval"的时间间隔，定期（默认1min）的对Alert Rule进行评估；当到达评估周期的时候，发现接口A为DOWN，即UP=0为真，激活Alert，进入“PENDING”状态，并记录当前active的时间；
-
-4.当下一个alert rule的评估周期到来的时候，发现UP=0继续为真，然后判断警报Active的时间是否已经超出rule里的"for" 持续时间，如果未超出，则进入下一个评估周期；如果时间超出，则alert的状态变为"FIRING"；同时调用Alertmanager接口，发送相关报警数据。
-
-5.AlertManager收到报警数据后，会将警报信息进行分组，然后根据alertmanager配置的"group_wait"时间先进行等待。等wait时间过后再发送报警信息。
-
-6.属于同一个Alert Group的警报，在等待的过程中可能进入新的alert，如果之前的报警已经成功发出，那么间隔"group_interval"的时间间隔后再重新发送报警信息。比如配置的是邮件报警，那么同属一个group的报警信息会汇总在一个邮件里进行发送。
-
-7.如果Alert Group里的警报一直没发生变化并且已经成功发送，等待"repeat_interval"时间间隔之后再重复发送相同的报警邮件；如果之前的警报没有成功发送，则相当于触发第6条条件，则需要等待group_interval时间间隔后重复发送。
-
-8.同时最后至于警报信息具体发给谁，满足什么样的条件下指定警报接收人，设置不同报警发送频率，这里有alertmanager的route路由规则进行配置。
-
-```yaml
-# prometheus 报警规则示例
-# /usr/local/prometheus/rules/node.yml
-
-groups:
-- name: node.rules
-  rules:
-  - alert: NodeFilesystemUsage
-    expr: 100 - (node_filesystem_free_bytes{fstype=~"ext4|xfs"} / node_filesystem_size_bytes{fstype=~"ext4|xfs"} * 100) > 80
-    for: 2m
-    labels:
-      severity: warning
-    annotations:
-      summary: "{{$labels.instance}}: {{$labels.mountpoint }} 分区使用过高"
-      description: "{{$labels.instance}}: {{$labels.mountpoint }} 分区使用大于 80% (当前值: {{ $value }})"
-  - alert: NodeMemoryUsage
-    expr: 100 - (node_memory_MemFree_bytes+node_memory_Cached_bytes+node_memory_Buffers_bytes) / node_memory_MemTotal_bytes * 100 > 80
-    for: 2m
-    labels:
-      severity: warning
-    annotations:
-      summary: "{{$labels.instance}}: 内存使用过高"
-      description: "{{$labels.instance}}: 内存使用大于 80% (当前值: {{ $value }})"
-  - alert: NodeCPUUsage
-    expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance) * 100) > 80
-    for: 2m
-    labels:
-      severity: warning
-    annotations:
-      summary: "{{$labels.instance}}: CPU使用过高"
-      description: "{{$labels.instance}}: CPU使用大于 80% (当前值: {{ $value }})"
-```
-
-```yaml
-# alertmanager示例文件#全局配置
-global:
-  resolve_timeout: 5m #处理超时时间，默认为5min
-  smtp_smarthost: 'smtp.126.com:465' # 邮箱smtp服务器代理
-  smtp_from: '****.com' # 发送邮箱名称
-  smtp_auth_username: '****.com' # 邮箱名称
-  smtp_auth_password: '****' # 邮箱密码或授权码 
-  smtp_require_tls: false
-
-
-#路由配置
-route:
-  group_by: ['alertname']
-  group_wait: 10s
-  group_interval: 10s
-  repeat_interval: 1h
-  receiver: 'email'      #所有报警均发邮件
-  routes:  #路由正则
-    - match_re: 
-       severity: warning  #如果是warning告警，接收者是webhook1
-      receiver: webhook1
-    - match_re:
-       severity: critical   #如果是error告警，接收者是webhook2
-      receiver: webhook2
-#接收人信息
-receivers:
-  - name: 'email' # 警报
-    email_configs: # 邮箱配置
-    - to: ****@qq.com'  # 接收警报的email配置
-  - name: 'webhook1'
-    webhook_configs:
-       send_resolved: false
-       url: http://localhost:8060/dingtalk/webhook1/send
-
-  - name: 'webhook2'
-    webhook_configs
-       send_resolved: true
-       url: http://localhost:8060/dingtalk/webhook2/send
-
-
-inhibit_rules:
-  - source_match:
-      severity: 'critical'
-    target_match:
-      severity: 'warning'
-    equal: ['alertname', 'dev', 'instance']
-```
-
----
-
-# `<font color=red>` *技术扩展部分* `</font>`
+`<font color=red>` *技术扩展部分* `</font>`
 
 ### 怎么理解运维（有哪些心得）?
 
@@ -4132,6 +5756,237 @@ Deepin : 武汉深之度，基于Debian
 ---
 
 ### 怎么理解DevOPS?
+
+#### DevOps 的定义
+
+DevOps 是开发和运维的**文化、实践与工具集合**，旨在通过促进开发（Development）和运维（Operations）团队之间的协作与自动化，打破传统开发与运维的壁垒。它强调持续集成、持续交付、自动化和协作，提升软件交付速度、质量和可靠性。
+
+#### DevOps 的核心目标
+
+* 加速交付：通过自动化和持续集成/持续部署（CI/CD），缩短软件从开发到上线的周期。
+* 提升质量：通过自动化测试、监控和快速反馈，减少错误，提高系统稳定性。
+* 增强协作：促进开发、运维、测试等团队的沟通，统一目标，优化流程。
+* 提高效率：自动化重复性任务（如构建、测试、部署），降低人工干预成本。
+* 支持规模化：适应微服务、云计算等复杂架构，实现高效管理。
+
+#### DevOps 的关键实践
+
+* 持续集成（CI）：频繁将代码集成到共享仓库，自动构建和测试。
+* 持续部署（CD）：自动化将通过测试的代码部署到生产环境。
+* 基础设施即代码（IaC）：通过代码管理基础设施（如 Terraform、Ansible）。
+* 监控与反馈：实时监控系统性能，收集反馈以快速修复问题（如 Prometheus、Grafana）。
+* 微服务与容器化：结合 Kubernetes、Docker 等技术，简化部署和扩展。
+* 版本控制：使用 Git 等工具管理代码和配置，保障可追溯性。
+
+#### DevOps 能给企业带来哪些好处
+
+* 快速交付：更快、更频繁地发布功能，满足业务需求。
+* 高可靠性：通过自动化测试和监控降低故障风险。
+* 协作效率：打破团队孤岛，统一目标，提升沟通效率。
+* 灵活扩展：支持云原生和分布式系统，适应动态负载。
+* 成本优化：自动化减少手动操作，降低运维成本。
+
+---
+
+### Ansible的常用模块及作用
+
+#### 🗂️ 文件/目录管理
+
+| 模块         | 作用                           | 示例                  |
+| ------------ | ------------------------------ | --------------------- |
+| `copy`     | 复制文件到目标主机             | 分发配置文件          |
+| `template` | 渲染 Jinja2 模板并部署         | 按变量渲染 nginx.conf |
+| `file`     | 设置文件属性、创建目录、软链等 | 创建目录、设置权限    |
+| `fetch`    | 从远程主机拉取文件到控制节点   | 收集日志文件          |
+
+#### 🖥️ 系统/用户管理
+
+| 模块         | 作用                    | 示例             |
+| ------------ | ----------------------- | ---------------- |
+| `user`     | 添加/删除用户，修改密码 | 创建业务用户     |
+| `group`    | 添加/删除用户组         | 组织权限管理     |
+| `hostname` | 设置主机名              | 主机初始化       |
+| `cron`     | 管理计划任务            | 添加定时备份任务 |
+
+#### 📦 软件包管理
+
+| 模块              | 作用                   | 示例                 |
+| ----------------- | ---------------------- | -------------------- |
+| `yum` / `apt` | 安装、升级、删除软件包 | 安装 nginx、mysql 等 |
+| `pip`           | 安装 Python 包         | 部署 python 环境依赖 |
+
+#### 🔧 服务与进程管理
+
+| 模块                      | 作用                 | 示例                      |
+| ------------------------- | -------------------- | ------------------------- |
+| `service` / `systemd` | 启动、重启、停止服务 | 管理 nginx、docker 等服务 |
+| `shell` / `command`   | 执行 Shell 命令      | 执行脚本、收集信息        |
+
+#### 🌐 网络与主机管理
+
+| 模块         | 作用                | 示例                    |
+| ------------ | ------------------- | ----------------------- |
+| `ping`     | 测试主机连通性      | 诊断 inventory 主机状态 |
+| `wait_for` | 等待某端口/文件就绪 | 确保服务已启动          |
+
+#### 举个实际例子
+
+比如我们日常批量部署 nginx 服务，可以使用 yum 安装软件包，用 template 渲染配置文件，用 systemd 启动服务，最后用 uri 模块检查服务是否响应正常
+
+---
+
+### Ansible playbook
+
+#### 是什么？
+
+Ansible 的 Playbook 是自动化运维的手段，它采用 YAML 格式，描述‘对哪些主机（hosts），执行哪些任务（tasks），以什么顺序（plays）执行’，通过声明式的方式完成复杂的操作流程
+
+#### 如何工作
+
+* 按顺序执行任务
+* 调用模块完成操作
+* 支持变量、模板、条件判断、循环、错误处理等逻辑
+
+#### 什么是Roles
+
+为了实现模块化和可复用性，Ansible 推荐使用 roles 来组织 Playbook，将变量、任务、模板等按职责分目录拆分，更利于维护和复用。Roles的标准目录结构如下：
+
+```yaml
+myrole/                       # Roles的名字
+├── tasks/            # 主任务列表（必须有 main.yml）
+├── handlers/         # 响应 notify 的任务
+├── templates/        # Jinja2 模板文件
+├── files/            # 静态文件
+├── vars/             # 默认变量
+├── defaults/         # 可被覆盖的默认变量
+├── meta/             # 角色元数据（依赖关系）
+└── README.md
+```
+
+#### 如何调用Roles?
+
+```yaml
+- hosts: webservers
+  roles:
+    - nginx
+
+```
+
+#### 用playbook完成过什么需求？
+
+##### 任务一： 使用 Ansible Playbook 实现 Kubernetes 节点初始化
+
+> 在 Kubernetes 集群部署过程中，我们使用 Ansible Playbook 对节点进行初始化配置，确保各节点具备统一的系统环境。这个流程主要包括以下几个步骤：
+
+1. **关闭 swap 分区** ：通过 `command` 模块和 `mount` 模块，临时禁用 swap 并注释 `/etc/fstab` 中的 swap 项，防止重启后重新启用。
+2. **设置内核参数** ：使用 `sysctl` 模块配置 Kubernetes 所需的网络相关内核参数，如 `net.bridge.bridge-nf-call-iptables=1`，并持久化保存。
+3. **加载内核模块** ：通过 `modprobe` 和配置 `/etc/modules-load.d/k8s.conf`，确保 `br_netfilter` 模块在系统启动时自动加载。
+4. **安装 containerd** ：使用 `yum` 模块自动安装 containerd 运行时，并配置其默认参数，如 CgroupDriver 设为 systemd。
+5. **设置 containerd 和 kubelet 开机启动** ：使用 `systemd` 模块管理服务状态。
+
+> 整个过程由一个包含多个 role 的 Playbook 驱动，确保新节点上线后执行一键部署脚本即可完成标准化初始化，极大提高了集群扩容的效率和一致性
+
+##### 任务二：使用 Ansible Playbook 自动部署 Prometheus + Node Exporter
+
+> 在一次多节点 Prometheus 监控系统部署项目中，我们使用 Ansible Playbook 实现了 Prometheus Server 和 Node Exporter 的自动部署，目标是保证每个节点的监控配置一致性，降低手工部署出错率。
+
+1. **Prometheus 服务端部署** ：
+
+* 下载并解压 Prometheus 二进制文件；
+* 通过 `template` 模块渲染 `prometheus.yml` 配置文件，动态插入 scrape targets；
+* 设置为 systemd 服务并开机自启。
+
+1. **Node Exporter 部署（所有被监控节点）** ：
+
+* 自动下载指定版本的 Node Exporter；
+* 分发 systemd service 文件；
+* 启动并验证服务是否监听 `9100` 端口；
+* 所有操作通过单独的 `node_exporter` role 执行。
+
+1. **目标文件管理** ：
+
+* 所有被监控节点的 IP 统一写入一个 JSON 文件，供 Prometheus 通过 `file_sd_configs` 自动发现；
+* 实现节点变化时无需重启 Prometheus，仅更新 JSON 文件并 reload。
+
+> 该 Playbook 被纳入我们团队的持续部署流程中，实现了**“新节点上线 → 自动部署 Exporter → 自动加入监控系统”**的闭环，极大提升了运维效率和可观测性
+
+---
+
+### Python常用模块及作用
+
+| 模块名      | 作用                                                  |
+| ----------- | ----------------------------------------------------- |
+| os          | 提供操作系统相关功能,如文件、目录操作、环境变量管理   |
+| sys         | 访问 Python 解释器相关参数，如命令行参数 `sys.argv` |
+| json        | JSON 数据的编码与解码                                 |
+| csv         | CSV 文件读写                                          |
+| re          | 正则表达式（字符串匹配与替换）                        |
+| datetime    | 日期和时间处理,如 `datetime.now()`                  |
+| time        | 时间戳、睡眠,如 `time.sleep(1)`                     |
+| requests    | HTTP 请求库（发送 GET/POST 请求）                     |
+| http.server | 快速搭建 HTTP 服务器                                  |
+| numpy       | 高性能数值计算（多维数组）                            |
+| pandas      | 数据分析（DataFrame 处理）                            |
+| PyTorch     | 动态图深度学习框架                                    |
+| pmysql      | 连接 MySQL 数据库                                     |
+| random      | 生成随机数                                            |
+
+#### 举几个模块的使用示例
+
+```shell
+# os模块
+import os
+print(os.listdir())  # 列出当前目录文件
+
+# json模块
+import json
+data = {"name": "Alice", "age": 30}
+json_str = json.dumps(data)  # 转为JSON字符串
+
+# 日期时间
+from datetime import datetime
+print(datetime.now().strftime("%Y-%m-%d"))  # 输出当前日期
+
+# 网络请求
+import requests
+response = requests.get("https://www.baidu.com")
+print(response.status_code)
+
+# 数据处理
+import pandas as pd
+data = pd.read_csv("data.csv")  # 读取CSV文件
+print(data.head())
+
+# 连接MySQL
+import pymysql
+
+# 建立数据库连接
+connection = pymysql.connect(
+    host='localhost',      # MySQL 服务器地址
+    user='root',          # 用户名
+    password='123456',    # 密码
+    database='test_db',   # 数据库名
+    port=3306,            # 端口（默认3306）
+    charset='utf8mb4',    # 字符编码
+    cursorclass=pymysql.cursors.DictCursor  # 返回字典格式的数据
+)
+
+# 创建游标并执行 SQL
+try:
+    with connection.cursor() as cursor:
+        # 示例1：执行查询
+        sql = "SELECT * FROM users WHERE id = %s"
+        cursor.execute(sql, (1,))  # 参数化查询，防止SQL注入
+        result = cursor.fetchone()  # 获取单条数据
+        print(result)
+
+        # 示例2：插入数据
+        insert_sql = "INSERT INTO users (name, age) VALUES (%s, %s)"
+        cursor.execute(insert_sql, ('Alice', 25))
+        connection.commit()  # 提交事务
+finally:
+    connection.close()  # 关闭连接
+```
 
 ---
 
@@ -4188,46 +6043,194 @@ Deepin : 武汉深之度，基于Debian
 
 典型的带外管理： 服务器远程管理卡  （iDRAC/IPMI/BMC）
 
+| 名称            | 厂商           | 协议层         |
+| --------------- | -------------- | -------------- |
+| **IPMI**  | 通用标准       | 工业标准协议   |
+| **BMC**   | 通用（基础芯片 | 控制器芯片名称 |
+| **iLO**   | HPE（惠普）    | 基于IPMI扩展   |
+| **iDRAC** | DELL 戴尔      | 基于IPMI扩展   |
+
+IPMI 是一个通用的服务器远程管理协议，由 BMC 芯片在硬件层面实现。
+
+服务器厂商如 HPE 的 iLO、DELL 的 iDRAC 实际上都是基于 BMC 实现的带外管理控制平台，兼容 IPMI 协议，并在此基础上进行了扩展，例如图形控制台、虚拟介质挂载、RESTful API 等功能
+
 ---
 
 ### linux下的网络测试工具
 
 * [ ] ping
 * [ ] traceroute
-* [ ] iperf
+* [ ] iperf/iperf3
+
+  ```
+  #  服务端
+  iperf3 -s [-p 5202]
+  # -p 指定监听端口，默认为5201
+
+  # 客户端
+  iperf3 -c <服务器ip>  [-u] [-b 100M] [-P 10] [-t]  [-J > xxx.json]
+
+  # -u：使用 UDP,默认为TCP
+  # -b：设置带宽，例如 100Mbit/s
+  # 能测试 UDP 丢包率、抖动，非常适合 实时音视频场景
+  # -P 多线程测试
+  # -t 设置持续时间
+  # -J 测试结果保存为json格式
+  ```
+
+经常关注的指标：
+
+| 指标                      | 含义                                         |
+| ------------------------- | -------------------------------------------- |
+| **Bandwidth**       | 实际带宽吞吐量（Mbit/s）                     |
+| **Retr**            | TCP 重传次数（越低越好）                     |
+| **Jitter**          | UDP 抖动，指数据包到达时间的波动（越低越好） |
+| **Lost/Total**      | UDP 丢包率                                   |
+| **CPU Utilization** | 客户端和服务器端的 CPU 使用率                |
+
 * [ ] iftop
 
 ---
 
-### iptables 四表五链
+### Linux下的压测工具
+
+#### stress
+
+#### stress-ng（综合压测）
+
+```
+# CPU 内存综合测试
+stress-ng --cpu 4 --vm 2 --vm-bytes 1G --timeout 60s --metrics-brief
+
+# 指定CPU运算方式
+stress-ng --cpu 2 --cpu-method matrixprod --timeout 30s --metrics-brief
+
+# IO压力测试
+stress-ng --io 2 --timeout 45s --metrics-brief
+
+# 自爆式测试
+stress-ng --all 1 --timeout 60s --metrics-brief
+```
+
+| 参数                    | 含义                                          | 示例                 |
+| ----------------------- | --------------------------------------------- | -------------------- |
+| `--cpu N`             | 启动 N 个 CPU 压力线程                        | `--cpu 4`          |
+| `--cpu-method METHOD` | 指定 CPU 运算方式（如：all、fft、matrixprod） | `--cpu-method fft` |
+| `--vm N`              | 启动 N 个内存压力线程                         | `--vm 2`           |
+| `--vm-bytes X`        | 每个 `--vm`线程分配的内存量                 | `--vm-bytes 1G`    |
+| `--io N`              | 启动 N 个 I/O 压力线程                        | `--io 2`           |
+| `--hdd N`             | 启动 N 个线程进行磁盘写入                     | `--hdd 2`          |
+| `--timeout T`         | 指定运行时长（如 `60s`、`5m`）            | `--timeout 1m`     |
+| `--metrics-brief`     | 输出简洁版测试结果和性能指标                  | `--metrics-brief`  |
+| `--verify`            | 启用每个操作的正确性验证                      | `--verify`         |
+| `--all`               | 尝试运行所有可用压力测试器（危险）            | `--all 1`          |
+| `--stressors`         | 查看所有可用的 stressor 名称                  | `--stressors`      |
+
+#### memtester(内存压测)
+
+```
+memtester 1G 3
+```
+
+#### fio（磁盘压测）
+
+* 模拟真实的磁盘 I/O 行为，支持顺序读写、随机读写、混合负载等。
+* 可用于评估硬盘、SSD、RAID、文件系统、云盘等的性能
+* 测试磁盘的 IOPS、吞吐量、延迟
+* 模拟数据库/日志/文件服务器工作负载
+* 磁盘性能对比测试（SSD vs HDD）
+
+```
+# 随机写测试，文件大小 1G，块大小 4K，持续 30 秒
+fio --name=test --filename=testfile --size=1G --bs=4k --rw=randwrite --time_based --runtime=30s --ioengine=libaio --direct=1
+
+# 顺序读写混合，模拟数据库负载
+fio --name=rw_mix --filename=testfile --size=2G --bs=8k --rw=randrw --rwmixread=70 --time_based --runtime=60s
+
+```
+
+#### dd（磁盘压测）
+
+* 快速测试**顺序读写**的吞吐能力（MB/s）
+* 适用于粗略评估磁盘性能或对比磁盘速度
+* 判断磁盘大块顺序读写的能力（如日志、备份）
+* 不适合评估 IOPS 或延迟性能
+
+  ```
+  # 只读测试
+  dd if=/dev/sda of=/dev/null bs=1M count=1000 conv=fdatasync
+
+  # 只写测试
+  dd if=/dev/zero of=/dev/sda bs=1M count=1000 conv=fdatasync
+
+  if：代表输入文件或设备。
+  of：表示输出到/dev/null，也就是丢弃读取的数据。
+  bs：指的是块大小，这里设为 1MB。
+  count：表示读取的块数量。
+  conv=fdatasync：能确保数据写入磁盘而非仅缓存
+  ```
+
+#### tc/netem（网络压测）
+
+`tc`（Traffic Control）是 Linux 系统中用于 **流量控制、限速、丢包、延迟、抖动等网络仿真** 的核心工具
+
+ `netem`（Network Emulator）是 `tc` 的一个子模块，用于模拟各种 **不良网络条件**
+
+```
+# 添加固定延迟 ，对eth0 接口加 100ms 延迟
+tc qdisc add dev eth0 root netem delay 100ms
+
+# 添加延迟和抖动，模拟网络不稳定
+# 延迟 100ms，带有 ±20ms 的随机抖动（标准差
+tc qdisc add dev eth0 root netem delay 100ms 20ms
+
+# 模拟丢包
+tc qdisc add dev eth0 root netem loss 5%
+
+# 模拟丢包+延迟
+tc qdisc add dev eth0 root netem delay 150ms loss 2%
+
+# 模拟带宽限制，netem 不限带宽，但可以与 tbf（令牌桶过滤器）结合模拟限速
+# 综合模拟：带宽 2Mbps，延迟 100ms
+tc qdisc add dev eth0 root handle 1: tbf rate 2mbit burst 32kbit latency 400ms
+# 然后挂接netem
+tc qdisc add dev eth0 parent 1:1 handle 10: netem delay 100ms
+
+# 查看当前规则
+tc qdisc show dev eth0
+
+# 删除当前规则
+tc qdisc del dev eth0 root
+
+# 注意：
+# tc 的配置是 临时的，系统重启会丢失。
+# 延迟、丢包等模拟作用于 出方向（egress）——即发送流量。
+# 如果要双向模拟（比如 TCP 会话），应在客户端和服务器两端都设置。
+# 对于容器或虚拟机中的网络接口，同样适用。
+```
+
+---
+
+### iptables四表五链
 
 #### 五链
 
 iptables命令中设置数据过滤或处理数据包的策略叫做规则，将多个规则合成一个链，叫规则链。 规则链则依据处理数据包的位置不同分类：
 
-* PREROUTING
-* 在进行路由判断之前所要进行的规则(DNAT/REDIRECT)
-* INPUT
-* 处理入站的数据包
-* OUTPUT
-* 处理出站的数据包
-* FORWARD
-* 处理转发的数据包
-* POSTROUTING
-* 在进行路由判断之后所要进行的规则(SNAT/MASQUERADE)
+* PREROUTING ：在进行路由判断之前所要进行的规则(DNAT/REDIRECT)
+* INPUT：处理入站的数据包
+* OUTPUT：处理出站的数据包
+* FORWARD：处理转发的数据包
+* POSTROUTING：在进行路由判断之后所要进行的规则(SNAT/MASQUERADE)
 
 #### 四表
 
 iptables中的规则表是用于容纳规则链，规则表默认是允许状态的，那么规则链就是设置被禁止的规则，而反之如果规则表是禁止状态的，那么规则链就是设置被允许的规则。
 
-* raw表
-* 确定是否对该数据包进行状态跟踪（较少使用）
-* mangle表
-* 为数据包设置标记（较少使用）
-* nat表
-* 修改数据包中的源、目标IP地址或端口
-* filter表
-* 确定是否放行该数据包（过滤）
+* raw表：确定是否对该数据包进行状态跟踪（较少使用）
+* mangle表：为数据包设置标记（较少使用）
+* nat表：修改数据包中的源、目标IP地址或端口
+* filter表：确定是否放行该数据包（过滤）
 
 规则表的先后顺序:raw→mangle→nat→filter
 
@@ -4620,6 +6623,23 @@ Role-based Authorization Strategy插件的配置
 
     当需要在容器中执行docker命令的时候，可以将宿主机的docker.sock挂载到容器中。称之为docker in docker
 
+---
+
+### http/1.1   http/2  http/3的区别
+
+| 特性         | HTTP/1.1（1997） | HTTP/2  （2015）  | HTTP/3  （2022）    |
+| ------------ | ---------------- | ------------------ | -------------------- |
+| 协议基础     | TCP              | TCP                | QUIC（基于 UDP）     |
+| 多路复用     | ❌ 不支持        | ✅ 支持            | ✅ 更好              |
+| 队头阻塞     | ✅ 存在          | ✅ TCP 层仍存在    | ❌ 不存在            |
+| 加密         | 可选 TLS         | 强制 TLS           | 强制 TLS 1.3（内建） |
+| 服务器推送   | ❌ 无            | ✅ 有              | ✅ 有                |
+| 丢包影响     | 大（整个连接慢） | 大（共享连接影响） | 小（每个流独立）     |
+| 首次连接延迟 | 高（TLS3次握手） | 中（TLS2次握手）   | 低（TLS1次握手）     |
+| 浏览器支持   | ✅ 全面支持      | ✅ 全面支持        | ✅ 现代浏览器均支持  |
+
+---
+
 ### 你每天到公司第一件事是什么？
 
 ---
@@ -4628,7 +6648,7 @@ Role-based Authorization Strategy插件的配置
 
 ---
 
-# `<font color=red>`*HR部分* `</font>`
+`<font color=red>`*HR部分* `</font>`
 
 ### 你上家公司在什么位置？你的通勤方式和通勤时间？
 
@@ -4695,4 +6715,12 @@ Role-based Authorization Strategy插件的配置
 
 ---
 
-### 驻场过程中能够体现沟通能力的经典场景
+### 有过和客户对接需求(和客户做直接沟通)的经验吗？频率如何？
+
+---
+
+### 说一个驻场过程中能够体现沟通能力的经典场景
+
+---
+
+### 作为驻场工程师，如何平衡客户和公司之间的关系

@@ -1,18 +1,20 @@
-# 实训阶段讲解要点
+### sk8s组件、作用
 
-### k8s组件、作用
+master节点的组件：
+ apiserver： 集群的统一入口，接收所有 REST 请求并转发给其他组件,所有交互都经过它。也是唯一可以跟etcd通信的组件
+ etcd: 分布式键值存储系统，用来保存集群的元数据(配置数据和状态信息)
+ kube-scheduler: 负责将新创建的 Pod 分配到合适的 Node 节点上（调度器）
+ kube-controller-manager:运行各种控制器（如副本控制器、节点控制器等）来维持集群状态
 
-* [ ] master节点
-  apiserver： 集群的统一入口，接收所有 REST 请求并转发给其他组件,所有交互都经过它。也是唯一可以跟etcd通信的组件
-  etcd: 分布式键值存储系统，用来保存集群的元数据(配置数据和状态信息)
-  kube-scheduler: 负责将新创建的 Pod 分配到合适的 Node 节点上（调度器）
-  kube-controller-manager:运行各种控制器（如副本控制器、节点控制器等）来维持集群状态
-* [ ] worker节点
-  kubelet: 负责和 apiserver 通信，管理Pod的生命周期，上报节点的健康状况
-  kube-proxy：负责将Pod注册到CoreDNS， 并为Service 创建ipvs或者iptables转发规则，实现服务发现和负载均衡
-  Container Runtime：容器运行时，比如 Docker、containerd、CRI-O，用于实际拉取镜像并运行容器
-* [ ] 附加组件
-  CoreDNS:集群内的DNS服务
+worker节点的组件：
+ kubelet: 负责和 apiserver 通信，管理Pod的生命周期，上报节点的健康状况
+ kube-proxy：负责将Pod注册到CoreDNS， 并为Service 创建ipvs或者iptables转发规则，实现服务发现和负载均衡
+ Container Runtime：容器运行时，比如 Docker、containerd、CRI-O，用于实际拉取镜像并运行容器
+
+附加组件：
+ CoreDNS:集群内的DNS服务
+
+    CNI网络插件: Flannel、Calico等
 
 ---
 
@@ -121,6 +123,24 @@ spec:
 
 ---
 
+### k8s的metrics-server和cAdvisor的区别
+
+| 项目         | cAdvisor                       | metrics-server                        |
+| ------------ | ------------------------------ | ------------------------------------- |
+| 安装方式     | 集成在 kubelet，默认启用       | 需要手动部署                          |
+| 数据来源     | 容器运行时，直接采集           | 从各个 kubelet（cAdvisor）聚合数据    |
+| 采集粒度     | 容器级别，细粒度               | Pod/Node 级别，粗粒度                 |
+| 提供 API     | 不直接提供 API（通过 kubelet） | 提供 `metrics.k8s.io`API            |
+| 使用场景     | Prometheus 等深度监控          | `kubectl top`，HPA                  |
+| 是否必须部署 | 是（kubelet 自带）             | 否（非必需，但用于 HPA 等功能时需要） |
+
+总结：
+
+* `cAdvisor` 是负责采集容器指标的底层组件
+* `metrics-server` 是负责聚合和提供指标查询接口的服务，依赖于 cAdvisor 的数据
+
+---
+
 ### k8s集群规模限制
 
 集群是运行 Kubernetes 代理的、 由[控制平面](https://kubernetes.io/zh-cn/docs/reference/glossary/?all=true#term-control-plane)管理的一组 [节点](https://kubernetes.io/zh-cn/docs/concepts/architecture/nodes/)（物理机或虚拟机）。 Kubernetes v1.30 单个集群支持的最大节点数为 5,000。 更具体地说，Kubernetes 旨在适应满足以下**所有**标准的配置：
@@ -146,13 +166,11 @@ spec:
    gpgkey=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key
    EOF
    ```
-
 2. 查看可用版本
 
    ```shell
    yum list --disablerepo=* --enablerepo="kubernetes"
    ```
-
 3. 备份重要组件及重要数据
 4. kube-apiserver 静态 pod 会始终处于运行状态。当执行 kubeadm 升级时，其中包括 etcd 的升级，在新的 etcd 启动期间，对kube-apiserver的请求将会卡住，因为etcd的静态 Pod 正在重新启动。作为一种解决方法，可以主动停止 kube-apiserver。在启动 kubeadm upgrade apply 命令之前，请等待几秒钟，以关闭 kube-apiserver 进程。这样可以完成正在进行的请求并关闭现有连接，从而最大限度地减少 etcd 停机的影响。这可以在控制平面节点上按如下方式完成
 
@@ -168,13 +186,11 @@ spec:
    ```shell
    yum install kubeadm-1.33.0-150500.1.1 --disableexcludes=kubernetes
    ```
-
 6. 升级前验证
 
    ```shell
    kubeadm upgrade plan
    ```
-
 7. 应用升级
 
    ```shell
@@ -190,14 +206,12 @@ spec:
 
    systemctl daemon-reload  &&  systemctl restart kubelet
    ```
-
 8. 升级网络插件(如需要，取决于网络插件和k8s的版本匹配情况)
 9. 升级其他控制平面
 
    ```
     kubeadm upgrade apply
    ```
-
 10. 升级工作节点
 
     ```shell
@@ -209,7 +223,6 @@ spec:
     systemctl daemon-reload  &&  systemctl restart kubelet
 
     ```
-
 11. 取消工作节点的污点
 
     ```
@@ -218,38 +231,38 @@ spec:
 
 ---
 
-### k8s的网络插件，calico和flannel的区别？
+### k8s的网络插件，Calico、Flannel和Cilium
 
-##### [参考链接](https://www.cnblogs.com/BlueMountain-HaggenDazs/p/18152648)
+#### [参考链接](https://www.cnblogs.com/BlueMountain-HaggenDazs/p/18152648)
 
-##### calico支持的工作模式
+#### calico支持的工作模式
 
-* [ ] **BGP**:           CALICO_IPV4POOL_IPIP="Never" 且 CALICO_IPV4POOL_VXLAN=”Never“
-* [ ] **IP Tunnel:**   CALICO_IPV4POOL_IPIP="Always" 且 CALICO_IPV4POOL_VXLAN=”Never“
-* [ ] **VXLAN** :      CALICO_IPV4POOL_IPIP="Never" 且 CALICO_IPV4POOL_VXLAN=”Always“
+* **BGP**:           CALICO_IPV4POOL_IPIP="Never" 且 CALICO_IPV4POOL_VXLAN=”Never“
+* **IP Tunnel:**   CALICO_IPV4POOL_IPIP="Always" 且 CALICO_IPV4POOL_VXLAN=”Never“
+* **VXLAN** :      CALICO_IPV4POOL_IPIP="Never" 且 CALICO_IPV4POOL_VXLAN=”Always“
 
-##### flannel支持的工作模式
+#### flannel支持的工作模式
 
-* [ ] **VXLAN**
-* [ ] **HOST-GW**
+* **VXLAN**
+* **HOST-GW**
 
-  ```yaml
-  net-conf.json: |
-      {
-        "Network": "10.244.0.0/16",
-        "Backend": {
-          "Type": "host-gw" 
-   #"Type": "vxlan"
-        }
+```yaml
+net-conf.json: |
+    {
+      "Network": "10.244.0.0/16",
+      "Backend": {
+        "Type": "host-gw" 
+ #"Type": "vxlan"
       }
-  ```
+    }
+```
 
-* [ ] UDP （已废弃）因为存在三次用户态和内核态之间的数据拷贝，导致性能低下
+* UDP （已废弃）因为存在三次用户态和内核态之间的数据拷贝，导致性能低下
   ![img](img/flannel-udp.png)
 
-##### 优缺点对比
+#### 优缺点对比
 
-###### 工作模式
+##### 工作模式
 
 两者都同时支持”路由"和"隧道"两种工作模式，
 
@@ -257,13 +270,13 @@ flannel的VXLAN是隧道模式，host-gw是路由模式
 
 calico的IPIP是隧道模式，BGP是路由模式
 
-###### 可配置性
+##### 可配置性
 
 flannel配置更为简单，在小规模集群中，如果对性能要求不是很苛刻，也没有复杂的网络要求，建议使用flannel
 
 calico配置较为复杂，支持配置网络策略，并且能够与istio集成，配置复杂的规则以描述pod应如何发送和接受流量，提高安全性并控制网络环境。如果对性能要求较高，且有网络安全方面的需求，要使用calico
 
-###### 性能差异
+##### 性能差异
 
 flannel的VXLAN模式下，使用overlay(覆盖网络)来实现Pod跨节点通信，将二层数据包封装到四层的UDP数据包中，并在目标节点进行反向的解封操作，会占用一定的cpu资源，导致网络性能会有损耗
 
@@ -271,7 +284,7 @@ calico的BGP模式下，每一个节点都作为边界网关，跨节点通信�
 
 即使同样在"隧道模式下",calico的IPIP也比flannel的VXLAN性能更好，因为封装的header头体积更小
 
-###### 环境要求
+##### 环境要求
 
 flannel的VXLAN模式对节点没有特殊要求，只要三层可达即可
 
@@ -287,7 +300,7 @@ VXLAN的工作原理是，当pod需要跨节点访问时，源pod所在节点的
 
 VXLAN模式下，同节点上的容器间通信，直接通过网桥(cni0)+Veth Pair设备完成，不需要经过flannel.1
 
-##### 如何选择
+#### 如何选择
 
 1、是否需要细粒度网络访问控制？
 
@@ -311,7 +324,7 @@ calico的路由表很多，而且走BGP协议，一旦出现问题排查起来�
 
 ---
 
-### flannel指定网卡、网段
+#### flannel指定网卡、网段
 
 ```yaml
 - name: kube-flannel
@@ -334,7 +347,7 @@ net-conf.json: |
     }
 ```
 
-### calico指定网卡、网段
+#### calico指定网卡、网段
 
 当节点上有多个网卡时，需要为calico指定使用哪块网卡
 
@@ -406,6 +419,29 @@ can-reach 方法使用你的本地路由来决定使用哪个IP地址来到达�
 - name: IP6_AUTODETECTION_METHOD
   value: "interface=eth.*"
 ```
+
+#### 总结
+
+| 特性/功能            | Flannel                                 | Calico                                          | Cilium                                                                                                             |
+| -------------------- | --------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 基本原理             | 使用覆盖网络创建平面网络                | 使用BGP路由和eBPF进行高效数据包转发             | 使用eBPF进行高性能网络和安全管理                                                                                   |
+| 网络模式             | VXLAN、Host-Gateway、UDP、IPIP、AWS VPC | 纯IP、IPIP、VXLAN、BGP、WireGuard、AWS VPC、GCE | Direct Routing、VXLAN、Geneve、IPIP、Egress Gateway、Cluster Mesh、Host-Reachable Services、Transparent Encryption |
+| 性能                 | 较低                                    | 高                                              | 最高                                                                                                               |
+| 复杂性               | 简单                                    | 中等                                            | 复杂                                                                                                               |
+| 网络策略             | 不支持                                  | 支持                                            | 支持                                                                                                               |
+| 安全性               | 基本                                    | 高                                              | 最高                                                                                                               |
+| 跨子网通信           | 支持（VXLAN、IPIP）                     | 支持                                            | 支持                                                                                                               |
+| 加密                 | 不支持                                  | 支持（WireGuard）                               | 支持（IPsec、WireGuard）                                                                                           |
+| 多集群支持           | 不支持                                  | 支持（使用BGP）                                 | 支持（Cluster Mesh）                                                                                               |
+| 可扩展性             | 中等                                    | 高                                              | 高                                                                                                                 |
+| 监控和可视化         | 基本                                    | 高                                              | 高                                                                                                                 |
+| 容器网络接口（CNI）  | 支持                                    | 支持                                            | 支持                                                                                                               |
+| 应用场景             | 简单的Kubernetes集群，小规模集群        | 中大型集群，需高性能和灵活网络策略              | 需要高性能、高安全性和可扩展性的大型集群                                                                           |
+| 安装配置             | 简单，适用于入门用户                    | 中等，适用于有一定经验的用户                    | 复杂，适用于高级用户和大规模部署                                                                                   |
+| 支持的Kubernetes版本 | 广泛支持                                | 广泛支持                                        | 广泛支持                                                                                                           |
+| 调试和故障排除       | 简单                                    | 较复杂                                          | 复杂                                                                                                               |
+| 社区支持             | 活跃                                    | 非常活跃                                        | 非常活跃                                                                                                           |
+| 商业支持             | 基本                                    | 提供                                            | 提供                                                                                                               |
 
 ---
 
@@ -503,127 +539,127 @@ server = "http://harbor.baway.org.cn"
 
 ### k8s数据备份
 
-1. [X] etcd备份
+* etcd备份
 
-    ```shell
-    # 备份工具 etcdctl
-    # https://github.com/etcd-io/etcd/releases
-    # go get github.com/coreos/etcd/etcdctl
+```shell
+# 备份工具 etcdctl
+# https://github.com/etcd-io/etcd/releases
+# go get github.com/coreos/etcd/etcdctl
 
-    ######################################################### etcd 备份  ############################################################
-    # etcdctl  snapshot save 
+######################################################### etcd 备份  ############################################################
+# etcdctl  snapshot save 
 
-    ############################################# 单master k8s
-    ETCDCTL_API=3
-    etcdctl \
-    --endpoints="https://10.203.43.100:2379" \
-    --cert="/etc/kubernetes/pki/etcd/server.crt" \
-    --key="/etc/kubernetes/pki/etcd/server.key" \
-    --cacert="/etc/kubernetes/pki/etcd/ca.crt" \
-    snapshot save \
-    /home/backup/snapshot.db
+############################################# 单master k8s
+ETCDCTL_API=3
+etcdctl \
+--endpoints="https://10.203.43.100:2379" \
+--cert="/etc/kubernetes/pki/etcd/server.crt" \
+--key="/etc/kubernetes/pki/etcd/server.key" \
+--cacert="/etc/kubernetes/pki/etcd/ca.crt" \
+snapshot save \
+/home/backup/snapshot.db
 
-    ############################################# 多master k8s
-    expofrt ETCDCTL_API=3
-    # 备份命令
-    etcdctl \
-    --endpoints="https://10.203.43.160:2379" \   # 必须且只需指定任意1个节点
-    --cert="/etc/kubernetes/pki/etcd/server.crt" \
-    --key="/etc/kubernetes/pki/etcd/server.key" \
-    --cacert="/etc/kubernetes/pki/etcd/ca.crt" \
-    snapshot save \
-    /home/backup/snapshot.db
-
-
-    # 查看快照信息
-    # etcdutl --write-out=table snapshot status xxx.db
-    # 自 etcd v3.5.x 起，etcdctl snapshot status 已被弃用
+############################################# 多master k8s
+expofrt ETCDCTL_API=3
+# 备份命令
+etcdctl \
+--endpoints="https://10.203.43.160:2379" \   # 必须且只需指定任意1个节点
+--cert="/etc/kubernetes/pki/etcd/server.crt" \
+--key="/etc/kubernetes/pki/etcd/server.key" \
+--cacert="/etc/kubernetes/pki/etcd/ca.crt" \
+snapshot save \
+/home/backup/snapshot.db
 
 
+# 查看快照信息
+# etcdutl --write-out=table snapshot status xxx.db
+# 自 etcd v3.5.x 起，etcdctl snapshot status 已被弃用
 
 
 
-    ######################################################### etcd 恢复  ############################################################
-    # etcdutl snapshop restore
-    # 自 etcd v3.5.x 版本起，使用 etcdctl 进行恢复的功能已被弃用，未来的可能会在 etcd 版本中被移除
-    ########################################### 单master k8s
-    # 关闭etcd和apiserver
-    mv /etc/kubernetes/manifests/{etcd.yaml,kube-apiserver.yaml}  /root/
-
-    # 备份原有数据目录
-    mv /var/lib/etcd  /var/lib/etcd.old
-
-    # 使用快照进行恢复
-    etcdutl \
-    --name=k8s-master \  # kubectl  get node 看到的mster在集群中的节点名称
-    --initial-cluster=k8s-master=https://10.203.43.100:2380 \  # master的节点名称和ip
-    --initial-advertise-peer-urls=https://10.203.43.100:2380 \  # master的ip
-    --initial-cluster-token \   # 集群标识，可选
-    --data-dir=/var/lib/etcd \  # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
-    snapshot restore  /var/backups/xxx.db \
-    # 重启etcd和apiserver 
-    mv /root/{etcd.yaml,kube-apiserver.yaml}  /etc/kubernetes/manifests/
-    # 重启kubelet
-    systemctl restart kubelet
 
 
-    ########################################### 多master k8s
-    # 关闭etc和apiserver,三个节点分别执行
-    mv /etc/kubernetes/manifests/{etcd.yaml,kube-apiserver.yaml}  /root
+######################################################### etcd 恢复  ############################################################
+# etcdutl snapshop restore
+# 自 etcd v3.5.x 版本起，使用 etcdctl 进行恢复的功能已被弃用，未来的可能会在 etcd 版本中被移除
+########################################### 单master k8s
+# 关闭etcd和apiserver
+mv /etc/kubernetes/manifests/{etcd.yaml,kube-apiserver.yaml}  /root/
 
-    # 备份原有数据目录，三个节点分别执行
-    mv /var/lib/etcd  /var/lib/etcd.old
+# 备份原有数据目录
+mv /var/lib/etcd  /var/lib/etcd.old
 
-    # 使用快照进行恢复,三个节点分别执行
-    etcdutl \
-    --name=k8s-master1 \  # kubectl  get node 看到的mster在集群中的节点名称，另外两个节点以此类推
-    --initial-cluster=k8s-master1=https://10.203.43.160:2380,k8s-master2=https://10.203.43.161:2380,k8s-master3=https://10.203.43.162:2380 \  # 所有initial-advertise-peer-urls的合集
-    --initial-advertise-peer-urls=https://10.203.43.160:2380 \  # master1的ip，另外两个节点以此类推
-    --initial-cluster-token=etcd-cluster-01       # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
-    --data-dir=/var/lib/etcd                      # 数据恢复路径，和原来的数据目录保持一致
-    snapshot restore  /var/backups/xxx.db \
+# 使用快照进行恢复
+etcdutl \
+--name=k8s-master \  # kubectl  get node 看到的mster在集群中的节点名称
+--initial-cluster=k8s-master=https://10.203.43.100:2380 \  # master的节点名称和ip
+--initial-advertise-peer-urls=https://10.203.43.100:2380 \  # master的ip
+--initial-cluster-token \   # 集群标识，可选
+--data-dir=/var/lib/etcd \  # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
+snapshot restore  /var/backups/xxx.db \
+# 重启etcd和apiserver 
+mv /root/{etcd.yaml,kube-apiserver.yaml}  /etc/kubernetes/manifests/
+# 重启kubelet
+systemctl restart kubelet
 
-    # 重启etcd和apiserver 
-    mv /root/{etcd.yaml,kube-apiserver.yaml}  /etc/kubernetes/manifests/
-    # 重启kubelet
-    systemctl restart kubelet
 
-    ################################################################## 查看etcd信息 ##############################################################
-    kubectl  exec -it -n kube-system etcd-xxx -- sh
-    $ export ETCDCTL_API=3
-    $ alias etcdctl='etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key'
-    $ etcdctl member list
-    $ etcdctl endpoints status --write-out=table
-    $ etcdctl endpoints health
+########################################### 多master k8s
+# 关闭etc和apiserver,三个节点分别执行
+mv /etc/kubernetes/manifests/{etcd.yaml,kube-apiserver.yaml}  /root
 
-    ################################################################## 使用systemd 管理 etcd ##############################################################
-    ##  etcd with systemd
-    [Unit]
-    Description=etcd key-value store
-    Documentation=https://github.com/etcd-io/etcd
-    After=network.target
+# 备份原有数据目录，三个节点分别执行
+mv /var/lib/etcd  /var/lib/etcd.old
 
-    [Service]
-    Type=notify
-    EnvironmentFile=/data/etcd.env
-    # ExecXXX 的命令中是可以使用 ${Xxx} 插值语法的
-    ExecStart=/data/bin/etcd \
-        --listen-client-urls http://${THIS_IP}:2379 \
-        --advertise-client-urls http://${THIS_IP}:2379 \
-        --listen-peer-urls http://${THIS_IP}:2380 \
-        --initial-advertise-peer-urls http://${THIS_IP}:2380 \
-        --initial-cluster "${NAME_1}=http://${HOST_1}:2380,${NAME_2}=http://${HOST_2}:2380,${NAME_3}=http://${HOST_3}:2380"
-    Restart=always
-    RestartSec=5s
-    LimitNOFILE=40000
+# 使用快照进行恢复,三个节点分别执行
+etcdutl \
+--name=k8s-master1 \  # kubectl  get node 看到的mster在集群中的节点名称，另外两个节点以此类推
+--initial-cluster=k8s-master1=https://10.203.43.160:2380,k8s-master2=https://10.203.43.161:2380,k8s-master3=https://10.203.43.162:2380 \  # 所有initial-advertise-peer-urls的合集
+--initial-advertise-peer-urls=https://10.203.43.160:2380 \  # master1的ip，另外两个节点以此类推
+--initial-cluster-token=etcd-cluster-01       # 为etcd集群设置一个唯一id,用来区分同一份配置文件启动的多个集群，使之互不影响
+--data-dir=/var/lib/etcd                      # 数据恢复路径，和原来的数据目录保持一致
+snapshot restore  /var/backups/xxx.db \
 
-    [Install]
-    WantedBy=multi-user.target
-    ```
+# 重启etcd和apiserver 
+mv /root/{etcd.yaml,kube-apiserver.yaml}  /etc/kubernetes/manifests/
+# 重启kubelet
+systemctl restart kubelet
 
-2. [X] yaml文件备份
-3. [X] 镜像备份
-4. [X] 共享存储
+################################################################## 查看etcd信息 ##############################################################
+kubectl  exec -it -n kube-system etcd-xxx -- sh
+$ export ETCDCTL_API=3
+$ alias etcdctl='etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key'
+$ etcdctl member list
+$ etcdctl endpoints status --write-out=table
+$ etcdctl endpoints health
+
+################################################################## 使用systemd 管理 etcd ##############################################################
+##  etcd with systemd
+[Unit]
+Description=etcd key-value store
+Documentation=https://github.com/etcd-io/etcd
+After=network.target
+
+[Service]
+Type=notify
+EnvironmentFile=/data/etcd.env
+# ExecXXX 的命令中是可以使用 ${Xxx} 插值语法的
+ExecStart=/data/bin/etcd \
+    --listen-client-urls http://${THIS_IP}:2379 \
+    --advertise-client-urls http://${THIS_IP}:2379 \
+    --listen-peer-urls http://${THIS_IP}:2380 \
+    --initial-advertise-peer-urls http://${THIS_IP}:2380 \
+    --initial-cluster "${NAME_1}=http://${HOST_1}:2380,${NAME_2}=http://${HOST_2}:2380,${NAME_3}=http://${HOST_3}:2380"
+Restart=always
+RestartSec=5s
+LimitNOFILE=40000
+
+[Install]
+WantedBy=multi-user.target
+```
+
+* yaml文件备份
+* 镜像备份
+* 共享存储
 
 ---
 
@@ -642,10 +678,10 @@ server = "http://harbor.baway.org.cn"
 
 ### pod处于Pending状态，可能得原因
 
-1. [X] 等待拉取镜像
-2. [X] 没有可用节点
-3. [X] 等待PV就绪
-4. [X] 分配不到IP地址
+* 等待拉取镜像
+* 没有可用节点
+* 等待PV就绪
+* 分配不到IP地址
 
 ---
 
@@ -683,70 +719,89 @@ server = "http://harbor.baway.org.cn"
 
 ### k8s高可用部署
 
-1. [X] 高可用原理
-    k8s高可用包含两个关键点：
+k8s高可用包含两个关键点：
 
-    apiserver高可用。其原理是多个apiserver实例进行负载均衡。具体的实现可以使用nginx、lvs、Haproxy作为负载均衡器，使用keepalived生成并管理VIP，客户端请求通过VPI发送给负载均衡器，然后由负载均衡器转发给某一个apiserver。由于VIP可以在多个apiserver实例之间自动漂移，所以某一个实例的宕机不会影响整个集群的可用性。
+apiserver高可用。其原理是多个apiserver实例进行负载均衡。具体的实现可以使用nginx、lvs、Haproxy作为负载均衡器，使用keepalived生成并管理VIP，客户端请求通过VPI发送给负载均衡器，然后由负载均衡器转发给某一个apiserver。由于VIP可以在多个apiserver实例之间自动漂移，所以某一个实例的宕机不会影响整个集群的可用性。
 
-    etcd高可用。etcd本身就是一个分布式键值存储库，使用3个及以上的节点来进行集群式部署即可实现高可用。k8s支持两种方式的etcd：堆叠etcd和外部etcd。堆叠etcd运行在k8s集群内，每个master节点运行一个etcd实例，外部etcd指的是k8s集群之外单独部署的etcd。
+etcd高可用。etcd本身就是一个分布式键值存储库，使用3个及以上的节点来进行集群式部署即可实现高可用。k8s支持两种方式的etcd：堆叠etcd和外部etcd。堆叠etcd运行在k8s集群内，每个master节点运行一个etcd实例，外部etcd指的是k8s集群之外单独部署的etcd。
 
-    综上，实现k8s集群的高可用部署，分为两种情况，如果使用堆叠etcd，至少需要3台master来实现高，而使用外部etcd，则至少需要两台master。
-2. [X] 部署方式
+综上，实现k8s集群的高可用部署，分为两种情况，如果使用堆叠etcd，至少需要3台master来实现高，而使用外部etcd，则至少需要两台master。
+
+---
+
+### k8s有哪些证书，各自的作用？
+
+| 证书作用                | 证书路径（默认）                           |
+| ----------------------- | ------------------------------------------ |
+| Kubernetes API Server   | /etc/kubernetes/pki/apiserver.crt          |
+| Kube Controller Manager | /etc/kubernetes/pki/controller-manager.crt |
+| Kube Scheduler          | /etc/kubernetes/pki/scheduler.crt          |
+| Kubelet                 | /var/lib/kubelet/pki/kubelet.crt           |
+| Etcd（如使用内置）      | /etc/kubernetes/pki/etcd/server.crt        |
+| Front Proxy, CA 等其他  | 多数在 /etc/kubernetes/pki/                |
 
 ---
 
 ### k8s的证书有效期？ 如何更新证书？
 
-* [X] 有效期查询
+#### 有效期查询
 
-  ```shell
-  kubeadm certs check-expiration
-  ```
+```shell
+kubeadm certs check-expiration
+```
 
-* [X] 证书续期
+#### 手动续期
 
-  ```shell
-  1. 更新控制平面证书
-  kubeadm renew all
-  # Done renewing certificates. You must restart the kube-apiserver, kube-controller-manager, 
-  # kube-scheduler and etcd, so that they can use the new certificates
-  # 执行完此命令之后需要重启控制面Pod,并且如果是HA集群，
-  # 多master的集群需要在每个控制平面都执行同样的操作，不可以将一份证书同步到其他节点，因为证书中包含节点IP、主机名等信息，不能通用
+```shell
+#############   更新master节点    #############
+1. 更新组件证书
+kubeadm renew all # 更新/etc/kubernetes/pki目录下除了CA根证书之外的所有证书
+ 
+# Done renewing certificates. You must restart the kube-apiserver, kube-controller-manager, 
+# kube-scheduler and etcd, so that they can use the new certificates
+# 执行完此命令之后需要重启控制面Pod,并且如果是HA集群，
+# 多master的集群需要在每个控制平面都执行同样的操作，不可以将一份证书同步到其他节点，因为证书中包含节点IP、主机名等信息，不能通用
 
-  2. 更新KUBECONFIG
-  cp /etc/kubernetes/admin.conf ~/.kube/config
+2. 更新KUBECONFIG
+kubeadm init phase kubeconfig all
+# 这个命令会重新生成/etc/kubernetes目录下的admin.conf、controller-manager.conf、kubelet.conf和scheduler.conf
 
-  3. 查看证书是否更新成功
-  ll /var/lib/kubelet/pki
-  kubelet-client-current.pem  # 查看该文件是否指向了最新的证书文件
+3. 重启控制平面组件和kubelet
+mv  /etc/kubernetes/manifests/*  /root/manifests/
+sleep 10s  # kubelet感知文件变化的间隔一般不超过5s
+mv /root/manifests/*  /etc/kubernetes/manifests/
 
-  # 注意： 以上操作不包含kubelet证书，kubelet证书默认会在到期前30天~120天自动续期（10%~30%生命周期)，无需手动更新
+systemctl restart kubelet
 
-  # 如果特殊情况必须手动更新kubelet证书，操作方法如下：
-  # 备份kubelet配置文件（/etc/kubernetes/kubelet.conf)
-  mv /etc/kubernetes/kubelet.conf{,.back}
-  # 重新生成kubelet.conf
-  kubeadm init  phase kubeconfig kubelet  --config /root/kubeadm.yaml --node-name k8s-master1 --kubeconfig-dir /tmp/kubelet
-  # 参数解释
-  --config 指定当初初始化该集群的配置文件，该文件中包含了apiserver地址、k8s版本等必要信息。也可以不使用--config而是使用-control-plane-endpoint、--kubernetes-version来分别指定这些信息
-  --node-name 节点名称
-  --kubeconfig-dir 生成的配置文件存放在什么位置
 
-  # 将新生成的配置文件拷贝到/etc/kubernetes
-  cp /tmp/kubelet/kubelet.conf  /etc/kubernetes
+############  更新worker节点 ###############
 
-  # 重启kubelet服务
-  systemctl  restart kubelet
+# 为节点重新生成kubelet.conf
+kubeadm init phase kubeconfig kubelet  --config /root/kubeadm.yaml --node-name <node_name> --kubeconfig-dir /tmp/kubelet
 
-  # 单独生成客户端证书
-  kubeadm kubeconfig user --org system:masters --client-name kubernetes-admin > ~/.kube/config
-  kubeadm kubeconfig user --client-name system:kube-controller-manager > /etc/kubernetes/controller-manager.conf
-  kubeadm kubeconfig user --client-name system:kube-scheduler > /etc/kubernetes/scheduler.conf
-  ```
+# 参数解释
+--config 指定当初初始化该集群的配置文件，该文件中包含了apiserver地址、k8s版本等必要信息。也可以不使用--config而是使用-control-plane-endpoint、--kubernetes-version来分别指定这些信息
+--node-name 节点名称
+--kubeconfig-dir 生成的配置文件存放在什么位置
 
----
 
-### kubelet证书的自动续期(kubelet证书轮换)(kubernetes版本1.8.0+)
+# 在node节点上备份kubelet配置文件（/etc/kubernetes/kubelet.conf)
+mv /etc/kubernetes/kubelet.conf{,.back}
+# 将新生成的配置文件拷贝到对应节点的/etc/kubernetes
+scp /tmp/kubelet/kubelet.conf  <node-name>:/etc/kubernetes
+
+# 重启节点的kubelet服务
+systemctl  restart kubelet
+
+# 在节点上查看证书是否更新成功
+ll /var/lib/kubelet/pki
+kubelet-client-current.pem  # 查看该文件是否指向了最新的证书文件。可能会有延迟，需要等kubelet的自动轮转，默认每 10 分钟检查一次
+```
+
+#### 自动续期
+
+* 控制平面证书自动续期可以使用计划任务，比如每个月检查一次证书有效期，当有效期小于30天的时候执行自动续期
+* kubelet证书有自动轮换机制，一般不需要手动干预，只要保证kubelet.conf不过期即可(kubernetes版本1.8.0+)
 
 ```shell
 kubelet 使用--rotate-certificates 参数来控制是否开启证书轮换
@@ -760,6 +815,40 @@ cat /etc/kubernetes/manifests/kube-controller-manager.yaml
 ……
 - --cluster-signing-duration=87600h0m0s   # 有效期设置为1年
 ……
+```
+
+#### 特别注意
+
+k8s从1.24到1.27，可以使用--cert-expiration来控制证书的有效期，不一定使用默认的1年有效期
+
+```bash
+kubeadm certs renew all  --cert-expiration=876000h  # 生成10年有效期的证书
+kubeadm init phase kubeconfig --cert-expiration=876000h # 生成10年有效期的kubeconfig
+```
+
+从1.28版本开始，kubeadm的api版本升级到了v1beta4,废弃了命令行中的--cert-expiration参数，开始在kubeadm.yaml中稳定支持以下两个参数：
+
+```yaml
+# kubeadm.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+certificateValidityPeriod: 876000h       # 非 CA 证书有效期，默认 8760h（1 年）
+caCertificateValidityPeriod: 87600h     # CA 证书有效期，默认 87600h（10 年）
+
+```
+
+可以在初始化集群之前就通过修改这两个参数的值把CA证书和组件证书的默认有效期都修改为自己所期望的，不必一定使用默认的1年有效期
+
+```bash
+kubeadm init --config kubeadm.yaml  # 初始化集群并把证书有效期设置为10年
+```
+
+对于已经运行的集群，可以也可以通过修改这两个参数，然后在执行证书续期的时候直接将新证书的有效期延长为自己想要的期限，不必一年一续
+
+```bash
+kubeadm certs renew all --config kubeadm.yaml  # 组件证书续签，有效期10年
+kubeadm init phase kubeconfig all --config kubeadm.yaml   # kubeconfig续签，有效期10年，如admin.conf  sechduler.conf controller-manager.conf等
+kubeadm init phase kubeconfig kubelet  --config /root/kubeadm.yaml --node-name <node_name> --kubeconfig-dir /tmp/kubelet  # 为节点生成kubelet.conf，有效期10年
 ```
 
 ---
@@ -801,7 +890,7 @@ staticPodPath: /etc/kubernetes/manifests
 
 deployment--->rs---->pod
 
-1. [X] 有状态应用
+1. [X] 有状态应用    statefulset
 
     有状态应用是指应用的多个实例需要持久化状态，每个实例有其独特的身份和持久化的数据存储，不可互换
 
@@ -812,7 +901,7 @@ deployment--->rs---->pod
 * **有序部署、扩展和删除** ：StatefulSets 确保应用实例按顺序启动和关闭，这对于依赖特定启动顺序的应用非常重要。
 * **头尾依赖** ：StatefulSets 支持有序的依赖关系，即一个实例的启动可能依赖于前一个实例的状态。
 
-2. [X] 无状态应用
+2. [X] 无状态应用  deployment
 
     无状态应用是指应用的多个实例之间没有持久化状态，每个实例都是独立的，并且可以互换。这意味着任何实例都可以处理任何请求，不需要持久化数据
 
@@ -903,7 +992,6 @@ ip adr # 此时看到的是容器ip
           maxSurge: 1
           maxUnavailable: 0
     ```
-
 2. [X] 常用命令
 
     ```bash
@@ -930,7 +1018,6 @@ ip adr # 此时看到的是容器ip
       type: DirectoryOrCreate  # 目录不存在则自动创建,默认选项
       type: Directory # 目录必须提前创建
   ```
-
 * [X] emptyDir
 * [X] configMap
 * [X] subPath
@@ -1015,7 +1102,7 @@ spec:
 
 opaque
 
-kubenetes.io/Service Account
+kubenetes.io/service-account-token
 
 ```yaml
 apiVersion: v1
@@ -1142,7 +1229,6 @@ bootstrap.kubernetes.io/token
         - mountPath: "/usr/share/nginx/html"
           name: pv-hostpath
     ```
-
 5. [X] pv的访问模式、回收策略、状态各有哪些？
     访问模式：
 
@@ -1193,7 +1279,6 @@ bootstrap.kubernetes.io/token
           #    timeoutSeconds: 3 #超时时间设置
           #    successThreshold: 1 #检查成功为1次表示就绪
     ```
-
 2. [X] 就绪
 
     ```yaml
@@ -1208,7 +1293,6 @@ bootstrap.kubernetes.io/token
             #  timeoutSeconds: 3 #超时时间设置
             #  successThreshold: 1 #检查成功1次表示就绪
     ```
-
 3. [X] 存活
 
     ```yaml
@@ -1217,7 +1301,7 @@ bootstrap.kubernetes.io/token
             #    command:
             #    - cat
             #    - /usr/share/nginx/html/ready.html
-            #  failureThreshold: 3 #检测失败5次表示未就绪
+            #  failureThreshold: 5 #检测失败5次表示未就绪
             #  periodSeconds: 10 #重试时间间隔
             #  timeoutSeconds: 3 #超时时间设置
             #  successThreshold: 1 #检查成功1次表示就绪
@@ -1860,7 +1944,6 @@ spec:
   # 然后再使用软链接把/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/[0-9]+\.log链接到
   /var/log/containers/<pod_name>_<namespace>_<container_name>-<container_id>.log
   ```
-
 * [ ] containerd
 
   ```shell
@@ -1886,7 +1969,6 @@ spec:
       "data-root": "/home/xxx"    # 默认存储目录
     }
     ```
-
 2. [ ] containerd
     kubelet的配置文件中，添加如下配置：
 
@@ -1911,90 +1993,150 @@ spec:
 
 ---
 
-### k8s服务暴露
+### k8s service类型
 
-1. service
+1. ClusterIP
 
-   1. [X] ClusterIP
-       1.1 无头服务
-   2. [X] NodePort
-   3. [X] Loadbalancer
+```yaml
+apiVersion: v1
+ kind: Service
+ metadata:
+   name: my-service
+   namespace: prod
+ spec:
+   type: ClusterIP # 关键配置
+   prots:
+     - port: 8848
+       name: xx
+       targetPort: xxx
+       protocol: TCP
+```
 
-       ```shell
-       # metallb
+2. NodePort
 
-       ```
+```yaml
+apiVersion: v1
+ kind: Service
+ metadata:
+   name: my-service
+   namespace: prod
+ spec:
+   type: NodePort # 关键配置
+   ports:
+     - port:
+       name:
+       targetPort:
+       nodePort:
+       protocol: TCP
+```
 
-   4. [X] ExternalName #pod跨namespace调用service
+3. Loadbalancer
 
-       ```yaml
-       apiVersion: v1
-       kind: Service
-       metadata:
-         name: my-service
-         namespace: prod
-       spec:
-         type: ExternalName
-         externalName: my.database.example.com
-       ```
+```yaml
+apiVersion: v1
+ kind: Service
+ metadata:
+   name: my-service
+   namespace: prod
+ spec:
+   type: Loadbalancer # 关键配置
+   ports:
+     - port:
+       name:
+       targetPort:
+       protocol: TCP
+```
 
-   5. [X] 没有选择器的service
+4. ExternalName
 
-       缺陷： 这种类型的svc对自定义的endpoint没有健康检查机制
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: prod
+spec:
+  type: ExternalName
+  externalName: www.baidu.com
+```
 
-       ```yaml
-       apiVersion: v1
-       kind: Service
-       metadata:
-         name: my-service
-       spec:
-         ports:
-           - protocol: TCP
-             name: 'http-80'
-             port: 80
-             targetPort: 80
+5. 其中ClusterIP中还包含一种特殊的svc，称为Headless Service，即无头服务
 
-       ################################
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: prod
+spec:
+  type: ClusterIP
+  clusterIP: None  # 特地声明了这个参数，即为无头服务
+```
+
+#### 各种服务的应用场景
+
+1. ClusterIP类型的svc把Pod中的业务暴露给集群内的其他服务，集群外的用户无法访问
+2. NodePort类型的svc既可以把Pod中的业务暴露给集群内的其他服务，又可以通过node节点的ip+nodeport端口把服务暴露给集群外的用户
+3. ExternalName类型的svc通过DNS名称解析将流量直接映射到外部服务（即集群外部的某个域名）。它的核心作用是通过 Kubernetes 的 Service 机制为外部服务提供一个内部可访问的DNS名称，从而简化集群内应用对外部服务的访问
+4. Loadbalancer类型的SVC多用于公有云环境，云服务商会自动为svc分配一个可用的公网ip，用来将服务暴露给互联网上的用户
+
+#### 特殊类型的svc：没有选择器的service
+
+   缺陷： 这种类型的svc对自定义的endpoint没有健康检查机制
+
+```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: my-service
+   spec:
+     ports:
+       - protocol: TCP
+         name: 'http-80'
+         port: 80
+         targetPort: 80
+
+   ################################
 
 
-       apiVersion: discovery.k8s.io/v1
-       kind: EndpointSlice               # 新版本endpoint，k8sversion v1.21+
-       metadata:
-         name: my-service-1 # 按惯例将 Service 的名称用作 EndpointSlice 名称的前缀
-         labels:
-           # 你应设置 "kubernetes.io/service-name" 标签。
-           # 设置其值以匹配 Service 的名称
-           kubernetes.io/service-name: my-service
-       addressType: IPv4
-       ports:
-         - name: 'http-80' # 应与上面定义的 Service 端口的名称匹配
-           appProtocol: http
-           protocol: TCP
-           port: 80
-       endpoints:  # 此列表中的 IP 地址可以按任何顺序显示
-         - addresses:
-             - "10.203.43.8"
-         - addresses:
-             - "10.203.43.106"
+   apiVersion: discovery.k8s.io/v1
+   kind: EndpointSlice               # 新版本endpoint，k8sversion v1.21+
+   metadata:
+     name: my-service-1 # 按惯例将 Service 的名称用作 EndpointSlice 名称的前缀
+     labels:
+       # 你应设置 "kubernetes.io/service-name" 标签。
+       # 设置其值以匹配 Service 的名称
+       kubernetes.io/service-name: my-service
+   addressType: IPv4
+   ports:
+     - name: 'http-80' # 应与上面定义的 Service 端口的名称匹配
+       appProtocol: http
+       protocol: TCP
+       port: 80
+   endpoints:  # 此列表中的 IP 地址可以按任何顺序显示
+     - addresses:
+         - "10.203.43.8"
+     - addresses:
+         - "10.203.43.106"
 
-       ##
-       apiVersion: v1  
-       kind: Endpoints    # 旧版本endpoint
-       metadata:
-         name: my-service-2
-       #指定自定义的point的目标地址
-       subsets:
-       - addresses:
-         - ip: 10.203.43.8
-         - ip: 10.203.43.106
-         # 外部redis的真实的工作端口
-         ports:
-          - port: 80
-            # 定义端口的名称，必须与 service 中的 ports.name 一致
-            name: http-80
-       ```
+   ##
+   apiVersion: v1  
+   kind: Endpoints    # 旧版本endpoint
+   metadata:
+     name: my-service-2
+   #指定自定义的point的目标地址
+   subsets:
+   - addresses:
+     - ip: 10.203.43.8
+     - ip: 10.203.43.106
+     # 外部redis的真实的工作端口
+     ports:
+      - port: 80
+        # 定义端口的名称，必须与 service 中的 ports.name 一致
+        name: http-80
+```
 
-2. ingress
+6. ingress
 
    1. [X] ingress-nginx
 
@@ -2023,7 +2165,6 @@ spec:
                      number: 8080
          ingressClassName: nginx
        ```
-
    2. [X] contour
 
        ```yaml
@@ -2074,8 +2215,117 @@ spec:
                      number: 8080
 
        ```
-
    3. [X] Traefik
+
+---
+
+### Ingress
+
+#### ingress类型
+
+##### ingress-nginx
+
+```yaml
+# ingress-nginx 配置https
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-nginx
+  namespace: default
+spec:
+  tls:
+  - hosts:
+      - baway.com
+    secretName: tls-ingress
+  rules:
+  - host: baway.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 8080
+  ingressClassName: nginx
+```
+
+##### contour
+
+```yaml
+# contour配置https
+# HTTPProxy
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: nginx-ingress
+spec:
+  ingressClassName: contour
+  virtualhost:
+    fqdn: nginx.baway.org.cn
+    tls:
+      secretName: baway-https
+  routes:
+  - conditions:
+    - prefix: /
+    services:
+    - name: nginx-deployment
+      port: 8080
+
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: httpbin
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: contour
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+  - secretName: httpbin
+    hosts:
+    - httpbin.davecheney.com
+  rules:
+  - host: httpbin.davecheney.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: httpbin
+            port:
+              number: 8080
+
+```
+
+##### Traefik
+
+#### Ingress工作原理
+
+##### ingress-nginx
+
+默认会为ingress-controller创建一个LoadBalancer类型的同名svc,可以手动编辑该svc,为其指定一个externalP（与k8s节点同网段）,之后将域名解析到这个externalIP即可
+
+或者将该svc修改为NodePort类型，之后在上游添加另外一层代理，将用户请求通过nodePort转发给ingress-controller
+
+##### contour
+
+默认会使用DaemonSet在每个节点上创建一个envoy(代理用户请求)实例，同时为这些envoy实例创建一个LoadBalancer类型的svc,同样可以通过修改svc的类型或者手动为svc指定externalIP来接收用户请求，然后把请求转发给envoy实例
+
+不同的是，contour会在每个运行envoy实例的节点上创建iptables/ipvs规则，将该节点的80端口转发给本机的envoy实例，也就是说，contour安装完成后即使不做任何修改，也可以马上工作，所有运行了envoy实例的节点都可以自动接管本机的80/443端口
+
+```shell
+DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:80 to:10.244.2.61:8080
+DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:443 to:10.244.2.61:8443
+```
+
+##### istio
+
+与ingress-nginx类似，通过为istio-ingressgateway这个svc手动指定externalIP或者将其修改为NodePort类型
 
 ---
 
@@ -2188,7 +2438,6 @@ spec:
             number: 443    # https协议连接后端，所以要求后端必须开启了https监听
           host: openldap.private.svc.cluster.local
   ```
-
 * [X] skywalking
 
 ---
@@ -2207,10 +2456,11 @@ svc的externalTrafficPolicy选项设置为Local
 
 ### hostPort、hostNetwork的区别？`<pod.spec.containers.ports.hostPort> <pod.spec.hostNetwork>`
 
-1. [X] 网络地址空间不同。hostport使用CNI分配的地址，hostNetwork使用宿主机网络地址空间；
-2. [X] 宿主机端口生成。hostport宿主机不生成端口，hostNetwork宿主机生成端口；
-3. [X] hostport通过iptables防火墙的nat表进行转发，hostNetwork 直接通过主机端口到容器中
-4. [X] 配置层级不同：
+1. [X] 首先，两者的共同点是只能通过pod所在的节点IP来访问，并不是任意节点IP，这和NodePort类型的svc是不一样的
+2. [X] 网络地址空间不同。hostport使用CNI分配的地址，hostNetwork使用宿主机网络地址空间；
+3. [X] 宿主机端口生成。hostport宿主机不生成端口，hostNetwork宿主机生成端口；
+4. [X] hostport通过iptables防火墙的nat表进行转发，hostNetwork 直接通过主机端口到容器中
+5. [X] 配置层级不同：
 
     hostPort是container级别
 
@@ -2397,124 +2647,162 @@ spec:
 
 ### pod的调度策略有哪些
 
-1. [X] nodeSelector `<pod.spec.nodeSelector>`
-2. [X] nodeName `<pod.spec.nodeName>`
+##### nodeSelector `<pod.spec.nodeSelector>`
 
-    ```shell
-    nodeName和nodeSelector的区别：
-    nodeName使用节点名称匹配节点,nodeSelector使用节点的标签进行匹配
-    nodeName可以忽略污点,nodeSelector不能
-    ```
+##### nodeName `<pod.spec.nodeName>`
 
-3. [X] taints & tolerations (污点和容忍度) `<pod.spec.tolerations>`
+```shell
+nodeName和nodeSelector的区别：
+nodeName使用节点名称匹配节点,nodeSelector使用节点的标签进行匹配
+nodeName可以忽略污点,nodeSelector不能
+```
 
-    ```yaml
-    tolerations:
-    - key: "node-role.kubernetes.io/control-plane"
-      operator: "Equal"
-      value: "value1"
-      effect: "NoSchedule"
-      tolerationSeconds: 3600
-    #- key: "key1"
-    #  operator: "Exists"
-    #  effect: "NoSchedule"
+##### taints & tolerations (污点和容忍度) `<pod.spec.tolerations>`
 
-    # 如果 operator 是 Equal，则toleration的key、value都必须与污点相同
-    # 此时如果effect 为空，表示可以与键名为key的任意效果相匹配。
+```yaml
+tolerations:
+- key: "node-role.kubernetes.io/control-plane"
+  operator: "Equal"
+  value: "value1"
+  effect: "NoSchedule"
+  tolerationSeconds: 3600
+#- key: "key1"
+#  operator: "Exists"
+#  effect: "NoSchedule"
 
-    # 如果 operator 是 Exists,容忍度不能指定value，且key和effect都可以为空或省略
-    # 如果一个容忍度的 key 为空且 operator 为 Exists， 
-    # 表示这个容忍度与任意的 key、value 和 effect 都匹配，即这个容忍度能容忍任何污点。
+# 如果 operator 是 Equal，则toleration的key、value都必须与污点相同
+# 此时如果effect 为空，表示可以与键名为key的任意效果相匹配。
 
-    ```
+# 如果 operator 是 Exists,容忍度不能指定value，且key和effect都可以为空或省略
+# 如果一个容忍度的 key 为空且 operator 为 Exists， 
+# 表示这个容忍度与任意的 key、value 和 effect 都匹配，即这个容忍度能容忍任何污点。
 
-4. [X] 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )`<pod.spec.affinity>`
-    4.1 node亲和性
+```
 
-    ```yaml
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: kubernetes.io/e2e-az-name
-              operator: In
-              values:
-              - e2e-az1
-              - e2e-az2
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-            - key: another-node-label-key
-              operator: In
-              values:
-              - another-node-label-value
+##### 亲和与反亲和 (node的亲和反亲和、pod的亲和反亲和 )`<pod.spec.affinity>`
 
-    # requiredDuringSchedulingIgnoredDuringExecution，这个是必须满足
-    # preferredDuringSchedulingIgnoredDuringExecution，这个是优先满足，如果实在不能满足的话，则允许一些pod在其它地方运行
-    # In，NotIn，Exists，DoesNotExist，Gt，Lt。你可以使用 NotIn 和 DoesNotExist 来实现节点反亲和行为，
-    # 或者使用节点污点将 #pod 从特定节点中驱逐。
-    # 如果同时指定了nodeSelector 和 nodeAffinity，两者必须都要满足，才能将 pod 调度到候选节点上。
-    # 如果指定多个与 nodeAffinity 类型关联的 nodeSelectorTerms，其中一个 nodeSelectorTerms满足即可调度
-    # 如果指定多个与 nodeSelectorTerms 关联的 matchExpressions，必须所有 matchExpressions 满足才能调度
-    ```
+###### node亲和性
 
-    4.2 Pod亲和性
+```yaml
+affinity:
+# 节点亲和配置
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - gfs-01
+          - gfs-02
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 1
+      preference:
+        matchExpressions:
+        - key: kubernetes.io/control-plane
+          operator: In
+          values:
+          - master
 
-    ```yaml
-    affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - web-store
-          topologyKey: "kubernetes.io/hostname"
-      podAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - store
-          topologyKey: "kubernetes.io/hostname"
+# requiredDuringSchedulingIgnoredDuringExecution，这个是必须满足
+# preferredDuringSchedulingIgnoredDuringExecution，这个是优先满足，如果实在不能满足的话，则允许一些pod在其它地方运行
+# In，NotIn，Exists，DoesNotExist，Gt，Lt。你可以使用 NotIn 和 DoesNotExist 来实现节点反亲和行为，
+# 或者使用节点污点将 #pod 从特定节点中驱逐。
+# 如果同时指定了nodeSelector 和 nodeAffinity，两者必须都要满足，才能将 pod 调度到候选节点上。
+# 如果指定多个与 nodeAffinity 类型关联的 nodeSelectorTerms，其中一个 nodeSelectorTerms满足即可调度
+# 如果指定多个与 nodeSelectorTerms 关联的 matchExpressions，必须所有 matchExpressions 满足才能调度
+```
 
-    # topologyKey可以设置成如下几种类型
-    #kubernetes.io/hostname　　＃Node
-    #failure-domain.beta.kubernetes.io/zone　＃Zone
-    #failure-domain.beta.kubernetes.io/region #Region
-    #可以设置node上的label的值来表示node的name,zone,region等信息，pod的规则中指定topologykey的值表示指定topology范围内的node上运行的pod满足指定规则
-    ```
+###### node反亲和
 
-    示例：node硬亲和、Pod软反亲和
+这里要注意，并没有nodeAntiAffinity选项（因为没必要），而是使用nodeAffinity+operator NotIn来实现反亲和效果
 
-    ```yaml
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: abc.com/zhongtai
-              operator: In
-              values:
-              - standard
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 50
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - nginx
-            topologyKey: "kubernetes.io/hostname"
+###### Pod亲和性
 
-    ```
+```yaml
+affinity:
+  podAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution: # 硬限制
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - prometheus
+        topologyKey: failure-domain.beta.kubernetes.io/zone
+            #        topologyKey: kubernetes.io/hostname
+        # topologyKey 拓扑域，基于什么标准进行亲和、反亲和调度，可以是主机、机柜、机房
+        # 如果指定的topology不存在，Pod无法被调度
+
+
+    preferredDuringSchedulingIgnoredDuringExecution:  # 软限制
+    - weight: 100
+      podAffinityTerm:
+        labelSelector: #标签选择
+          matchExpressions: #正则匹配
+          - key: project
+            operator: In
+            values:
+            - python
+        topologyKey: failure-domain.beta.kubernetes.io/zone
+
+# topologyKey可以设置成如下几种类型
+#kubernetes.io/hostname　　＃Node
+#failure-domain.beta.kubernetes.io/zone　＃Zone
+#failure-domain.beta.kubernetes.io/region #Region
+#可以设置node上的label的值来表示node的name,zone,region等信息，pod的规则中指定topologykey的值表示指定topology范围内的node上运行的pod满足指定规则
+```
+
+###### Pod反亲和
+
+```yaml
+affinity:
+podAntiAffinity:
+  requiredDuringSchedulingIgnoredDuringExecution: # 硬限制
+    - labelSelector:
+        matchExpressions:
+        - key: security
+          operator: In
+          values:
+          - S1
+        topologyKey: kubernetes.io/hostname
+  preferredDuringSchedulingIgnoredDuringExecution: # 软限制
+  - weight: 100
+    podAffinityTerm:
+      labelSelector:
+        matchExpressions:
+        - key: security
+          operator: In
+          values:
+          - S2
+      topologyKey: kubernetes.io/hostname
+```
+
+###### 示例：node硬亲和、Pod软反亲和
+
+```yaml
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: abc.com/zhongtai
+          operator: In
+          values:
+          - standard
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 50
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - nginx
+        topologyKey: "kubernetes.io/hostname"
+
+```
 
 ---
 
@@ -2732,6 +3020,59 @@ docker inspect <pod_id> -f '{{index .Config.Labels "io.kubernetes.pod.name"}}'
 kubectl get pod -o custom-columns=NodeName:.spec.nodeName,PodName:.metadata.name,PodUid:.metadata.uid
 ```
 
+---
+
+### kubectl apply  | patch | replace的区别
+
+总结对比：
+
+| 命令                | 简述                                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `kubectl patch`   | **局部更新**资源，改哪儿写哪儿，改动小、风险低                                  |
+| `kubectl replace` | **整体替换**资源，必须提供完整定义，改动大、风险高                              |
+| `kubectl apply`   | **管理整体结构，**需要有完整的配置(yaml文件)，配置**版本可追溯 、可回滚** |
+
+详细对比：
+
+| 对比项            | `kubectl patch`                          | `kubectl apply`                  | `kubectl replace（慎用)`                   |
+| ----------------- | ------------------------------------------ | ---------------------------------- | -------------------------------------------- |
+| 操作方式          | **部分更新**资源，只提交要修改的字段 | 整体管理资源，声明式"宣告"资源状态 | **整体替换**资源，整个 YAML 被重写     |
+| 参数              | `-p '{"spec":{...}}'`+`--type`         | `-f resource.yaml`               | `-f resource.yaml`                         |
+| YAML 完整性       | 只需要包含要修改的部分字段                 | 需要完整的yaml文件                 | 需要完整的资源定义文件                       |
+| 更新字段范围      | 通常是 metadata、spec 的某个字段           | 整体结构，适合管理资源“全貌”     | 所有字段，包括 status 以外的所有部分         |
+| 风险              | 风险较低，不易误删字段                     | 较低（自动合并未声明的字段）       | 高风险，**容易因遗漏字段导致配置丢失** |
+| 使用场景          | 快速修改 labels、replicas、finalizers 等   | 持续稳定地管理资源                 | 重建资源、手动 apply 失败后替代方案          |
+| 是否需要完整 YAML | ❌ 不需要                                  | ✅ 必须完整                        | ✅ 必须完整                                  |
+
+示例
+
+```
+# 修改副本数
+kubectl patch deployment nginx-deploy -p '{"spec":{"replicas":5}}'
+
+# 添加标签
+kubectl patch pod mypod -p '{"metadata":{"labels":{"env":"prod"}}}''
+
+# 删除Terminating状态的namespace
+kubectl patch namespace myns -p '{"metadata":{"finalizers":[]}}' --type=merge
+
+# 使用json patch删除字段
+kubectl patch pod mypod --type=json -p='[{"op": "remove", "path": "/metadata/annotations/my-annotation"}]'
+
+# 在指定namespace修改资源
+kubectl patch deployment myapp -n dev -p '{"spec":{"replicas":2}}'
+```
+
+kubectl  patch 的三种类型(kubectl  patch  --type)
+
+| 类型          | 说明                                                                                              | 使用场景                           |
+| ------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `strategic` | 默认类型。Kubernetes 自定义的合并策略，针对结构化资源（如 Pod、Deployment）能智能合并数组和 map。 | 修改 Deployment 的 spec            |
+| `merge`     | 标准 JSON Merge Patch，简单合并（替换）字段，不支持智能处理列表                                   | 修改 metadata、labels 等           |
+| `json`      | JSON Patch（RFC 6902），最强大但也最复杂，需要用操作指令                                          | 精确操作，比如删除数组中的一个元素 |
+
+---
+
 ### kubectl 管理多个集群
 
 ```shell
@@ -2798,6 +3139,9 @@ openssl req -new -key ${username}.key -out ${username}.csr -subj "/CN=${username
 
 openssl x509 -req -in ${username}.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out ${username}.crt -days 3650
 
+### 特别注意：k8s的认证和鉴权是分开的，以上步骤只是实现使用不同的上下文来对不同的k8s集群进行认证，认证通过不代表有权限对k8s的资源进行操作，还需要使用RBAC对用户进行授权，确保用户在对应的namespace下具备必要的权限
+### 以下内容是在k8s中新建一个RoleBinding或者ClusterRoleBiniding来给用户授予权限
+
 # 为用户授权,用户${username}在public命名空间下有最高权限
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -2819,8 +3163,6 @@ subjects:
 export KUBECONFIG=~/.kube/config-dev:~/.kube/config-pro:~/.kube/config-test
 kubectl  config  view --flatten > config-all # 将多个config进行合并
 ```
-
-特别注意：k8s的认证和鉴权是分开的，以上步骤只是实现使用不同的上下文来对不同的k8s集群进行认证，认证通过不代表有权限对k8s的资源进行操作，还需要使用RBAC对用户进行授权，确保用户在对应的namespace下具备必要的权限
 
 ---
 
