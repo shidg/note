@@ -1,11 +1,8 @@
-set nocompatible	" Use Vim defaults (much better!)
-set bs=indent,eol,start		" allow backspacing over everything in insert mode
-"set ai			" always set autoindenting on
-"set backup		" keep a backup file
-set viminfo='20,\"50	" read/write a .viminfo file, don't store more
-			" than 50 lines of registers
+set nocompatible  "Use Vim defaults (much better!)
+set bs=indent,eol,start  "allow backspacing over everything in insert mode
+set viminfo='20,\"50 " read/write a .viminfo file, don't store more than 50 lines of registers
 
-" Only do this part when compiled with support for autocommands
+"Only do this part when compiled with support for autocommands
 if has("autocmd")
   augroup redhat
   autocmd!
@@ -32,239 +29,280 @@ if has("cscope") && filereadable("/usr/bin/cscope")
    if filereadable("cscope.out")
       cs add cscope.out
    " else add database pointed to by environment
-   elseif $CSCOPE_DB != ""
-      cs add $CSCOPE_DB
+   elseif  != ""
+      cs add 
    endif
    set csverb
 endif
 
-if has('mouse')
-  set mouse=a
+" Switch syntax highlighting on, when the terminal has colors
+" Also switch on highlighting the last used search pattern.
+if &t_Co > 2 || has("gui_running")
+  syntax on
+  set hlsearch
 endif
 
+" 自定义前缀键,默认为 \
+let mapleader=" "
 
-if &term=="xterm"
-     set t_Co=256
-     set t_Sb=[4%dm
-     set t_Sf=[3%dm
-endif
+" ========================
+" 插件管理器: vim-plug
+" ========================
+call plug#begin('~/.vim/plugged')
 
-" Don't wake up system with blinking cursor:
-" http://www.linuxpowertop.org/known.php
-let &guicursor = &guicursor . ",a:blinkon0"
+" 项目目录浏览器
+Plug 'preservim/nerdtree'
 
-"隐藏工具栏菜单栏
-set guioptions-=m
-set guioptions-=T
-map <silent> <F1> :if &guioptions =~# 'T' <Bar>
-        \set guioptions-=T <Bar>
-        \set guioptions-=m <bar>
-    \else <Bar>
-        \set guioptions+=T <Bar>
-        \set guioptions+=m <Bar>
-    \endif<CR>
+" Git 状态显示在 NERDTree 中
+Plug 'Xuyuanp/nerdtree-git-plugin'
 
-"隐藏左侧滚动条   
-set guioptions-=L
+" 状态栏美化
+Plug 'vim-airline/vim-airline'
 
-"隐藏右侧滚动条    
-set guioptions-=r
+" 智能补全和语言服务支持
+"Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
-"不生成.swp文件
-set nobackup
+" 自动括号
+Plug 'jiangmiao/auto-pairs'
 
-"语法高亮
+" 快速注释
+Plug 'tpope/vim-commentary'
+
+" Git 行内变更提示
+Plug 'airblade/vim-gitgutter'
+
+" 实时语法检查和 lint（适用于 shell/python/yaml）
+Plug 'dense-analysis/ale'
+
+" Markdown 编辑增强
+Plug 'preservim/vim-markdown'
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' }
+
+" YAML 缩进增强
+Plug 'stephpy/vim-yaml'
+
+" 模糊查找
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
+call plug#end()
+
+" ========================
+" 基础设置
+" ========================
 syntax on
-
-"文件类型探测 
-filetype off
-
-set rtp+=C:\Users\shidegang\.vim\bundle\Vundle.vim
-call vundle#begin()
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'flazz/vim-colorschemes' "配色方案
-Plugin 'scrooloose/nerdtree'
-Plugin 'kien/ctrlp.vim'
-Plugin 'bling/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'Yggdroot/indentLine'
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'majutsushi/tagbar'
-call vundle#end() 
-"根据文件类型缩进
-filetype indent on
-
-"显示行数标示
 set number
- 
-"打开状态栏的坐标信息
-set ruler
- 
-"取消底部状态栏显示。1为关闭，2为开启。
-set laststatus=2
- 
-"将输入的命令显示出来，便于查看当前输入的信息
-set showcmd
- 
-"设置魔术匹配控制，可以通过:h magic查看更详细的帮助信息
-set magic
- 
-"设置vim存储的历史命令记录的条数
-set history=100
- 
-"下划线高亮显示光标所在行
-set cursorline
- 
- 
-"搜索时忽略大小写
-set ignorecase
- 
-"在执行宏命令时，不进行显示重绘；在宏命令执行完成后，一次性重绘，以便提高性能。
-set lazyredraw
- 
-"设置一个tab对应4个空格
-set tabstop=4
- 
-"在按退格键时，如果前面有4个空格，则会统一清除
-set softtabstop=4
-
-"将新增的tab转换为空格。不会对已有的tab进行转换
-set expandtab
-" 自动缩进时缩进4个空格
-set shiftwidth=4
- 
-"继承前一行的缩进方式
-set autoindent
-
-"防止特殊符号无法正常显示
-set ambiwidth=double
-"超过79列时换行
-set textwidth=79
-"不在单词中间换行
-set lbr
-"自动折行
-"set wrap
-"高亮光标所在行
-set cursorline
-"快捷键F12打开或关闭paste模式，防止粘贴文件时因为自动缩进出现格式混乱
+set relativenumber
+set tabstop=4 shiftwidth=4 expandtab
+set autoindent smartindent
+set clipboard=unnamedplus
+"set mouse=a
+filetype plugin indent on
+set encoding=utf-8
+set updatetime=300
+set hidden
 set pastetoggle=<F12>
 
-"字符编码
-set encoding=utf-8
-set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
-set fileencoding=utf-8
-"set termencoding=utf-8
-set ambiwidth=double
+" 创建新文件时，自动跳到文件最后一行，并进入插入模式
+autocmd BufNewFile * normal G o
 
-"菜单乱码
-source $VIMRUNTIME/delmenu.vim
-source $VIMRUNTIME/menu.vim
+" ========================
+" 快捷键绑定
+" ========================
 
-"提示信息乱码
-language messages zh_CN.utf-8
- 
- 
-"高亮显示搜索匹配到的字符串
-set hlsearch
+" 模糊查找文件
+nnoremap <C-p> :Files<CR>
 
-"高亮显示匹配到的字符串时的配色
-"highlight Search term=reverse ctermfg=7 ctermbg=6 gui=bold guifg=White guibg=Yellow
- 
-"在搜索模式下，随着搜索字符的逐个输入，实时进行字符串匹配，并对首个匹配到的字符串高亮显示
-set incsearch
+" 全文搜索
+nnoremap <C-f> :Rg<CR>
 
-"字体
-set guifont=Ubuntu_Mono_derivative_Powerlin:h15:cANSI:qDRAFT
+" Normal 模式下按 Ctrl+S 保存
+nmap <C-s> :w<CR>
 
-"配色方案
-"set background=dark
-colorscheme molokai
+" Insert 模式下Ctr+S保存，并自动返回插入符模式
+imap <C-s> <Esc>:w<CR>a
 
-" 插入匹配括号
-inoremap ( ()<LEFT>
-inoremap [ []<LEFT>
-inoremap { {}<LEFT>
+" NERDTree 设置
+" ========================
+" 启动Vim自动打开NERDTree并跳转到右侧窗口
+autocmd VimEnter * NERDTree | if winnr('$') > 1 | wincmd l | endif
 
-"jj 映射为Esc
-imap jj <Esc><Right>
-"打开文件自动最大化
-au GUIENTER * simalt ~x
- 
-"设置自定义快捷键的前导键
-let mapleader=","
- 
-"利用前导键加b，则可以在一个单子两边加上大括号
-"map b wbi{<Esc>ea}<Esc>
- 
-"使用前导键加w来实现加速文件保存，来代替:w!加回车
-nmap w :w!<CR>
- 
-"匹配那些末尾有空格或TAB的行。（es：Endspace Show）
-map es :/.*\s\+$<CR>
- 
-"删除行末尾的空格或TAB（ed：Endspace Delete）
-map ed :s#\s\+$##<CR>
- 
-"如果所选行的行首没有#，则给所选行行首加上注释符#（#a：# add）
-map #a :s/^\([^#]\s*\)/#\1/<CR>
- 
-"如果所选行行首有#，则将所选行行首所有的#都去掉（#d：# delete）
-map #d :s/^#\+\(\s*\)/\1/<CR>
- 
-"如果所选行的行首没有//，则给所选行行首加上注释符//（/a：/ add）
-map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
- 
-"如果所选行行首有//，则将所选行行首的//都去掉（/d：/ delete）
-map /d :s/^\/\/\(\s*\)/\1/<CR>
+" 快速打开和关闭NERDTree
+nnoremap <C-n> :NERDTreeToggle<CR>
 
-" 允许折叠
-set foldenable 
+" 当使用快捷键打开NERDTree时，也自动跳转到右侧窗口
+nnoremap <silent> <C-n> :NERDTreeToggle<CR>:wincmd l<CR>
 
-" 按缩进折叠
-set foldmethod=syntax 
 
-" 设置折叠区域的宽度
-set foldcolumn=0 
+" 自动关闭 Vim 如果只剩 NERDTree 窗口
+autocmd BufEnter * if winnr('$') == 1 && &filetype == 'nerdtree' | quit | endif
+let g:NERDTreeShowHidden=1
+let g:NERDTreeMinimalUI=1
+let g:NERDTreeGitStatusUseNerdFonts=1
+let g:NERDTreeAutoDeleteBuffer=1
 
-" 设置折叠层数为
-setlocal foldlevel=1 
 
-" 设置为自动关闭折叠 
-"set foldclose=all 
+" 定义函数：如果当前在NERDTree，就跳到右边，否则跳到NERDTree
+function! ToggleNERDTreeFocus()
+  if bufname('%') =~ 'NERD_tree_'
+    wincmd p
+  else
+    if bufwinnr('NERD_tree_1') != -1
+      exec bufwinnr('NERD_tree_1') . "wincmd w"
+    else
+      NERDTree
+    endif
+  endif
+endfunction
 
-" 用空格键来开关折叠
-nnoremap <space> @=((foldclosed(line('.')) < 0) ? 'zc' : 'zo')<CR> 
+nnoremap <leader>n :call ToggleNERDTreeFocus()<CR>
 
-"NERDTree
-"autocmd vimenter * NERDTree
-map w :NERDTreeToggle<CR>
-autocmd VimEnter * wincmd w
-autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
-let NERDTreeShowBookmarks=1 
-let NERDTreeChDirMode=1
-let NERDTreeShowHidden=1
-let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
 
-"Ctrlp
-let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn|pyc)$'
 
-"tagbar
-nmap <F8> :TagbarToggle<CR>
-
-"airline
-let g:airline_powerline_fonts = 1
-let g:airline_theme="molokai" 
-"let g:airline_theme="solarized" 
-let g:airline_powerline_fonts = 1
-if !exists('g:airline_symbols')
-    let g:airline_symbols = {}
-endif
-let g:airline#extensions#whitespace#enabled = 0
-let g:airline#extensions#whitespace#symbol = '!'
+" ========================
+" Airline 设置
+" ========================
 let g:airline#extensions#tabline#enabled = 1
-let g:airline#extensions#tabline#buffer_nr_show = 1
-let g:airline#extensions#tabline#left_sep = ' '
-let g:airline#extensions#tabline#left_alt_sep = '|'
+let g:airline_theme='dark'
+
+" ========================
+" coc.nvim 设置
+" ========================
+" 安装后在 Vim 内执行 :CocInstall coc-pyright coc-sh
+let g:coc_global_extensions = ['coc-pyright', 'coc-sh', 'coc-yaml', 'coc-json', 'coc-markdownlint']
+
+" Tab 补全设置
+inoremap <silent><expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <silent><expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+" ========================
+" markdown-preview 设置
+" ========================
+let g:mkdp_auto_start = 0
+let g:mkdp_auto_close = 1
+nmap <leader>mp :MarkdownPreview<CR>
+nmap <leader>mc :MarkdownPreviewStop<CR>
+
+"========================
+" yml设置
+" =======================
+"autocmd FileType yaml setlocal foldmethod=indent foldlevelstart=1
+
+"========================
+" ALE 设置
+" ========================
+let g:ale_fix_on_save = 1
+let g:ale_linters = {
+\   'python': ['flake8'],
+\   'sh': ['shellcheck'],
+\   'yaml': ['yamllint'],
+\}
+
+" ========================
+" 分屏操作快捷键
+" ========================
+
+
+" --- 分屏 ---
+"  水平分屏
+nnoremap <leader>s :split<CR>
+
+" 垂直分屏
+nnoremap <leader>v :vsplit<CR>
+
+" 水平分屏，不打开任何文件
+nnoremap <leader>sn :new<CR>
+
+" 垂直分屏，不打开任何文件
+nnoremap <leader>vn :vnew<CR>
+
+" --- 窗口切换 ---
+"  切换到左边窗口
+nnoremap <C-h> <C-w>h
+
+" 切换到右边窗口
+nnoremap <C-j> <C-w>j
+
+" 切换到上边窗口
+nnoremap <C-k> <C-w>k
+
+" 切换到下边窗口
+nnoremap <C-l> <C-w>l
+
+" 窗口间循环切换
+nnoremap <leader>ww <C-w>w
+
+" --- 调整窗口大小 ---
+nnoremap <A-Up>    :resize +2<CR>
+nnoremap <A-Down>  :resize -2<CR>
+nnoremap <A-Left>  :vertical resize -2<CR>
+nnoremap <A-Right> :vertical resize +2<CR>
+nnoremap <leader>= <C-w>=
+
+" --- 关闭窗口 ---
+nnoremap <leader>q :close<CR>
+
+
+
+""定义函数SetTitle，自动插入文件头
+func SetTitle()
+    if &filetype == 'sh'
+        call setline(1,"\#!/bin/bash")
+        call append(line("."), "# File Name: -- ".expand("%")." --")
+        call append(line(".")+1, "# author: -- shidegang --")
+        call append(line(".")+2, "# Created Time: ".strftime("%Y-%m-%d %H:%M:%S"))
+
+    elseif &filetype == 'python'
+        call setline(1, "#!/usr/bin/env python")
+        call append(line("."), "# -*- coding: utf-8 -*-")
+        call append(line(".")+1, "'''")
+        call append(line(".")+2, "author: -- shidegang --")
+        call append(line(".")+3, "Created Time: ".strftime("%Y-%m-%d %H:%M:%S"))
+        call append(line(".")+4, "'''")
+
+    elseif &filetype == 'ruby'
+       call setline(1,"#!/usr/bin/env ruby")
+       call append(line("."),"# encoding: utf-8")
+       call append(line(".")+1, "")
+    else
+       call setline(1,"/*************************************************************************")
+       call append(line("."), "    > File Name: ".expand("%"))
+       call append(line(".")+1, "  > Author: ")
+       call append(line(".")+2, "  > Mail: ")
+       call append(line(".")+3, "  > Created Time: ".strftime("%c"))
+       call append(line(".")+4, " ************************************************************************/")
+       call append(line(".")+5, "")
+    endif
+
+    if &filetype == 'java'
+       call append(line(".")+6,"public class ".expand("%:r"))
+       call append(line(".")+7,"")
+    endif
+endfunc
+
+
+
+
+autocmd BufNewFile *.sh,*.java,*.py exec ":call SetTitle()"
+autocmd BufNewFile,BufRead *.py
+\set tabstop=4
+\set softtabstop=4
+\set shiftwidth=4
+\set textwidth=79
+\set expandtab
+\set fileformat=unix
+
+augroup DevAutoCmd
+    autocmd!
+    autocmd FileType sh,python,yaml,markdown setlocal formatoptions-=cro
+    autocmd FileType sh,python setlocal expandtab tabstop=4 shiftwidth=4
+    autocmd FileType yaml   setlocal ts=2 sw=2 expandtab
+    autocmd BufNewFile * normal G o
+    autocmd BufWritePre *.py %s/\s\+$//e
+    autocmd BufWritePre *.sh %s/\s\+$//e
+augroup END
+
+" ========================
+" 其他建议插件命令
+" ========================
+" :ALEFix                                             ← 手动格式化
