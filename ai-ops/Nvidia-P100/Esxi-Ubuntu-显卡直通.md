@@ -123,6 +123,8 @@ lsmod | grep nouveau  # 没有任何输出即为成功
 ### 安装驱动
 
 ```bash
+# 安装依赖工具
+sudo apt install vim curl wget iproute2 dkms build-essential linux-headers-generic -y
 sudo ./NVIDIA-Linux-x86_64-535.261.03.run --silent --dkms --accept-license --no-questions
 ```
 
@@ -218,9 +220,19 @@ sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 sudo tee /etc/modules-load.d/k8s.conf <<'EOF'
 overlay
 br_netfilter
+ip_vs
+ip_vs_rr
+ip_vs_wrr
+ip_vs_sh
+nf_conntrack
 EOF
 sudo modprobe overlay
 sudo modprobe br_netfilter
+sudo modprobe ip_vs
+sudo modprobe ip_vs_rr
+sudo modprobe ip_vs_wrr
+sudo modprobe ip_vs_sh
+sudo modprobe nf_conntrack
 
 # 配置 sysctl
 sudo tee /etc/sysctl.d/k8s.conf <<'EOF'
@@ -370,9 +382,19 @@ kubectl get node
 
 ### 创建runtimeClass
 
+```tex
 目前这个GPU节点上的容器运行时(containerd)已经被配置为同时具备runc、nvidia两个runtime，默认的runtime是自带的runc，nvidia是通过安装Containerd Toolkit并执行nvidia-ctk runtime configure --runtime=containerd命令添加的。
 
 之后，所有需要调用GPU的Pod都将被调度到这个GPU节点，并且要使用Containerd的nvidia runtime来创建和运行容器才能成功调用GPU，runtimeClass的作用就是为Pod指定nvidia runtime
+
+# 这一点上container和docker不同
+# Kubernetes 官方和 NVIDIA 的建议是：
+# Docker runtime → 可以安全地把默认 runtime 设成 nvidia（非 GPU 容器不会受影响）。
+# Containerd runtime → 不要直接修改默认 runtime，
+# 而是通过 nvidia-container-runtime 配合 nvidia-device-plugin 使用 RuntimeClass 的方式来区分。
+```
+
+
 
 ```yaml
 # nvidia-runtime.yaml
