@@ -91,8 +91,8 @@ kernel.sysrq = 0
 kernel.core_uses_pid = 1
 kernel.msgmnb = 65536
 kernel.msgmax = 65536
-# next 单个共享内存段的大小（单位：字节）限制，计算公式64G*1024*1024*1024(字节) 
-kernel.shmmax = 4294967296 
+# next 单个共享内存段的大小（单位：字节）限制，计算公式64G*1024*1024*1024(字节)
+kernel.shmmax = 4294967296
 #next 所有内存大小（单位：页，1页 = 4Kb），计算公式16G*1024*1024*1024/4KB(页)
 kernel.shmall = 2097152
 kernel.shmmni = 4096
@@ -105,11 +105,14 @@ net.core.wmem_max = 16777216
 net.core.rmem_default = 8388608
 net.core.rmem_max = 16777216
 
-#网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目
-net.core.netdev_max_backlog = 3000
 
-# tcp全连接队列最大长度[系统级]
-net.core.somaxconn = 81920
+net.core.somaxconn = 8192            # 每个监听socket的TCP全连接队列长度
+net.ipv4.tcp_max_syn_backlog = 4096  # 每个监听socket的TCP半连接队列长度
+net.ipv4.tcp_synack_retries = 2      # 内核发送syn+ack的重试次数
+net.ipv4.tcp_tw_reuse = 1            # TIME_WAIT重用(只对客户端生效)
+net.ipv4.tcp_fin_timeout = 30        # 缩短FIN_WAIT_2状态的超时时间
+net.ipv4.ip_local_port_range = 1024 65000  # 扩大本地端口范围
+net.core.netdev_max_backlog = 16384  # 数据包backlog 队列长度（packet 个数）
 
 # 放弃回应一个（未建立连接的）TCP 连接请求前﹐需要进行N次重试,default:3；
 net.ipv4.tcp_retries1 = 3
@@ -120,9 +123,6 @@ net.ipv4.tcp_retries2 = 5
 net.ipv4.tcp_max_orphans = 3276800
 
 net.ipv4.tcp_syncookies = 1
-
-# tcp半连接队列最大长度(当syncookies=1时该参数无效) 
-net.ipv4.tcp_max_syn_backlog = 8192
 
 # 对于一个新建连接，内核要发送多少个 SYN 连接请求才决定放弃(出站)
 net.ipv4.tcp_syn_retries = 2
@@ -135,9 +135,6 @@ net.ipv4.tcp_synack_retries = 2
 ################# 很可能会导致处在NAT环境中的客户端与该服务器的连接出现不可预知的问题  ##########################################
 # tcp时间戳
 net.ipv4.tcp_timestamps = 1
-
-# TIME-WAIT快速回收,须开启tcp时间戳方能生效. 
-net.ipv4.tcp_tw_recycle = 0
 
 # TIME_WAIT重用,须开启tcp时间戳方能生效
 # 这个参数对客户端有意义，在主动发起连接的时候会在调用的inet_hash_connect()中会检查是否可以重用TIME_WAIT状态的套接字。
@@ -296,7 +293,7 @@ endif
 "endif
 " vundel
 
-filetype off 
+filetype off
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
@@ -375,33 +372,33 @@ highlight TabLineSel term=reverse,bold cterm=reverse,bold ctermbg=7 ctermfg=4
 
 "Mapping jj to Esc
 imap jj <Esc><Right>
- 
+
 "设置自定义快捷键的前导键
 let mapleader=","
- 
+
 "匹配那些末尾有空格或TAB的行。（es：Endspace Show）
 map es :/.*\s\+$<CR>
- 
+
 "删除行末尾的空格或TAB（ed：Endspace Delete）
 map ed :s#\s\+$##<CR>
- 
+
 "如果所选行的行首没有#，则给所选行行首加上注释符#（#a：# add）
 map #a :s/^\([^#]\s*\)/#\1/<CR>
- 
+
 "如果所选行行首有#，则将所选行行首所有的#都去掉（#d：# delete）
 map #d :s/^#\+\(\s*\)/\1/<CR>
- 
+
 "如果所选行的行首没有//，则给所选行行首加上注释符//（/a：/ add）
 map /a :s/^\([^\/\/]\s*\)/\/\/\1/<CR>
- 
+
 "如果所选行行首有//，则将所选行行首的//都去掉（/d：/ delete）
 map /d :s/^\/\/\(\s*\)/\1/<CR>
 
 " YCM
 let g:ycm_seed_identifiers_with_syntax=1
 let g:ycm_complete_in_comments=1
-let g:ycm_collect_identifiers_from_comments_and_strings = 0 
-let g:ycm_complete_in_strings = 1 
+let g:ycm_collect_identifiers_from_comments_and_strings = 0
+let g:ycm_complete_in_strings = 1
 autocmd InsertLeave * if pumvisible() == 0|pclose|endif
 
 
@@ -413,7 +410,7 @@ autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
-let NERDTreeShowBookmarks=1 
+let NERDTreeShowBookmarks=1
 let NERDTreeChDirMode=1
 let NERDTreeShowHidden=1
 let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
@@ -529,14 +526,14 @@ mkdir -p /Data/corefiles && chmod 777 /Data/corefiles
 echo -e "reboot system right now?[Y/n]"
 read -n 1 answer
 case $answer in
-Y|y) echo 
+Y|y) echo
 for i in $(seq -w 10| tac)
 do
         echo -ne "\aThe system will reboot after $i seconds...\r"
         sleep 1
 done
 echo
-shutdown -r now  
+shutdown -r now
 ;;
 N|n)
 echo
