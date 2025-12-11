@@ -1,20 +1,104 @@
-### sk8s组件、作用
+### k8s组件、作用
 
-master节点的组件：
- apiserver： 集群的统一入口，接收所有 REST 请求并转发给其他组件,所有交互都经过它。也是唯一可以跟etcd通信的组件
- etcd: 分布式键值存储系统，用来保存集群的元数据(配置数据和状态信息)
- kube-scheduler: 负责将新创建的 Pod 分配到合适的 Node 节点上（调度器）
- kube-controller-manager:运行各种控制器（如副本控制器、节点控制器等）来维持集群状态
+####  master节点的组件：
 
-worker节点的组件：
- kubelet: 负责和 apiserver 通信，管理Pod的生命周期，上报节点的健康状况
- kube-proxy：负责将Pod注册到CoreDNS， 并为Service 创建ipvs或者iptables转发规则，实现服务发现和负载均衡
- Container Runtime：容器运行时，比如 Docker、containerd、CRI-O，用于实际拉取镜像并运行容器
+- apiserver： 集群的统一入口，接收所有 REST 请求并转发给其他组件,所有交互都经过它。也是唯一可以跟etcd通信的组件
+- etcd: 分布式键值存储系统，用来保存集群的元数据(配置数据和状态信息)
+-  kube-scheduler: 负责将新创建的 Pod 分配到合适的 Node 节点上（调度器）
+-  kube-controller-manager:运行各种控制器（如副本控制器、节点控制器等）来维持集群状态
 
-附加组件：
- CoreDNS:集群内的DNS服务
+#### worker节点的组件：
 
-    CNI网络插件: Flannel、Calico等
+- kubelet: 负责和 apiserver 通信，管理Pod的生命周期，上报节点的健康状况
+- kube-proxy：负责将Pod注册到CoreDNS， 并为Service 创建ipvs或者iptables转发规则，实现服务发现和负载均衡
+- Container Runtime：容器运行时，比如 Docker、containerd、CRI-O，用于实际拉取镜像并运行容器
+
+#### 附加组件：
+- CoreDNS:集群内的DNS服务
+- CNI网络插件: Flannel、Calico等
+
+---
+
+### k8s增减节点
+
+#### 增加node节点
+
+```bash
+# 1、 在新节点上预装基础环境
+# 1.1 系统参数调整，如关闭swap、加载ipvs模块等
+# 1.2 安装容器运行时和k8s组件(kubeadm kubelet kubectl)
+
+
+# 2、在master节点上生成join命令
+kubeadm token create --print-join-command # 输出如下内容
+
+kubeadm join 10.203.43.160:6443 --token nu8ost.5tb85x8nsmyjfczo --discovery-token-ca-cert-hash sha256:b1319adedc1de8f90dabfa141aa48c5298869b94805bf647735601c2698f0461
+
+# 3、在新节点上执行上面生成的kubeadm join命令，节点上的kubelet会向apiserver注册node对象，完成节点增加
+kubeadm join 10.203.43.160:6443 --token nu8ost.5tb85x8nsmyjfczo --discovery-token-ca-cert-hash sha256:b1319adedc1de8f90dabfa141aa48c5298869b94805bf647735601c2698f0461
+```
+
+#### 增加master节点
+
+```bash
+# 1、 在新节点上预装基础环境
+# 1.1 系统参数调整，如关闭swap、加载ipvs模块等
+# 1.2 安装容器运行时和k8s组件(kubeadm kubelet kubectl)
+
+
+# 2、在master节点上生成join命令和证书秘钥
+# 2.1 kubeadm token create --print-join-command # 输出如下内容
+
+kubeadm join 10.203.43.160:6443 --token nu8ost.5tb85x8nsmyjfczo --discovery-token-ca-cert-hash sha256:b1319adedc1de8f90dabfa141aa48c5298869b94805bf647735601c2698f0461
+
+# 2.2 kubeadm init phase upload-certs --upload-certs # 输出如下内容
+certificate key: 1234567890abcdef1234567890abcdef
+
+# 3、在新节点上执行上面生成的kubeadm join命令，节点上的kubelet会向apiserver注册node对象，完成节点增加
+kubeadm join 10.203.43.160:6443 --token nu8ost.5tb85x8nsmyjfczo --discovery-token-ca-cert-hash sha256:b1319adedc1de8f90dabfa141aa48c5298869b94805bf647735601c2698f0461 \
+--control-plane \
+--certificate key: 1234567890abcdef1234567890abcdef
+
+
+## 补充
+kubeadm init phase upload-certs --upload-certs 
+# 这条命令是k8s提供的证书共享机制，类似于手动执行以下命令：
+
+# 在新master上创建目录
+sudo mkdir -p /etc/kubernetes/pki/etcd  
+
+# 将现有master上的以下证书文件拷贝到新master
+sudo scp master1:/etc/kubernetes/pki/ca.crt /etc/kubernetes/pki/
+sudo scp master1:/etc/kubernetes/pki/ca.key /etc/kubernetes/pki/
+sudo scp master1:/etc/kubernetes/pki/sa.key /etc/kubernetes/pki/
+sudo scp master1:/etc/kubernetes/pki/sa.pub /etc/kubernetes/pki/
+sudo scp master1:/etc/kubernetes/pki/front-proxy-ca.crt /etc/kubernetes/pki/
+sudo scp master1:/etc/kubernetes/pki/front-proxy-ca.key /etc/kubernetes/pki/
+sudo scp master1:/etc/kubernetes/pki/etcd/ca.crt /etc/kubernetes/pki/etcd/
+sudo scp master1:/etc/kubernetes/pki/etcd/ca.key /etc/kubernetes/pki/etcd/
+```
+
+#### 删除node节点
+
+```bash
+# 1. 清空节点
+kubectl drain <node-name> --delete-emptydir-data --force --ignore-daemonsets --force
+
+# 2. 删除节点
+kubectl delete node <node-name>
+
+# 3. 重置节点，删除数据
+kubeadm reset
+rm -rf ~/.kube
+```
+
+#### 删除master节点
+
+```bash
+# 步骤和删除node节点相同，只不过需要额外注意：
+# ⚠️ 如果使用的是外置etcd，还需将该节点 etcd peer 从 etcd 集群中移除
+# 如果是使用的kubeadm 内置 etcd 则 kubeadm 会自动处理
+```
 
 ---
 
@@ -154,80 +238,105 @@ spec:
 
 ### k8s版本升级（kubeadm）
 
-1. 添加yum源
+#### 要点： 注意升级顺序，先升级控制平面，再升级工作节点
 
-   ```shell
-   cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
-   [kubernetes]
-   name=Kubernetes
-   baseurl=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/
-   enabled=1
-   gpgcheck=1
-   gpgkey=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key
-   EOF
-   ```
-2. 查看可用版本
+#### 第一步，准备工作
 
-   ```shell
-   yum list --disablerepo=* --enablerepo="kubernetes"
-   ```
-3. 备份重要组件及重要数据
-4. kube-apiserver 静态 pod 会始终处于运行状态。当执行 kubeadm 升级时，其中包括 etcd 的升级，在新的 etcd 启动期间，对kube-apiserver的请求将会卡住，因为etcd的静态 Pod 正在重新启动。作为一种解决方法，可以主动停止 kube-apiserver。在启动 kubeadm upgrade apply 命令之前，请等待几秒钟，以关闭 kube-apiserver 进程。这样可以完成正在进行的请求并关闭现有连接，从而最大限度地减少 etcd 停机的影响。这可以在控制平面节点上按如下方式完成
+1. 添加yum源(所有节点)
 
-```shell
-   killall -s SIGTERM kube-apiserver
-   sleep 20
+```ini
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.34/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.34/rpm/repodata/repomd.xml.key
+EOF
 ```
 
-5. 升级顺序为，先升级控制平面再升级工作节点。
+2. 查看可用版本
 
-   控制平面上安装新版kubeadm
+```bash
+yum list --disablerepo=* --enablerepo="kubernetes"
+```
 
-   ```shell
-   yum install kubeadm-1.33.0-150500.1.1 --disableexcludes=kubernetes
-   ```
-6. 升级前验证
+3. 数据备份
 
-   ```shell
-   kubeadm upgrade plan
-   ```
-7. 应用升级
+需要备份的核心数据是 etcd + /etc/kubernetes + kubelet 证书 + CNI 配置。 见以下列表：
 
-   ```shell
-   # 升级第一台控制平面
-   kubeadm upgrade apply v1.33.0
+| 备份内容                                              | 说明                                       | 默认路径 / 获取方式                                                              |
+| ----------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| **etcd 数据**（最重要）                         | 集群所有状态数据（Pod、Service、CRD 等）   | `/var/lib/etcd/` 或 `ETCDCTL_API=3 etcdctl snapshot save`                    |
+| **Kubernetes PKI 证书**                         | 集群认证与加密密钥，防止节点无法重新加入   | `/etc/kubernetes/pki/`                                                         |
+| **kubeconfig 文件**                             | 控制平面组件与集群通信凭据                 | `/etc/kubernetes/*.conf`（如 admin.conf、kubelet.conf 等）                     |
+| **kubelet 证书与密钥**                          | kubelet 与 APIServer 双向认证              | `/var/lib/kubelet/pki/`                                                        |
+| **kubeadm 配置文件**                            | 记录集群配置，用于升级/重建                | `/etc/kubernetes/kubeadm-config.yaml` 或 `kubeadm config view` 生成          |
+| **CNI 网络插件配置**                            | 网络组件配置，避免网络故障                 | `/etc/cni/net.d/`                                                              |
+| **容器运行时（containerd/docker）配置（可选）** | 容器运行时镜像等配置，升级出现异常时可恢复 | Containerd:`/etc/containerd/config.toml` ，Docker: `/etc/docker/daemon.json` |
+| **自定义资源 (CRDs) 定义（可选）**              | 避免自定义 API 丢失（如 Operators）        | `kubectl get crd -o yaml > crd-backup.yaml`                                    |
+| **重要业务 YAML 文件（可选）**                  | 工作负载手工备份                           | `kubectl get all -A -o yaml > cluster-resources-backup.yaml`                   |
 
-   # 输出以下内容代表成功
-   [upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.33.x". Enjoy!
-   [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
+4. 停止apiserver（可选）
 
-   # 升级控制平面上的kubelet（若存在)
-   yum install -y kubelet-'1.33.0-150500.1.1' kubectl-'1.33.0-150500.1.1' --disableexcludes=kubernetes
+```bash
+# kube-apiserver 静态 pod 会始终处于运行状态。当执行 kubeadm 升级时，其中包括 etcd 的升级，
+# 在新的 etcd 启动期间，对kube-apiserver的请求将会卡住，因为etcd的静态 Pod 正在重新启动。作为一种解决方法，可以主动停止 kube-apiserver。
+# 在启动 kubeadm upgrade apply 命令之前，请等待几秒钟，以关闭 kube-apiserver 进程。
+# 这样可以完成正在进行的请求并关闭现有连接，从而最大限度地减少 etcd 停机的影响。这可以在控制平面节点上按如下方式完成
+killall -s SIGTERM kube-apiserver
+sleep 20
+```
 
-   systemctl daemon-reload  &&  systemctl restart kubelet
-   ```
-8. 升级网络插件(如需要，取决于网络插件和k8s的版本匹配情况)
-9. 升级其他控制平面
+5. 所有节点安装新版kubeadm
 
-   ```
-    kubeadm upgrade apply
-   ```
-10. 升级工作节点
+```bash
+yum install kubeadm-1.33.0-150500.1.1 --disableexcludes=kubernetes
+```
 
-    ```shell
-    # 清空节点
-    kubectl drain <node-to-drain> --ignore-daemonsets
+#### 第二步，升级第一台控制平面(master节点)
 
-    # 升级并重启Kubelet
-    yum install -y kubelet-'1.33.0-150500.1.1' kubectl-'1.33.0-150500.1.1' --disableexcludes=kubernetes
-    systemctl daemon-reload  &&  systemctl restart kubelet
+1. 升级前验证
 
-    ```
-11. 取消工作节点的污点
+```shell
+kubeadm upgrade plan
+```
 
-    ```
-    kubectl uncordon <node-to-uncordon>
-    ```
+2. 正式升级
+
+```bash
+kubeadm upgrade apply v1.33.0
+
+# 输出以下内容代表成功
+[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.33.x". Enjoy!
+[upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
+```
+
+#### 第三步,升级其他控制平面
+
+```bash
+kubeadm upgrade node
+```
+
+#### 第四步，升级worker节点
+
+```bash
+kubectl drain <node-to-drain> --ignore-daemonsets
+yum install -y kubelet-'1.33.0-150500.1.1' kubectl-'1.33.0-150500.1.1' --disableexcludes=kubernetes
+ystemctl daemon-reload
+systemctl restart kubelet
+kubectl uncordon <node-to-uncordon>
+```
+
+#### 第五步，升级kubectl和kubelet(所有节点)
+
+```bash
+yum install -y kubelet-'1.33.0-150500.1.1' kubectl-'1.33.0-150500.1.1' --disableexcludes=kubernetes
+systemctl daemon-reload
+systemctl restart kubelet
+```
+
+#### 第六步，升级网络插件(可选)
 
 ---
 
@@ -676,12 +785,101 @@ WantedBy=multi-user.target
 
 ---
 
-### pod处于Pending状态，可能得原因
+### pod处于Pending状态，可能的原因
 
-* 等待拉取镜像
-* 没有可用节点
+* 节点资源不足
+* 没有节点能够满足当前的调度策略
 * 等待PV就绪
-* 分配不到IP地址
+* CNI插件异常导致pod分配不到IP地址
+
+---
+
+### pod卡在Terminating状态的原因和解决
+
+#### 可能的原因
+
+Pod 卡在 Terminating 状态通常是 Pod 资源对象被删除，但底层容器未完全退出导致的，可能有以下原因：
+
+| 类别                   | 原因说明                                     |
+| ---------------------- | -------------------------------------------- |
+| 应用进程问题           | 应用未响应 SIGTERM / 死锁 / 卡住             |
+| PreStop Hook           | 脚本未结束或失败                             |
+| Finalizer 卡住         | CRD / Operator 未清理                        |
+| Volume 无法卸载        | NFS / Ceph / iSCSI / CSI 挂载阻塞            |
+| CNI 残留网络设备       | Calico / Cilium / Flannel interface 清理失败 |
+| Container runtime 问题 | containerd / docker stuck                    |
+| Node NotReady          | 节点异常，无法 clean up                      |
+
+#### 排查流程
+
+* 查看pod详情
+
+```bash
+kubectl describe pod <pod>
+kubectl get pod <pod> -o json | jq '.metadata.finalizers'
+```
+
+* 检查容器状态
+
+```bash
+crictl ps | grep <pod>
+crictl inspect <id>
+```
+
+* 检查挂载卷
+
+```bash
+mount | grep <pod>
+```
+
+* 检查网络
+
+```bash
+ip link | grep cni
+```
+
+* 检查kubelet
+
+```bash
+journalctl -u kubelet
+```
+
+#### 解决措施
+
+* 强制删除
+
+```bash
+kubectl delete pod <pod> --force --grace-period=0
+```
+
+> 但是要注意，强制删除只能删除etcd中关于该pod的记录，该Pod相关的容器进程可能还在运行，需要进一步清理
+
+{.is-warning}
+
+1. 清理容器
+
+```bash
+crictl stop <id>
+crictl rm <id>
+```
+
+2. 清理挂载
+
+```bash
+umount -f /var/lib/kubelet/pods/<pod-id>/volumes/*
+```
+
+3. 清理Finalizer卡主的pod
+
+```bash
+kubectl patch pod <pod>  -p '{"metadata":{"finalizers":[]}}' --type=merge
+```
+
+4. 必要时重启kubelet和容器运行时
+
+```bash
+systemctl restart kubelet containerd
+```
 
 ---
 
@@ -731,14 +929,21 @@ etcd高可用。etcd本身就是一个分布式键值存储库，使用3个及�
 
 ### k8s有哪些证书，各自的作用？
 
-| 证书作用                | 证书路径（默认）                           |
-| ----------------------- | ------------------------------------------ |
-| Kubernetes API Server   | /etc/kubernetes/pki/apiserver.crt          |
-| Kube Controller Manager | /etc/kubernetes/pki/controller-manager.crt |
-| Kube Scheduler          | /etc/kubernetes/pki/scheduler.crt          |
-| Kubelet                 | /var/lib/kubelet/pki/kubelet.crt           |
-| Etcd（如使用内置）      | /etc/kubernetes/pki/etcd/server.crt        |
-| Front Proxy, CA 等其他  | 多数在 /etc/kubernetes/pki/                |
+| 证书                               | 类型           | 主要用途                      |
+| ---------------------------------- | -------------- | ----------------------------- |
+| ca.{crt,key}                       | Root CA        | 签发所有 k8s 证书             |
+| apiserver.{crt,key}                | 服务端证书     | 供其他组件访问 kube-apiserver |
+| apiserver-kubelet-client.{crt,key} | client cert    | API Server 访问 kubelet       |
+| apiserver-etcd-client.{crt,key}    | client cert    | API Server 访问 etcd          |
+| controller-manager.{crt,key}       | client cert    | CM 使用                       |
+| scheduler.{crt,key}                | client cert    | scheduler 使用                |
+| sa.{pub,key}                       | ServiceAccount | Pod 内 token 认证             |
+| front-proxy-ca.{crt,key}           | Root CA        | 聚合 API                      |
+| front-proxy-client.{crt,key}       | client cert    | kube-aggregator 使用          |
+| etcd/ca.{crt,key}                  | Root CA        | etcd 自身的 TLS               |
+| etcd/server.{crt,key}              | 服务端证书     | etcd 自身的 HTTPS             |
+| etcd/peer.{crt,key}                | peer cert      | 多节点 etcd 通信              |
+| etcd/healthcheck-client.{crt,key}  | client cert    | etcdctl 健康检查              |
 
 ---
 
@@ -756,15 +961,16 @@ kubeadm certs check-expiration
 #############   更新master节点    #############
 1. 更新组件证书
 kubeadm renew all # 更新/etc/kubernetes/pki目录下除了CA根证书之外的所有证书
- 
+
+
+2. 更新KUBECONFIG
+kubeadm init phase kubeconfig all
+# 这个命令会重新生成/etc/kubernetes目录下的admin.conf、controller-manager.conf、kubelet.conf和scheduler.conf
 # Done renewing certificates. You must restart the kube-apiserver, kube-controller-manager, 
 # kube-scheduler and etcd, so that they can use the new certificates
 # 执行完此命令之后需要重启控制面Pod,并且如果是HA集群，
 # 多master的集群需要在每个控制平面都执行同样的操作，不可以将一份证书同步到其他节点，因为证书中包含节点IP、主机名等信息，不能通用
 
-2. 更新KUBECONFIG
-kubeadm init phase kubeconfig all
-# 这个命令会重新生成/etc/kubernetes目录下的admin.conf、controller-manager.conf、kubelet.conf和scheduler.conf
 
 3. 重启控制平面组件和kubelet
 mv  /etc/kubernetes/manifests/*  /root/manifests/
@@ -776,8 +982,8 @@ systemctl restart kubelet
 
 ############  更新worker节点 ###############
 
-# 为节点重新生成kubelet.conf
-kubeadm init phase kubeconfig kubelet  --config /root/kubeadm.yaml --node-name <node_name> --kubeconfig-dir /tmp/kubelet
+# 为节点重新生成kubelet.conf(在master节点执行)
+kubeadm init phase kubeconfig kubelet  --config /root/kubeadm.yaml --node-name k8s-node1 --kubeconfig-dir /tmp/kubelet
 
 # 参数解释
 --config 指定当初初始化该集群的配置文件，该文件中包含了apiserver地址、k8s版本等必要信息。也可以不使用--config而是使用-control-plane-endpoint、--kubernetes-version来分别指定这些信息
@@ -992,6 +1198,7 @@ ip adr # 此时看到的是容器ip
           maxSurge: 1
           maxUnavailable: 0
     ```
+
 2. [X] 常用命令
 
     ```bash
@@ -999,7 +1206,7 @@ ip adr # 此时看到的是容器ip
     kubectl roolout undo  --to-revision=2
     kubectl roolout pause
     kubectl roolout resume
-
+    
     # 为更新添加注释，代替原来的--record
     kubectl annotate deployment nginx kubernetes.io/change-cause=""
     ```
@@ -1018,6 +1225,7 @@ ip adr # 此时看到的是容器ip
       type: DirectoryOrCreate  # 目录不存在则自动创建,默认选项
       type: Directory # 目录必须提前创建
   ```
+
 * [X] emptyDir
 * [X] configMap
 * [X] subPath
@@ -1149,7 +1357,7 @@ bootstrap.kubernetes.io/token
 * [ ] pv/pvc
   pv和pvc是一一对应的绑定关系
 
-2. [X] nfs:
+2. [ ] nfs:
 3. [ ] ceph
 4. [ ] local
 
@@ -1229,14 +1437,16 @@ bootstrap.kubernetes.io/token
         - mountPath: "/usr/share/nginx/html"
           name: pv-hostpath
     ```
-5. [X] pv的访问模式、回收策略、状态各有哪些？
+
+5. [ ] pv的访问模式、回收策略、状态各有哪些？
     访问模式：
 
 * ReadWriteOnce（RWO）：读写权限，但是只能被单个节点挂载
 * ReadOnlyMany（ROX）：只读权限，可以被多个节点挂载
 * ReadWriteMany（RWX）：读写权限，可以被多个节点挂载
+* ReadWriteOncePod (RWOP) ：（k8s 1.22+ 新增）卷只能被单个 Pod 以读写方式挂载（比 RWO 更严格）
 
-5. [X] 回收策略
+5. [ ] 回收策略
 
 * Retain：该策略表示保留PV中的数据，不进行回收，必须手动处理。
 * Delete：该策略表示在PV释放后自动删除PV中的数据。
@@ -1253,6 +1463,18 @@ bootstrap.kubernetes.io/token
   # 总结起来，持久卷的回收策略可以通过persistentVolumeReclaimPolicy字段来定义，可选值包括Retain、Delete和废弃的Recycle。建议使用动态卷供应商的回收机制来定义回收策略<StorageClass>
   ```
 
+* [ ] PV/PVC匹配规则：
+
+| 匹配条件                               | 在 PV 中                                                    | 在 PVC 中                       | 匹配规则                                                 |
+| -------------------------------------- | ----------------------------------------------------------- | ------------------------------- | -------------------------------------------------------- |
+| **storageClassName**             | spec.storageClassName                                       | spec.storageClassName           | 必须一致（或者 PVC 为空时，绑定没有 storageClass 的 PV） |
+| **accessModes**                  | spec.accessModes                                            | spec.accessModes                | PVC 请求的模式必须被 PV 支持（PVC ≤ PV）               |
+| **capacity**                     | spec.capacity.storage                                       | spec.resources.requests.storage | PVC 请求容量必须 ≤ PV 容量                              |
+| **selector (labels)**            | metadata.labels                                             | spec.selector                   | PVC selector 必须能匹配 PV 上的 label                    |
+| **volumeMode**                   | spec.volumeMode（Filesystem/Block）                         | spec.volumeMode                 | 必须相同（默认都是 Filesystem）                          |
+| **nodeAffinity** （仅 Local PV） | spec.nodeAffinity                                           | PVC 不写                        | PV 指定节点，调度器强制 Pod 调度到该节点                 |
+| **reclaimPolicy**                | spec.persistentVolumeReclaimPolicy（Retain/Delete/Recycle） | PVC 不写                        | 不影响绑定，只影响 PVC 释放后的 PV 行为                  |
+
 ---
 
 ### pv的状态
@@ -1264,7 +1486,7 @@ bootstrap.kubernetes.io/token
 
 ---
 
-### k8s探针
+### k8s探针 <pod.spec.containers.xxxProbe>
 
 1. [X] 启动
 
@@ -1279,6 +1501,7 @@ bootstrap.kubernetes.io/token
           #    timeoutSeconds: 3 #超时时间设置
           #    successThreshold: 1 #检查成功为1次表示就绪
     ```
+
 2. [X] 就绪
 
     ```yaml
@@ -1293,6 +1516,7 @@ bootstrap.kubernetes.io/token
             #  timeoutSeconds: 3 #超时时间设置
             #  successThreshold: 1 #检查成功1次表示就绪
     ```
+
 3. [X] 存活
 
     ```yaml
@@ -1447,9 +1671,9 @@ bootstrap.kubernetes.io/token
           #  type: Utilization
           #  averageUtilization: 60
     ```
-
+    
     HPA支持的四种类型的指标
-
+    
     ```yaml
     apiVersion: autoscaling/v2beta2
     kind: HorizontalPodAutoscaler
@@ -1514,7 +1738,7 @@ bootstrap.kubernetes.io/token
             type: AverageValue
             averageValue: 30
     ```
-
+    
     使用prometheus-adapter提供custom和external接口，以为HPA提供Pods和External两种类型的指标
 
 ```yaml
@@ -1944,15 +2168,16 @@ spec:
   # 然后再使用软链接把/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/[0-9]+\.log链接到
   /var/log/containers/<pod_name>_<namespace>_<container_name>-<container_id>.log
   ```
+
 * [ ] containerd
 
   ```shell
   # 日志由kubelet管理，原始日志文件路径：
   /var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/[0-9]+\.log
-
+  
   # kubelet会把原始的日志文件通过软链接连接到：
   /var/log/containers/<pod_name>_<namespace>_<container_name>-<container_id>.log
-
+  
   ```
 
 ### k8s日志定制
@@ -1969,24 +2194,25 @@ spec:
       "data-root": "/home/xxx"    # 默认存储目录
     }
     ```
+
 2. [ ] containerd
     kubelet的配置文件中，添加如下配置：
 
     ```shell
     --container-log-max-files=10
     --container-log-max-size="100Mi"
-
+   
     # kubelet配置文件
-
+   
     # 主配置，主配置中会加载多个子配置
     /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
-
+   
     # 子配置
     /etc/kubernetes/kubelet.conf
     /var/lib/kubelet/config.yaml
     /var/lib/kubelet/kubeadm-flags.env
     /etc/sysconfig/kubelet
-
+   
     # kubelet启动命令加载多个ARGS变量，可以把自定义配置添加到合适的ARGS变量中，推荐$KUBELET_EXTRA_ARGS
     /usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
     ```
@@ -2165,6 +2391,7 @@ spec:
                      number: 8080
          ingressClassName: nginx
        ```
+
    2. [X] contour
 
        ```yaml
@@ -2215,6 +2442,7 @@ spec:
                      number: 8080
 
        ```
+
    3. [X] Traefik
 
 ---
@@ -2335,15 +2563,15 @@ DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:443 to:10.
 
   ```yaml
   ##### istio 1.24.1 ######
-
+  
   #### https  SIMPLE mode
   # step1  生成tls证书并保存为secret
   penssl genrsa -out server.key 2048  # 长度至少为2048
   openssl req -new -key server.key -out server.csr  # CN nor SAN names不能全部为空
   openssl x509 -req -in server.csr -out server.crt -signkey server.key -days 3650
-
+  
   kl -n istio-system  create secret tls baway-https --key=server.key --cert=server.crt  # 将证书保存到secret中
-
+  
   # step2 创建gateway
   apiVersion: networking.istio.io/v1
   kind: Gateway
@@ -2438,6 +2666,7 @@ DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:443 to:10.
             number: 443    # https协议连接后端，所以要求后端必须开启了https监听
           host: openldap.private.svc.cluster.local
   ```
+
 * [X] skywalking
 
 ---
@@ -2495,7 +2724,7 @@ spec:
           hostPort: 10000
           name: http
           protocol: TCP
-```
+  ```
 
 ```yaml
 apiVersion: apps/v1
@@ -2545,7 +2774,7 @@ spec:
        name: demo
      restartPolicy: Always
      dnsPolicy: ClusterFirst
-
+   
    ```
 
 * [X] dnsConfig
@@ -2576,7 +2805,7 @@ spec:
       options:
         - name: ndots
           value: "5"
-
+  
   ```
 
 ---
@@ -2634,6 +2863,16 @@ spec:
 1. [X] Always：容器失效时，自动重启该容器，这是默认值
 2. [X] OnFailure：容器停止运行且退出码不为0时重启
 3. [X] Never：不论状态为何，都不重启该容器
+
+| 控制器类型              | 支持的 restartPolicy       | 默认值                           | 说明                                          |
+| ----------------------- | -------------------------- | -------------------------------- | --------------------------------------------- |
+| **Pod（裸 Pod）** | Always / OnFailure / Never | **Always**                 | 不挂载在控制器下时，可以自由设置，默认 Always |
+| **Deployment**    | **Always** （强制）  | Always                           | 仅支持 Always，否则会报错                     |
+| **ReplicaSet**    | **Always** （强制）  | Always                           | 跟 Deployment 一样                            |
+| **StatefulSet**   | **Always** （强制）  | Always                           | 用于有状态应用，必须 Always                   |
+| **DaemonSet**     | **Always** （强制）  | Always                           | 节点守护进程 Pod，必须 Always                 |
+| **Job**           | OnFailure / Never          | **Never**                  | 不能用 Always，否则无限重启                   |
+| **CronJob**       | OnFailure / Never          | **OnFailure** （若未指定） | 模板 Pod 不能设置为 Always                    |
 
 ---
 

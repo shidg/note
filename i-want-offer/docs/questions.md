@@ -1,6 +1,61 @@
- `<font color=red>` *Linux基础知识部分* `</font>`
+n'g `<font color=red>` *Linux基础知识部分* `</font>`
 
 ### linux runlevel
+
+---
+
+### Linux内核管理
+
+#### 查看已经安装的内核版本
+
+```bash
+# CentOS RHEL系列
+rpm -qa | grep kernel
+或者
+awk -F\' '/menuentry / {print $2}' /boot/grub2/grub.cfg
+
+# Ubuntu Debian
+dpkg -l | grep linux-image
+或者
+grep 'menuentry ' /boot/grub/grub.cfg
+
+```
+
+#### 查看当前的默认内核
+
+```bash
+uname -r
+```
+
+#### 设置默认内核
+
+```bash
+# CentOS RHEL系列
+grep ^menuentry /boot/grub2/grub.cfg # 查看当前所有的内核
+然后
+grub2-set-default 1  # 其中1是内核的index,注意是从上自下按照顺序从0开始
+然后
+grub2-mkconfig -o /boot/grub2/grub.cfg # 重新生成grub配置
+grub2-mkconfig -o /boot/efi/EFI/centos/grub.cfg # efi机器
+最后
+shutdown -r now  # 重启
+
+## 比使用index更准确的方式是直接使用版本名来设置
+grub2-set-default "AlmaLinux (5.14.0-362.el9.x86_64)"
+
+# Ubuntu RHEL系列
+grep 'menuentry ' /boot/grub/grub.cfg # 查看所有可用内核
+然后
+vi /etc/default/grub # 打开grub配置文件
+GRUB_DEFAULT=1       # 将默认内核修改为对应的index
+然后
+update-grub    # 更新grub配置
+最后
+shutdown -r now  # 重启
+
+## 也可以使用字符串匹配
+GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 6.8.0-28-generic"
+```
 
 ---
 
@@ -125,6 +180,201 @@ ntp
 
 ---
 
+### Linux磁盘分区工具
+
+#### fdisk
+
+#### gdisk
+
+#### parted
+
+```bash
+# 打开要操作的磁盘
+parted /dev/sdb
+
+# 设置分区表类型为gpt,在parted交互界面执行mklabel
+(parted) mklabel gpt
+
+# 创建新分区
+(parted) mkpart <分区名称> <文件系统类型> <分区起始位置> <分区结束位置>
+(parted) mkpart p1 xfs 1MiB 50G
+
+## 1MiB：第一个分区的起始位置。使用 1MiB 是一个现代的最佳实践，可以确保分区对齐（起始位置是4KB的倍数，以确保对齐物理块的边界)，提高性能。
+## 后续分区的起始位置指定为前一个分区的结束位置即可，parted会自动处理对齐问题
+
+# 查看分区结果确认操作是否成功
+(parted) print
+
+# 确认无误后退出parted
+(parted) quit
+
+# 格式化
+mkfs.xfs
+```
+
+---
+
+### Linux文件系统类型
+
+#### 常见文件系统类型
+
+| 文件系统                      | 特点                                                               | 典型应用场景                         |
+| ----------------------------- | ------------------------------------------------------------------ | ------------------------------------ |
+| **ext4**                | 最主流、稳定的日志文件系统，支持大文件、延迟分配、extent、在线扩容 | 各类通用服务器（Web、应用、数据库）  |
+| **XFS**                 | 高性能日志文件系统，擅长处理大文件与并发写入，支持在线扩容         | 日志型、存储型、视频文件、高 IO 应用 |
+| **Btrfs**               | 支持快照、压缩、校验、子卷、卷管理等高级特性                       | 容器平台、需要快照和数据保护的系统   |
+| **ZFS**                 | 提供数据完整性校验、快照、压缩和存储池管理                         | 企业级存储系统、备份服务器           |
+| **F2FS**                | 针对闪存介质优化，提升 SSD 性能和寿命                              | 嵌入式设备、移动设备、SSD 系统分区   |
+| **vfat / exfat / ntfs** | 用于跨平台文件访问                                                 | 移动硬盘、U盘等外部设备              |
+
+#### ext3 ext4 xfs三种文件系统在日志机制和性能上的差异
+
+| 对比项                     | **ext3**                                             | **ext4**                              | **XFS**                                |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------- | -------------------------------------------- |
+| **日志机制**         | 传统 JBD（Journal Block Device），支持 metadata journaling | 改进的 JBD2，支持更大日志、更高性能         | 使用独立的日志区，基于 B+ 树结构，日志效率高 |
+| **性能特性**         | 性能较低，单文件和文件系统容量有限                         | 引入 extent、延迟分配、预分配，大幅提升性能 | 高并发性能优异，特别适合大文件与多线程写入   |
+| **最大文件系统容量** | 16TB 左右                                                  | 1EB 理论支持（常用数十TB）                  | 可达 PB 级别                                 |
+| **扩展能力**         | 可在线扩容（有限）                                         | 可在线扩容                                  | 可在线扩容但不支持缩减                       |
+| **适用场景**         | 旧系统或兼容性要求                                         | 通用用途                                    | 大规模、高并发、高吞吐场景                   |
+
+#### 为什么XFS不能在线缩减？
+
+> **答：**
+>
+> XFS 的设计理念是  **高性能与一致性优先** ，其元数据结构（尤其是空间分配和 inode 管理）在磁盘上采用固定的  **B+ 树索引布局** 。
+>
+> 这些结构依赖于文件系统初始化时的空间范围，一旦缩减容量，就会破坏这些索引的完整性。
+
+更具体地说：
+
+* XFS 将磁盘空间划分为固定的 Allocation Group（AG），每个 AG 独立管理自己的 inode、空闲块和日志；
+* 缩减文件系统意味着要重新组织 AG 和元数据布局，这种操作风险极高，难以保证数据一致性；
+* 因此 XFS  **只支持在线扩容，不支持缩减** 。
+
+> ✅ **总结一句话：**
+>
+> XFS 的内部元数据结构是固定分配的，无法在不破坏一致性的情况下缩小容量。
+
+#### ext4的extent是什么，为什么比传统块映射更高效？
+
+> **答：**
+>
+> 在传统 ext3 文件系统中，文件的数据块采用“ **块映射表（block mapping）** ”管理，每个文件保存大量单独的块号映射。
+>
+> 当文件很大或有连续数据块时，映射表会非常庞大，查找效率低、元数据开销大。
+
+**ext4 引入了 extent（区段）机制：**
+
+* 一个 extent 表示一段连续的物理块（例如 128 个连续块），只需记录「起始块 + 长度」；
+* 这样大大减少了元数据记录数量；
+* 文件读写时只需查一次 extent 表，顺序 IO 效率显著提升。
+
+**优势总结：**
+
+* 元数据更少，文件系统更轻量；
+* 支持更大文件；
+* 顺序写入性能提升；
+* 减少碎片化。
+
+> ✅ **总结一句话：**
+>
+> `extent` 用一个“连续区段”取代多个“离散块”的映射方式，大幅减少元数据、提升顺序读写性能。
+
+---
+
+### 常见的存储类型
+
+#### 对象存储
+
+    把数据当作一个个“对象”存放，通过 HTTP API（S3、OBS）访问，最适合海量非结构化数据（图片、视频、日志等）
+
+#### 文件存储
+
+    提供共享目录（NFS、SMB），强调文件层级结构，适合多实例同时读写
+
+#### 块存储
+
+    提供裸设备（如磁盘），需要挂载文件系统，性能最高，适合数据库类高 IOPS 场景
+
+#### 图表对比
+
+| 对比项                   | **对象存储 (Object)**           | **文件存储 (File)**                | **块存储 (Block)**                          |
+| ------------------------ | ------------------------------------- | ---------------------------------------- | ------------------------------------------------- |
+| **访问方式**       | API（HTTP/REST，如 S3）               | 文件协议（NFS / SMB）                    | 作为本地磁盘（iSCSI / FC / NVMeoF）               |
+| **数据组织结构**   | 扁平结构（Bucket/Object）             | 目录树（文件夹/文件）                    | 无结构，由主机自己创建文件系统                    |
+| **读写粒度**       | 整个对象                              | 文件级                                   | 块级（4K/8K）                                     |
+| **可扩展性**       | 极高，几乎无限                        | 中等                                     | 受单设备/卷容量限制                               |
+| **性能**           | 适中（高吞吐、低 IOPS）               | 中等                                     | 最高（低延迟/高 IOPS）                            |
+| **共享能力**       | 天生共享                              | 多客户端共享目录                         | 一般不共享（多实例同时挂载会损坏数据，需集群 FS） |
+| **典型协议**       | S3、OBS、OSS、Swift                   | NFS、SMB、CIFS                           | iSCSI、FC、NVMe / ROCE                            |
+| **成本**           | 最低（按量付费、冷存储便宜）          | 中等                                     | 最高                                              |
+| **适合数据类型**   | 非结构化大文件                        | 文件共享协作型                           | 随机读写强的结构化数据                            |
+| **一致性**         | 大多为最终一致（可配强一致）          | 强一致                                   | 强一致                                            |
+| **应用对接复杂度** | 需 SDK 开发 / CLI                     | 开箱即用类似本地目录                     | 当成本地磁盘使用                                  |
+| **常见使用场景**   | 备份、日志、视频、图片、AI 训练数据集 | 多机器共享文件、Web 服务静态文件、家目录 | 数据库、虚拟机磁盘、企业核心系统                  |
+
+#### 总结
+
+* **对象存储** ：大文件、海量、API、便宜。
+* **文件存储** ：共享目录、兼容性强、多客户端读写。
+* **块存储** ：像本地磁盘一样用，最适合数据库等强性能场景
+
+---
+
+### Linux 软件包管理
+
+```bash
+## 已知命令，查询其由哪个软件包提供
+# rpm
+rpm -qf $(which chsh)
+
+# yum (已过时，但很多系统还在用)
+yum provides chsh
+
+# dnf (推荐)
+dnf provides chsh
+
+
+## 已知软件包，查询其能提供哪些命令
+# rpm
+rpm -ql shadow-utils | grep /bin/
+
+# yum
+yum list installed shadow-utils
+# (只显示是否已安装，要看内容还是得用 rpm)
+
+# dnf
+dnf repoquery -l shadow-utils | grep /bin/
+
+
+### 总结
+rpm -ql：列出已安装包的所有文件。
+
+dnf repoquery -l：不仅能查本地，还能查仓库里的包内容。
+
+yum 本身不直接支持列出文件内容，需要 yum-utils 插件 (repoquery)
+```
+
+---
+
+### buffer和cache的区别
+
+#### 概念
+
+* Buffer（缓冲区）
+  buffer是块设备 I/O 缓冲区，用来存储文件系统元数据（metadata）、文件系统操作的块（block），如 inode 表、目录结构等。
+  写文件时先写入 buffer，buffer合并多个小块写请求，形成大块顺序写入，再异步刷写到磁盘，减少磁盘的频繁访问，提高 I/O 性能。
+* Cache（页面缓存 / page cache）
+  cache文件内容的缓存区，用来存储实际文件数据（用户读写的文件内容），比如 /var/log/syslog、应用数据文件等。
+  文件被读取后会被缓存到 page cache，下次访问同一文件时，可以直接从内存读取，而不再访问磁盘，可以提高文件读取速度。
+
+#### 区别
+
+buffer存储的是块设备数据，不是具体的文件内容，写入磁盘后会释放，优化的是磁盘的写入
+cache保存的是文件的具体内容，文件被访问后会保留，内存不足时被回收，优化磁盘读取
+
+---
+
 ### DNS解析流程
 
 #### DNS服务器概念
@@ -133,7 +383,7 @@ ntp
 
 顶级域DNS服务器：为 `.com`、`.org`、`.cn`等提供对应域的权威服务器信息
 
-权威DNS服务器：最终存储域名与IP对应关系的地方，如 `example.com` 的A记录、MX记录等
+权威DNS服务器：最终存储域名与IP对应关系的地方，如 `baidu.com` 的A记录、MX记录等
 
 递归DNS服务器：由运营商或企业提供，帮客户端查询最终的IP地址
 
@@ -143,6 +393,7 @@ ntp
 
 * 客户端（浏览器或操作系统） **首先查本地缓存** （浏览器DNS缓存、系统DNS缓存等）是否已有该域名的解析记录（A记录）。
 * 如果找到了，直接使用， **不再发起网络请求** 。
+* /etc/hosts
 
 ##### 本地DNS服务器（通常由ISP或企业提供，也就是递归DNS服务器）查询
 
@@ -441,7 +692,7 @@ nmcli c reload 重载所有的connection，但不会立即生效
 立即使网卡配置文件生效
 nmcli c up eth0 (connection name)
 nmcli d connect ens33 (connection name)
-nmcli d repply ens33 (device name)
+nmcli d reapply ens33 (device name)
 
 
 查看网卡列表
@@ -512,6 +763,119 @@ ip route del default          # 删除默认路由
 ip route delete 192.168.1.0/24 dev eth0 # 删除路由
 ```
 
+#### 网卡聚合(Bonding)
+
+* 定义 ：把多块物理网卡（NIC）捆绑成一块逻辑网卡（bond0），对外表现为一个接口。
+* 好处：
+  1. **高可用（HA）** ：某块网卡/链路故障时，流量能自动切到其他网卡，业务不中断。
+  2. **带宽叠加（负载均衡）** ：多块网卡可以同时传输，提升整体带宽。
+
+在 Linux 里，这是通过 **bonding 内核模块** 实现的，支持以下几种模式：
+
+| 模式                        | 名称                       | 特点                                                   | 适用场景                           |
+| --------------------------- | -------------------------- | ------------------------------------------------------ | ---------------------------------- |
+| **0 (balance-rr)**    | 轮询负载均衡               | 数据包轮流从不同网卡发出，能带宽叠加，但可能导致乱序   | 高带宽、交换机支持即可             |
+| **1 (active-backup)** | 主备模式                   | 一张网卡工作，另一张待命，故障自动切换                 | 高可用优先，最常用，交换机无需配置 |
+| **2 (balance-xor)**   | 基于 MAC/IP 哈希做流量分担 | 同一流保持在同一网卡，不乱序                           | 多会话均衡                         |
+| **3 (broadcast)**     | 广播模式                   | 所有包从所有网卡发出                                   | 特殊场景，多目标冗余               |
+| **4 (802.3ad)**       | LACP 动态聚合              | 需要交换机支持 IEEE 802.3ad (LACP)，带宽叠加、故障切换 | 企业常用，和交换机绑定             |
+| **5 (balance-tlb)**   | 传输负载均衡               | 自动按发送负载均衡，接收由主网卡                       | 交换机无需配置                     |
+| **6 (balance-alb)**   | 自适应负载均衡             | 发送+接收均能均衡，接收靠 ARP 欺骗实现                 | 无需交换机支持，复杂场景           |
+
+配置方法：
+
+```bash
+###################   CentOS   ###################
+######  临时配置  #########
+# 加载内核模块
+modprobe bonding
+
+# 创建 bond0
+ip link add bond0 type bond
+echo 4 > /sys/class/net/bond0/bonding/mode   # 设置 mode 4 (802.3ad)
+
+# 添加从接口
+ip link set eth0 master bond0
+ip link set eth1 master bond0
+
+# 启动接口
+ip link set bond0 up
+ip addr add 192.168.1.100/24 dev bond0
+
+
+
+######  永久配置   ##########
+# /etc/sysconfig/network-scripts/ifcfg-bond0
+DEVICE=bond0
+BONDING_OPTS="mode=1 miimon=100"
+BOOTPROTO=static
+IPADDR=192.168.1.100
+NETMASK=255.255.255.0
+ONBOOT=yes
+
+
+# /etc/sysconfig/network-scripts/ifcfg-eth0/eth1
+DEVICE=eth0/eth1
+MASTER=bond0
+SLAVE=yes
+ONBOOT=yes
+
+# 查看状态
+cat /proc/net/bonding/bond0
+当前模式（Mode: 802.3ad 等）
+活动从接口列表
+链路状态
+
+
+
+###################  Alma Linux ###################
+# 创建 bond0，模式为 active-backup
+nmcli connection add type bond ifname bond0 mode active-backup con-name bond0
+
+# 给 bond0 配置 IP
+nmcli connection modify bond0 ipv4.method manual ipv4.addresses 192.168.1.100/24 ipv4.gateway 192.168.1.1 ipv4.dns 8.8.8.8
+
+# 把 ens32、ens33 加到 bond0
+nmcli connection add type ethernet ifname ens32 master bond0 con-name bond-slave-ens32
+nmcli connection add type ethernet ifname ens33 master bond0 con-name bond-slave-ens33
+
+# 启动 bond
+nmcli connection up bond0
+nmcli connection up bond-slave-ens32
+nmcli connection up bond-slave-ens33
+
+
+###################  Ubuntu ###################
+
+# /etc/netplan/01-bond.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0: {}
+    enp2s0: {}
+  bonds:
+    bond0:
+      interfaces: [enp1s0, enp2s0]
+      parameters:
+        mode: active-backup
+        mii-monitor-interval: 100
+        primary: enp1s0
+      addresses: [192.168.10.20/24]
+      gateway4: 192.168.10.1
+      nameservers:
+        addresses: [8.8.8.8,1.1.1.1]
+
+```
+
+总结
+
+* **Bonding = 多网卡聚合成一个逻辑接口** ；
+* 主要目的：高可用 + 高带宽；
+* **最常用模式** ：
+* mode=1（active-backup）：简单、可靠、交换机无需配置
+* mode=4（802.3ad / LACP）：性能好，但交换机需支持并配置
+
 ---
 
 ### 根据进程查看端口，根据端口查看进程
@@ -525,26 +889,18 @@ lsof -i:tcpprot
 ### CentOS 7 单用户模式
 
 ```shell
-在系统开始引导前按e键进入编辑模式
-对“linux16"开头的行做如下修改:
-# method1
-ro ---> rw init=/bin/sh
-然后ctr+x进入单用户模式
-chroot /sysroot
-passwd修改密码
-touch /.autorelabel   # 如果确认系统的Selinux是关闭的，则此步骤可以省略
-exit # 退出sysroot
-reboot # 重启
+## 操作方法：
+重启系统，在进入CentOS启动界面、开始加载内核前，按e键进入编辑模式
+找到“linux16"开头的行，在行尾添加init=/bin/bash
+使用组合键ctr+x启动为单用户模式，然后执行以下命令：
+mount -o remount,rw / # 以可写模式重新挂载根目录
+passwd # 使用passwd命令为root设置新密码
+touch /.autorelabel # 如果确认系统的Selinux是关闭的，则此步骤可以省略
+sync # 确保数据写入磁盘
+mount -o remount,ro / # 确保根目录切换成只读，减少损坏风险
+exec /sbin/reboot -f # 重启
 
-# method2
-直接在行尾添加init=/bin/sh
-ctr+x进入单用户模式
-mount -o remount,rw /
-passwd修改密码
-touch /.autorelabel   # 如果确认系统的Selinux是关闭的，则此步骤可以省略
-exec /sbin/init  # 重启
-
-# 关于/.autorelabel
+#### 关于/.autorelabel
 在单用户模式下，修改用户密码后必须执行重新标记SElinux文件系统的操作，否则修改密码不能成功
 /.autorelabel文件的作用是，在系统重新启动的时候修正档案的预设security context(安全上下文)，因为在系统启动时发现存在/.autorelabel文件，就会调用fixfiles命令对整个文件系统进行relabeling。
 ```
@@ -932,28 +1288,28 @@ WHERE table_schema = 'your_db' AND engine != 'InnoDB';
 mysqldump \
   --single-transaction \
   --quick \
-  --skip-lock-tables \
   --routines \
   --events \
   --triggers \
+  --master-data=2 \
   -u root -p mydb > mydb.sql
 
 ```
 
 参数解释：
 
-| 参数                     | 作用                                                                                       | 是否推荐生产使用        |
-| ------------------------ | ------------------------------------------------------------------------------------------ | ----------------------- |
-| `--single-transaction` | 开始导出时开启一个一致性事务快照，**避免锁表** ，确保导出数据一致（仅适用于 InnoDB） | ✅ 强烈推荐             |
-| `--quick`              | 一行一行读取数据，而不是一次性加载到内存（使用流式输出）适合大表导出                       | ✅ 强烈推荐             |
-| `--skip-lock-tables`   | 跳过显式执行 `LOCK TABLES`， **避免对 MyISAM 表加锁** （已弃用 MyISAM 时无副作用） | ✅ 推荐搭配使用         |
-| `--routines`           | 包含存储过程（Stored Procedures）                                                          | ✅ 如数据库中使用了过程 |
-| `--events`             | 包含事件调度器（Event Scheduler）中的事件                                                  | ✅ 如数据库中启用了事件 |
-| `--triggers`           | 包含触发器（Triggers），防止逻辑缺失                                                       | ✅ 一般都需要           |
-| `-u root`              | 指定连接用户名                                                                             | ✅                      |
-| `-p`                   | 提示输入密码（会在执行后让你输入密码）                                                     | ✅                      |
-| `mydb`                 | 要导出的数据库名                                                                           | ✅                      |
-| `> mydb.sql`           | 将输出内容重定向到文件中                                                                   | ✅                      |
+| 参数                     | 作用                                                                                                                                                                                                                                                           | 是否推荐生产使用        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `--single-transaction` | 开始导出时开启一个一致性事务快照，**避免锁表** ，确保导出数据一致（仅适用于 InnoDB）                                                                                                                                                                     | ✅ 强烈推荐             |
+| `--quick`              | 一行一行读取数据，而不是一次性加载到内存（使用流式输出）适合大表导出                                                                                                                                                                                           | ✅ 强烈推荐             |
+| `--master-data`        | 在备份文件中记录当前主库的 binlog 文件名和位置（即 `SHOW MASTER STATUS` 的结果），<br />方便之后建立主从复制或增量恢复；<br />默认值为1，会在dump文件中生成可执行的CHANGE MASTER TO语句。<br />如果设置为2，则会在dump文件中生成注释掉的CHNGE MASTER TO 语句 | ✅ 推荐使用2            |
+| `--routines`           | 包含存储过程（Stored Procedures）                                                                                                                                                                                                                              | ✅ 如数据库中使用了过程 |
+| `--events`             | 包含事件调度器（Event Scheduler）中的事件                                                                                                                                                                                                                      | ✅ 如数据库中启用了事件 |
+| `--triggers`           | 包含触发器（Triggers），防止逻辑缺失                                                                                                                                                                                                                           | ✅ 一般都需要           |
+| `-u root`              | 指定连接用户名                                                                                                                                                                                                                                                 | ✅                      |
+| `-p`                   | 提示输入密码（会在执行后让你输入密码）                                                                                                                                                                                                                         | ✅                      |
+| `mydb`                 | 要导出的数据库名                                                                                                                                                                                                                                               | ✅                      |
+| `> mydb.sql`           | 将输出内容重定向到文件中                                                                                                                                                                                                                                       | ✅                      |
 
 #### 开启了GTID的MySQL，在使用mysqldump导出导入数据的时候需要注意什么？
 
@@ -968,6 +1324,7 @@ mysqldump \
   --routines \
   --events \
   --triggers \
+  --master-data=2 \
   -u root -p mydb > mydb.sql
 ```
 
@@ -1024,18 +1381,19 @@ mysql -u root -p mydb < mydb.sql
 
 ### MySQL快速备份数据表
 
+#### 只备份表结构
+
 ```
-或者
 CREATE TABLE <new tables> LIKE <old table>;
 或者
 SHOW CREATE TABLE <old table>;#拿到旧表的建表语句，然后手动执行创建新表
 ```
 
-复制旧表的数据到新表
+#### 复制旧表的数据到新表
 
 ```
 # 表结构一样
-CREATE TABLE <new table> AS SELECT * FROM <old table>
+CREATE TABLE <new table> AS SELECT * FROM <old table>  # 不适合作为正式备份手段，因为它不会保留索引、约束、触发器、事件等元信息
 
 # INSERT INTO 
 # INSERT INTO 不能自动创建数据表
@@ -1089,7 +1447,324 @@ DCL 数据控制语言  GRANT  REVOKE  DENY
 
 ---
 
-### MySQL主从同步的原理？
+### MySQL主从同步原理？
+
+MySQL主从复制主要是通过binlog来实现，整个过程分为以下几步：
+
+#### 1. 主库记录变更
+
+事务提交时，主库将 SQL 语句或行变更写入 binlog
+
+#### 2. 从库拉取日志
+
+从库的I/O线程连接主库，请求从指定位置（或 GTID）开始拉取binlog
+
+#### 3. 主库发送日志
+
+主库的 binlog dump 线程 将 binlog 发送给从库的I/O线程
+从库的I/O线程会将接受到的binlog写入本地的relay log
+
+#### 4. 从库应用变更
+
+从库的SQL线程按顺序执行relay log中的事件，保持与主库数据一致
+
+---
+
+### MySQL主从同步的过程？
+
+#### MySQL5.7
+
+##### 方式1，基于binlog文件名+位置偏移量)
+
+###### 一、配置主库
+
+1. 设置server id,大于等于1且不能和从库相同:
+
+```ini
+server-id = 1
+```
+
+2. 主库开启binlog,配置参数为：
+
+```ini
+# 通用配置
+log_bin = mysql-bin
+binlog_format = ROW   
+binlog_row_image = FULL
+expire_logs_days = 7
+sync_binlog = 1
+
+# 可选配置
+binlog_do_db = db1,db2
+binlog_ignore_db = mysql
+```
+
+3. 重启主库的MySQL服务使以上配置生效
+
+```bash
+systemctl restart mysqld
+```
+
+3. 在主库上创建同步专用账户，执行以下三条SQL:
+
+```bash
+CREATE USER 'repl'@'%' IDENTIFIED BY 'Slave@123';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+FLUSH PRIVILEGES;
+```
+
+4. 在主库上获取binlog的名称和偏移量,执行以下SQL:
+
+```bash
+SHOW MASTER STATUS;
+```
+
+SQL执行成功后会输出以下内容，记录下File和Position两个字段的值，后续要使用
+
+```bash
++------------------+----------+--------------+------------------+-------------------+
+| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
++------------------+----------+--------------+------------------+-------------------+
+| mysql-bin.000003 | 785      |              |                  |  
+```
+
+###### 二、配置从库
+
+1. 配置server-id,不能与主库相同
+
+```ini
+server-id = 2
+```
+
+2. 配置中继日志
+
+```ini
+relay-log = mysql-relay-bin
+```
+
+3. 设置只读（确保从库不会被直接写入）
+
+```ini
+read_only = 1
+```
+
+4. 重启从库的MySQL使配置生效
+
+```bash
+systemctl restart mysqld
+```
+
+5. 登录从库的MySQL，配置从库连接主库
+
+```bash
+CHANGE MASTER TO
+MASTER_HOST='master_ip',
+MASTER_USER='repl',# 上一步在主库上创建的用户
+MASTER_PASSWORD='xxx',# 上一步在主库上创建的那个用户的密码`
+MASTER_LOG_FILE='mysql-bin.000003',# 主库上执行SHOW MASTER STATUS输出的File字段
+MASTER_LOG_POS=785;# 主库上执行SHOW MASTER STATUS输出的Position字段
+```
+
+6. 启动复制，执行以下SQL
+
+```bash
+START SLAVE;
+```
+
+7. 检查复制状态，执行以下SQL
+
+```bash
+SHOW SLAVE STATUS\G`
+如果以下参数的值都是yes，说明主从复制已经正常
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+```
+
+##### 方式2，基于GTID
+
+###### 一、配置主库
+
+1. 设置server id,大于等于1且不能和从库相同:
+
+```ini
+server-id = 1
+```
+
+2. 主库开启binlog,配置参数为：
+
+```ini
+# 通用配置
+log_bin = mysql-bin
+binlog_format = ROW  
+binlog_row_image = FULL
+expire_logs_days = 7
+sync_binlog = 1
+gtid_mode = ON # 关键配置，开启GTID
+enforce_gtid_consistency = ON # 强制GTID一致性
+```
+
+3. 重启主库的MySQL服务使以上配置生效
+
+```bash
+systemctl restart mysqld
+```
+
+3. 在主库上创建同步专用账户，执行以下三条SQL:
+
+```bash
+CREATE USER 'repl'@'%' IDENTIFIED BY 'Slave@123';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';
+FLUSH PRIVILEGES;
+```
+
+###### 二、配置从库
+
+1. 配置server-id,不能与主库相同
+
+```ini
+server-id = 2
+```
+
+2. 配置中继日志
+
+```ini
+relay-log = mysql-relay-bin
+```
+
+3. 配置gtid
+
+```ini
+gtid_mode = ON
+enforce_gtid_consistency = ON
+log_slave_updates = ON
+```
+
+4. 重启从库的MySQL使配置生效
+
+```bash
+systemctl restart mysqld
+```
+
+5. 登录从库的MySQL，配置从库连接主库
+
+```bash
+CHANGE MASTER TO
+MASTER_HOST='master_ip',
+MASTER_USER='repl',# 上一步在主库上创建的用户
+MASTER_PASSWORD='xxx',# 上一步在主库上创建的那个用户的密码 
+MASTER_AUTO_POSITION = 1;
+```
+
+6. 启动复制，执行以下SQL
+
+```bash
+START SLAVE;
+```
+
+7. 检查复制状态，执行以下SQL
+
+```bash
+SHOW SLAVE STATUS\G
+
+如果以下参数的值都是yes，说明主从复制已经正常
+Slave_IO_Running: Yes
+Slave_SQL_Running: Yes
+```
+
+#### MySQL8
+
+##### 配置主库
+
+1. 修改配置文件
+
+```ini
+[mysqld]
+server-id = 1
+log_bin = mysql-bin
+binlog_format = ROW
+gtid_mode = ON
+enforce_gtid_consistency = ON
+
+# 推荐的可靠性和元数据存储
+master_info_repository = TABLE
+relay_log_info_repository = TABLE
+sync_binlog = 1
+innodb_flush_log_at_trx_commit = 1
+binlog_expire_logs_seconds = 604800   # 7 天，可按需调整
+
+# 可选：减少不必要的复制（按需）
+# binlog_do_db = your_db
+# binlog_ignore_db = mysql
+```
+
+2. 创建同步账号
+
+```bash
+CREATE USER 'repl'@'10.0.%' IDENTIFIED BY 'StrongPass!';
+GRANT REPLICATION SLAVE ON *.* TO 'repl'@'10.0.%';
+FLUSH PRIVILEGES;
+```
+
+3. 重启MySQL
+
+```bash
+systemctl restart mysqld
+```
+
+##### 配置从库
+
+1. 修改配置文件
+
+```ini
+[mysqld]
+server-id = 2
+log_bin = mysql-bin              # 建议开启，便于后续级联复制或切主
+binlog_format = ROW
+gtid_mode = ON
+enforce_gtid_consistency = ON
+log_slave_updates = ON           # 从库将应用的事务写入自己的 binlog（用于级联/故障切换更顺滑）
+
+master_info_repository = TABLE
+relay_log_info_repository = TABLE
+relay_log_recovery = ON          # 异常重启后更可靠地恢复中继日志
+sync_binlog = 1
+innodb_flush_log_at_trx_commit = 1
+binlog_expire_logs_seconds = 604800
+
+read_only = ON                   # 防止误写（SUPER/REPLICATION_APPLIER除外）
+super_read_only = ON             # 更严格防写（8.0 可用）
+skip_slave_start = 1             # 不随服务自启复制，方便先导入备份/做初始化
+```
+
+2. 重启MySQL
+
+```bash
+systemctl restart mysqld
+```
+
+3. 配置数据同步
+
+```bash
+-- 从库执行
+STOP REPLICA;             -- 若提示不存在可忽略
+RESET REPLICA ALL;
+
+CHANGE REPLICATION SOURCE TO
+  SOURCE_HOST='xx.xx.xx.xx',
+  SOURCE_PORT=3306,
+  SOURCE_USER='repl',
+  SOURCE_PASSWORD='StrongPass!',
+  SOURCE_AUTO_POSITION=1;   -- 关键：启用 GTID 定位
+
+-- 若前面配置了 skip_slave_start=1，现在启动复制
+START REPLICA;
+```
+
+4. 检查同步状态
+
+```bash
+SHOW REPLICA STATUS\G
+```
 
 ---
 
@@ -1118,7 +1793,50 @@ binlog_row_image=MINIMAL
 
 ---
 
-### MySQL主从同步的配置过程？
+### MySQL事务的特性和隔离级别
+
+#### 事务特性
+
+| 特性                               | 全称                                   | 含义                                                             | MySQL 如何实现 |
+| ---------------------------------- | -------------------------------------- | ---------------------------------------------------------------- | -------------- |
+| **A - 原子性 (Atomicity)**   | 操作要么全部成功，要么全部失败         | Undo Log（回滚日志）保证在失败时能回滚                           |                |
+| **C - 一致性 (Consistency)** | 数据从一个正确状态转换到另一个正确状态 | 依赖 MySQL 的各种机制：约束（主键/外键/唯一）、触发器、binlog 等 |                |
+| **I - 隔离性 (Isolation)**   | 事务之间互不影响                       | 通过隔离级别 + MVCC（非锁定读）或加锁实现                        |                |
+| **D - 持久性 (Durability)**  | 事务一旦提交就永久保存                 | Redo Log（重做日志）+ 刷盘机制（innodb_flush_log_at_trx_commit） |                |
+
+#### 隔离级别
+
+| 隔离级别                   | 会出现的问题           | InnoDB 是否使用 MVCC | 是否会加锁读取         | 默认？        |
+| -------------------------- | ---------------------- | -------------------- | ---------------------- | ------------- |
+| **READ UNCOMMITTED** | 脏读、不可重复读、幻读 | ❌                   | ❌                     | 否            |
+| **READ COMMITTED**   | 不可重复读、幻读       | ✔（快照读）         | 部分加锁（当前读加锁） | Oracle 默认   |
+| **REPEATABLE READ**  | 可能出现幻读（理论上） | ✔（快照读）         | 当前读加锁             | ✔ MySQL 默认 |
+| **SERIALIZABLE**     | 无（最高隔离）         | ✔                   | ✔ 所有读都加锁        | 否            |
+
+#### 隔离级别 + 读异常 的对照表
+
+| 隔离级别                   | 脏读 | 不可重复读      | 幻读                                        |
+| -------------------------- | ---- | --------------- | ------------------------------------------- |
+| **RU**               | ✔   | ✔              | ✔                                          |
+| **RC**               | ✘   | ✔              | ✔                                          |
+| **RR（MySQL 默认）** | ✘   | ✘（MVCC 解决） | ✔（快照读会出现 / 当前读由 gap lock 解决） |
+| **Serializable**     | ✘   | ✘              | ✘                                          |
+
+#### MySQL InnoDB 的特殊点（面试常考）
+
+1）MySQL 默认 RR，却不会出现不可重复读？
+
+因为快照读（MVCC）会让第一次 SELECT 生成 Read View，后续读看到旧版本。
+
+2）幻读如何解决？
+
+快照读（普通 SELECT）：可能产生幻读
+
+当前读（SELECT … FOR UPDATE / UPDATE / DELETE）：通过 间隙锁（Gap Lock） 解决幻读
+
+> 一句话背诵：
+
+MySQL 的 RR 通过 MVCC 解决不可重复读，通过 间隙锁 部分解决幻读。
 
 ---
 
@@ -1269,6 +1987,27 @@ Redis cluster的内部通信协议为gossip，包含meet、ping、pong、fail等
 
 ---
 
+### 关系型数据库和非关系型数据库的区别
+
+#### 定义
+
+* 关系型数据库（RDBMS）是以表格（二维表）结构存储数据的，强调数据的一致性和事务性（ACID 特性）
+  典型代表有：MySQL、PostgreSQL、Oracle、SQL Server。
+* 非关系型数据库（NoSQL）则不使用表格结构，更强调可扩展性和高性能，常用于分布式场景，数据模型更加灵活。
+  代表产品有：
+  键值型（Key-Value）：Redis
+  文档型（Document）：MongoDB
+  列式存储（Column-Oriented）：Elasticsearch、HBase
+
+#### 区别
+
+数据结构：关系型是表结构，非关系型是键值、文档或图结构。
+事务支持：关系型支持 ACID；非关系型一般遵循 BASE 理论，支持最终一致性。
+扩展性：关系型纵向扩展为主（scale-up），非关系型更擅长横向扩展（scale-out）。
+应用场景：关系型适合结构化数据和复杂查询；非关系型适合高并发、大数据量和灵活数据结构的场景。
+
+---
+
 ### linux系统中的1号进程是什么
 
 ---
@@ -1292,6 +2031,12 @@ Bash默认不会处理SIGTERM信号，因此这将会导致如下的问题：第
 容器（container）的定义和镜像（image）几乎一模一样，也是一堆层的统一视角，唯一区别在于容器的最上面那一层是可读可写的
 
 一个运行态容器（running container）被定义为一个可读写的统一文件系统加上隔离的进程空间和包含其中的进程
+
+---
+
+### 镜像由哪几层组成？
+
+容器镜像由多层只读 Layer 构成：基础镜像层、中间构建层和 Metadata 配置层，这些层通过 UnionFS 叠加组成一个完整的只读文件系统。容器运行时会额外加一个可写层
 
 ---
 
@@ -1369,6 +2114,44 @@ ss的Recv-Q和Send-Q字段的含义随着State字段的值不同(也就是socket
 正则表达式 \Bword\B 匹配 "sword1" 中的 "word"，但不匹配 "password" 或 "words"
 正则表达式 \B\d+\B 匹配 "abc123def" 中的 "123"，但不匹配 "123" 或 "abc123"
 正则表达式 \B[A-Z]+\B 匹配 "HELLO WORLD" 中的 "ELL" 和 "ORL"，但不匹配 "HELLO" 或 "WORLD"
+```
+
+贪婪模式和非贪婪模式
+
+量词后加问号表示非贪婪模式，比如 `*?`, `+?`, `??`, `{n,m}?`
+
+捕获分组和非捕获分组
+
+()    分组且保留捕获内容
+
+```bash
+字符串：10.244.1.3:9200;9100
+表达式： ([^:]+)(:\d+)?;(\d+)
+
+([^:]+) → 捕获 10.244.1.3（第一分组）
+(:\d+)? → 匹配 :9200（（第二分组））
+; → 匹配 ;
+(\d+) → 捕获 9100（第三分组）
+
+最终分组：
+$1 = 10.244.1.3
+$2 = 9200
+```
+
+(?:)  分组但不保留匹配内容
+
+```bash
+字符串：10.244.1.3:9100;9100
+表达式： ([^:]+)(?::\d+)?;(\d+)
+
+([^:]+) → 捕获 10.244.1.3（第一分组）
+(?::\d+)? → 匹配 :9100（不捕获）
+; → 匹配 ;
+(\d+) → 捕获 9100（第二分组）
+
+最终分组：
+$1 = 10.244.1.3
+$2 = 9100
 ```
 
 ---
@@ -1700,7 +2483,8 @@ unless-stoped    在容器退出时总是重启容器，但是不考虑在Docker
 ```shell
 journalctl -u docker.service  # 查看docker.service的运行日志
 journalctl -u docker.service --since "7 days ago" # 查看docker.service最近7天的日志
-
+journalctl -fu docker.service # 查看实时日志
+journalctl -fu docker.service -o cat  (--no-pager) # 查看实时日志并且显示完整行信息，因为默认会对过长的行进行折叠
 ```
 
 ---
@@ -1761,6 +2545,25 @@ max-file=3，意味着一个容器最多有三个日志，分别是：容器id-j
 ---
 
 ### docker的退出状态码
+
+| **状态码 (Exit Code)** | **含义**               | **描述**                                                                                      | **常见原因**                                                                                                |
+| ---------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **0**                  | **成功退出 (Success)** | 容器内的主进程正常、预期地终止，并且没有错误发生。                                                  | 运行一个完成任务后自动退出的脚本或批处理作业，如数据备份、构建过程等。                                            |
+| **1**                  | **应用错误/未知错误**  | 容器内的主进程因应用程序自身的逻辑错误、配置错误或内部异常而退出。                                  | 代码中存在未捕获的异常、启动文件找不到、依赖缺失、初始化失败等。                                                  |
+| **126**                | **命令不可执行**       | **权限问题**：尝试执行的文件没有执行权限。或 **Shell 错误**：Shell 无法执行指定的命令。 | 启动命令 (CMD/ENTRYPOINT) 路径错误、文件权限不足 (`chmod +x` 缺失)。                                            |
+| **127**                | **文件或命令找不到**   | 容器的启动命令 (CMD/ENTRYPOINT) 指定的程序或脚本在容器内不存在。                                    | 拼写错误、路径错误、镜像中未安装所需的包。                                                                        |
+| **128 + N**            | **信号退出**           | 进程被编号为$N$ 的致命信号终止。                                                                  | 进程被外部信号（如 `kill` 命令）终止。                                                                          |
+| **137**                | **SIGKILL 信号终止**   | $128 + 9 = 137$。进程被 **SIGKILL (信号 9)** 强制终止。                                     | **Kubernetes/Docker OOMKilled**：进程超出内存限制（**最常见原因之一**）。或被管理员/系统强制杀死。    |
+| **143**                | **SIGTERM 信号终止**   | $128 + 15 = 143$。进程被 **SIGTERM (信号 15)** 优雅终止。                                   | 正常关机流程：Kubernetes/Docker 在停止容器时，会先发送 SIGTERM 信号。如果应用接收信号并成功退出，则返回此状态码。 |
+
+#### 需要重点关注的是非零状态码，特别是以下几种
+
+* **`137` (SIGKILL / OOMKilled)**:
+  * **诊断方向：** 几乎总是与**资源限制**有关。检查容器的 `limits.memory` 是否太低，或者 Node 上是否有足够的资源。
+* **`1` (Application Error)**:
+  * **诊断方向：** 应用程序内部问题。您需要立即查看**容器日志** (`kubectl logs -p <pod-name>`)，找出具体的启动失败或崩溃原因。
+* **`127` (Command Not Found)**:
+  * **诊断方向：** 镜像或 Pod 定义问题。检查 Dockerfile 或 Pod YAML 中的 `command` 和 `args` 是否拼写正确，以及执行程序是否存在于容器路径中。
 
 ![img](img/docker-exit-code.png)
 
@@ -3581,9 +4384,42 @@ pkill -9 -t pts/1   #强制杀死从pts/1虚拟终端登陆的进程
 
 ### 僵尸进程和孤儿进程
 
+#### 定义
+
+* 僵尸进程
+  进程执行结束，但父进程未调用 wait() / waitpid() 回收资源，子进程状态留在系统进程表中
+  大量僵尸进程会占满进程表，导致系统无法创建新进程
+* 孤儿进程
+  父进程退出，子进程还在运行
+
+#### 处理措施
+
+* 僵尸进程
+  找到僵尸进程的父进程，然后向父进程发送SIGCHLD信号，触发父进程调用wait()方法来回收子进程
+  极端情况可以直接杀死父进程，让1号进程来接管并回收僵尸进程
+
+```bash
+kill -SIGCHLD <父进程PID> # 触发父进程回收子进程
+
+kill -9 <父进程PID>  # 强制杀死父进程
+```
+
+* 孤儿进程
+  一般无需处理，系统会自动托管
+
+#### 如何查找僵尸进程
+
+```bash
+ps aux | grep Z
+```
+
 ---
 
 ### 父进程为1的僵尸进程如何处理？
+
+父进程为1的僵尸进程说明子进程已经退出，但系统未能回收资源，通常是内核态资源或驱动卡住，比如 GPU/IO/NFS 问题。
+
+这种情况 kill 无效，需要查看 `dmesg`，尝试卸载驱动或释放设备句柄，最终方案一般是重启节点
 
 ---
 
@@ -3609,7 +4445,7 @@ SGID还可以作用于目录，当目录被设置了SGID后：
 2. 用户在此目录下的有效用户组将变成该目录的用户组
 3. 若用户在此目录下拥有 w 权限，则用户所创建的新文件的用户组与该目录的用户组相同
 
-粘贴位(sticky bit)
+粘滞位(sticky bit)
 
 对目录设置了sticky bit，则所有用户在该目录下只能删除自己创建的文件，如/tmp目录
 
@@ -3694,7 +4530,115 @@ stick bit:chmod 1755 xxx
 
 **du命令是用户级的程序，它不考虑Meta Data**，而 **df命令则查看文件系统的磁盘分配图并考虑Meta Data** 。**df命令获得真正的文件系统数据，而du命令只查看文件系统的部分情况**
 
-如果用户删除了一个正在运行的应用所打开的某个目录下的文件，则du命令返回的值显示出减去了该文件后的目录的大小。但df命令并不显示减去该文件后的大小。**直到该运行的应用关闭了这个打开的文件，du返回的值才显示出减去了该文件后的文件系统的使用情况。**
+如果用户删除了一个正在运行的应用所打开的某个目录下的文件，则du命令返回的值显示出减去了该文件后的目录的大小。但df命令并不显示减去该文件后的大小。**直到该运行的应用关闭了这个打开的文件，df返回的值才显示出减去了该文件后的文件系统的使用情况。**
+
+---
+
+### ssh 使用PAM进行增强认证
+
+#### 什么是PAM
+
+PAM（Pluggable Authentication Modules），可插拔认证模块，是unix/linux通用的一个认证框架，把认证逻辑和具体应用分开，使得SSH、su、sudo、login、gdm、passwd都能使用同一的认证接口，由三部分组成：
+
+* 应用程序接口，sshd login sudo等应用调用这个API
+* 配置文件： 通常是/etc/pam.d下的一些列文件或者/etc/pam.conf
+* PAM模块：通常是/lib/security或者/lib64/security下的一些列动态库，也就是.so文件
+
+#### PAM框架支持四种模块类型
+
+* auth: 用户身份认证
+* account: 账号权限控制，检查账号是否被锁定、是否过期、是否有登录时间限制等
+* password： 密码更新,执行passwd命令时调用
+* session：会话管理，登录成功或退出时执行一些动作，比如挂载目录、记录日志、配额设置等
+
+#### 常见内置PAM模块
+
+| 模块名                                | 作用                                           |
+| ------------------------------------- | ---------------------------------------------- |
+| `pam_unix.so`                       | 基于 `/etc/passwd`和 `/etc/shadow`进行认证 |
+| `pam_rootok.so`                     | 如果用户是 root（UID=0），则直接通过           |
+| `pam_securetty.so`                  | 限制 root 用户只能从安全终端登录               |
+| `pam_limits.so`                     | 限制用户资源（如最大进程数、最大文件大小等）   |
+| `pam_env.so`                        | 设置登录环境变量                               |
+| `pam_tally2.so`/`pam_faillock.so` | 记录失败登录次数并锁定账号                     |
+| `pam_nologin.so`                    | 当 `/etc/nologin`存在时拒绝非 root 登录      |
+| `pam_wheel.so`                      | 限制 `su`切换到 root 必须属于 wheel 组       |
+| `pam_ldap.so`                       | 使用 LDAP 服务器认证                           |
+| `pam_krb5.so`                       | Kerberos 认证                                  |
+| `pam_mkhomedir.so`                  | 登录时自动创建 home 目录                       |
+| `pam_google_authenticator.so`       | 双因素认证（TOTP）                             |
+
+#### PAM控制标志
+
+* required： 如果本环节执行成功，且后续流程够成功，则最终结果是成功；如果本环节失败，后续也继续执行，但最终结果一定是失败
+* requisite：如果本环节执行成功，且后续流程够成功，则最终结果是成功；如果本环节失败，立即返回失败，后续不在执行
+* sufficient：如果本环节成功，则立即成功，不执行后续；如果本环节失败，对后续没有影响，继续向下执行
+* optional： 无论本环节是否成功，都对后续没有影响
+* [default=die]：
+
+  含义：
+
+  `default` 指的是除了明确列出的状态（如 `success`、`auth`、`deny` 等）之外的所有返回状态。
+
+  `die` 表示 **立即终止整个 PAM 认证流程** ，并返回失败。
+
+  作用：
+
+  当该模块返回的结果不属于已明确列出的返回码时（比如错误或异常状态），PAM 会立即中断，不再继续后面的模块，也不会尝试其他认证方式，认证直接失败。
+* [success=1,default=ignore]：
+
+  含义：
+
+`success=1`：如果该模块返回 `success`（成功），则跳过后面 **1** 条规则，直接跳到下一条（跳过中间的模块）。
+
+`default=ignore`：如果返回不是 `success`，则忽略这个结果，继续执行下一条 PAM 模块。
+
+    作用：
+
+    这是典型的“条件跳过”写法。
+
+    模块执行成功时，跳过接下来的一条规则（常用于跳过一些不必要的验证步骤）。
+
+    模块失败时，则不管它，继续走下一条模块，避免认证流程被提前终止。
+
+#### PAM引用子文件
+
+* substack
+* include
+
+#### PAM实现ssh用户10分钟内输入5次错误密码即锁定账号5分钟
+
+```bash
+# /etc/pam.d/sshd
+auth       substack     password-auth # 引入了password-auth,所以要去修改password-auth
+
+# /etc/password-auth,添加+开头的行，注意出现顺序，必须在pam_unix.so的前后，位置不能更换
++auth        required      pam_faillock.so preauth  audit deny=5 unlock_time=300 fail_interval=600
+auth        sufficient    pam_unix.so nullok try_first_pass
++auth        required      pam_faillock.so authfail  audit deny=5 unlock_time=300 fail_interval=600
+```
+
+#### PAM控制用户密码规则
+
+```bash
+# /etc/pam.d/system-auth和/etc/pam.d/password-auth,添加+开头的行，注意位置不能错
+password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type=  # 在pam_unix.so之前
+password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=2  # 新密码不能与前2次密码相同
+
+# /etc/security/pwquality.conf
+minlen = 9    # 密码长度
+minclass = 3  # 3种字符类型
+
+```
+
+#### /etc/login.defs
+
+```bash
+PASS_MAX_DAYS 90  # 新建用户的密码最大有效期
+PASS_MIN_DAYS 0   
+PASS_MIN_LEN 5   # 密码最小长度，在启用pam的时候这个参数不生效，以pam为准
+PASS_WARN_AGE 7
+```
 
 ---
 
@@ -4391,7 +5335,7 @@ cd acme.sh &&  acme.sh --install -m 94586572@qq.com
 
 
 # 申请证书
-acme.sh  --issue -d example.com  -d '*.example.com'  --dns dns_ali  --server letsencrypt
+acme.sh  --issue -d example.com  -d '*.example.com'  --dns dns_ali  --server letsencrypt  泛域名证书
 
 # 安装证书
 acme.sh --installcert -d cmt004.com --key-file /usr/local/nginx/conf/certs/cmt004.com.key --fullchain-file /usr/local/nginx/conf/certs/cmt004.com.pem --reloadcmd "nginx -s reload"
@@ -6249,6 +7193,44 @@ iptables中的规则表是用于容纳规则链，规则表默认是允许状态
 
 ---
 
+### iptables、nftables、firewall-cmd、ufw
+
+* **iptables**
+  * 是 Linux **netfilter 框架** 的用户态工具，诞生于  **Linux 2.4 内核（2001 年）** 。
+  * 规则基于 **表（table）+ 链（chain）** 模型，广泛用于包过滤、防火墙、NAT。
+  * 经过多年发展，规则数量多时会变得复杂、性能下降，难以维护。
+* **nftables**
+  * 是 iptables 的  **继任者** ，在 **Linux 3.13 内核（2014 年）** 引入，由 netfilter 项目组开发。
+  * 目标：统一并替代  **iptables / ip6tables / arptables / ebtables** 。
+  * 规则更高效（使用字节码解释器），语法更简洁，支持事务（一次性加载/回滚规则）。
+  * 内核里有新的 **nf_tables** 子系统，用户态工具是  **nft** 。
+
+👉  **关系总结** ：
+
+* **iptables = 老一代工具**
+* **nftables = 新一代工具（iptables 的替代品）**
+* 现在大多数发行版（RHEL 8+/Debian 10+/Ubuntu 20.04+）已经默认使用  **nftables** ，iptables 只是一个  **兼容层** 。
+
+| 对比项               | **iptables**                                                | **nftables**                               |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
+| **内核框架**   | 基于 netfilter，规则存储在不同表（filter/nat/mangle/raw）         | 基于 nf_tables，更通用的框架                     |
+| **用户态工具** | `iptables`,`ip6tables`,`arptables`,`ebtables`（四套工具） | 统一成一个命令：`nft`                          |
+| **语法复杂度** | 不同工具语法不统一，规则冗长                                      | 统一语法，更简洁                                 |
+| **规则管理**   | 修改规则逐条执行，顺序影响性能                                    | 使用集合、映射，支持批量事务                     |
+| **性能**       | 大量规则时性能下降                                                | 内核用字节码虚拟机（nft bytecode）执行，性能更优 |
+| **状态**       | 仍然可用，但逐渐被替换                                            | 新标准，内核重点维护方向                         |
+| **防火墙封装** | firewalld 默认基于 iptables（RHEL 7）                             | firewalld 默认基于 nftables（RHEL 8+）           |
+
+* firewall-cmd和ufw是“上层封装"，客户端配置工具，底层调用iptables或者nftables作为后端执行
+
+  在**RHEL 7 / CentOS 7** ：firewalld 默认使用 iptables 作为后端。
+
+  在**RHEL 8 / AlmaLinux 8+ / Rocky 8+** ：firewalld 默认使用 nftables。
+
+  在**Ubuntu**中，ufw默认使用nftables
+
+---
+
 ### 你们的研发团队有多少人，运维团队如何分工？
 
 ---
@@ -6619,9 +7601,11 @@ Role-based Authorization Strategy插件的配置
 
 ---
 
-### docker-in-docker
+### DinD(docker-in-docker)和DooD(docker outside of docker)
 
-    当需要在容器中执行docker命令的时候，可以将宿主机的docker.sock挂载到容器中。称之为docker in docker
+DinD:使用docker官方提供的docker:dind镜像，在容器中运行docker daemon
+
+DooD:当需要在容器中执行docker命令的时候，可以将宿主机的docker.sock挂载到容器中,容器中只需要有docker命令，不需要运行docker进程
 
 ---
 
@@ -6695,6 +7679,10 @@ Role-based Authorization Strategy插件的配置
 
 ---
 
+### 为什么选择运维而不是研发？
+
+---
+
 ### 你对我们公司有了解吗？
 
 ---
@@ -6724,3 +7712,20 @@ Role-based Authorization Strategy插件的配置
 ---
 
 ### 作为驻场工程师，如何平衡客户和公司之间的关系
+
+---
+
+### 国内主要外包公司
+
+| 公司                                          | 备注（服务范围／亮点）                                                                                                                                                                                                  |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 东软集团（Neusoft）                           | 成立于1991年，是国内老牌软件开发＋IT服务公司，在智慧城市、医疗、智能汽车、软件开发等多个方向有布局。([维基百科](https://zh.wikipedia.org/wiki/%E4%B8%9C%E8%BD%AF%E9%9B%86%E5%9B%A2?utm_source=chatgpt.com "东软集团"))        |
+| 博彦科技（Beyondsoft）                        | 提供研发外包、IT咨询、系统集成、业务流程外包等。你之前提到的公司。([金蝶云星辰](https://www.jdy.com/article/1970362875633545218.html?utm_source=chatgpt.com "中国十大软件外包公司排名？实力解析与数字化转型指南-金蝶云星辰")) |
+| 文思海辉（Pactera / VanceInfo + HiSoft 合并） | 在海外软件外包、定制开发、系统集成方面有较强能力。([博客园](https://www.cnblogs.com/testzcy/p/18456350?utm_source=chatgpt.com "中国六大软件外包公司转载 - 博客园"))                                                           |
+| 中软国际                                      | 在国内IT服务／外包领域也属头部，覆盖软件开发、系统集成、咨询等。([博客园](https://www.cnblogs.com/testzcy/p/18456350?utm_source=chatgpt.com "中国六大软件外包公司转载 - 博客园"))                                             |
+| 软通动力                                      | 提供软件与数字技术服务、数字化运营服务，在国内IT服务市场有较大份额。([博客园](https://www.cnblogs.com/testzcy/p/18456350?utm_source=chatgpt.com "中国六大软件外包公司转载 - 博客园"))                                         |
+| 浪潮软件                                      | 深耕政企信息化、外包服务也有一定份量。([金蝶云星辰](https://www.jdy.com/article/1970362875633545218.html?utm_source=chatgpt.com "中国十大软件外包公司排名？实力解析与数字化转型指南-金蝶云星辰"))                             |
+| 用友网络                                      | 虽以 ERP 起家，但其 IT 服务＋定制开发＋外包体系也在扩展。([金蝶云星辰](https://www.jdy.com/article/1970362875633545218.html?utm_source=chatgpt.com "中国十大软件外包公司排名？实力解析与数字化转型指南-金蝶云星辰"))          |
+| 亚信科技                                      | 通信行业外包／系统集成服务商，服务于运营商等。([金蝶云星辰](https://www.jdy.com/article/1970362875633545218.html?utm_source=chatgpt.com "中国十大软件外包公司排名？实力解析与数字化转型指南-金蝶云星辰"))                     |
+| 中科软                                        | 在软件研发与行业应用服务方面有积累，也被列为外包公司候选。([博客园](https://www.cnblogs.com/testzcy/p/18456350?utm_source=chatgpt.com "中国六大软件外包公司转载 - 博客园"))                                                   |
+| 上海微创软件                                  | 国际化的 IT 服务公司，也被列入“十大软件外包公司”榜单。([脉脉](https://maimai.cn/article/detail?efid=SnJxgaEa9RZU-vA1i1-UMg&fid=1843044339&utm_source=chatgpt.com "中国内地十大软件外包公司排行榜单"))                       |

@@ -1,0 +1,34 @@
+image: harbor.baway.org.cn/python/mkdocs:latest
+
+variables:
+  # MkDocs 默认构建输出目录
+  MKDOCS_OUTPUT_DIR: public
+
+stages:
+  - build
+  - deploy
+
+build-mkdocs:
+  stage: build
+  tags:
+    - docker
+  script:
+    - echo "开始构建 MkDocs 文档"
+    - mkdocs build --clean --site-dir $MKDOCS_OUTPUT_DIR
+  artifacts:
+    paths:
+      - $MKDOCS_OUTPUT_DIR
+  only:
+    - main  # 或者 master，按你项目的默认分支修改
+
+pages:
+  stage: deploy
+  tags:
+    - docker
+  script:
+    - echo "发布到 GitLab Pages"
+  artifacts:
+    paths:
+      - public
+  only:
+    - main  # 或者 master，按你项目的默认分支修改

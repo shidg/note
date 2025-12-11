@@ -1,0 +1,17 @@
+site_name: offer
+theme:
+  name: material
+  language: zh
+nav:
+  - 首页: index.md
+  - k8s面试题: k8s.md
+  - Linux面试题: questions.md
+  - 常见场景题: 场景题总结.md
+  - 关于简历: 如何写简历.md
+  - 项目案例: 项目介绍和项目案例.md
+  - 电网工作内容介绍: 国家电网工作内容介绍.md
+  - 电信工作内容介绍: 电信工作内容介绍.md
+
+markdown_extensions:
+  - toc:
+      permalink: true
