@@ -1,5 +1,5 @@
 linux
 =====
 
-运维笔记 on github
+运维笔记
 
