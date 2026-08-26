@@ -1,0 +1,52 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: dify-ingress
+  namespace: dify
+spec:
+  ingressClassName: contour    
+  virtualhost:
+    fqdn: dify.baway.org.cn        
+  routes:
+  # Dify Console API
+  - conditions:
+    - prefix: /console/api
+    services:
+    - name: dify-api
+      port: 5001
+    timeoutPolicy:
+      response: 5m  
+
+  # Dify App API
+  - conditions:
+    - prefix: /api
+    services:
+    - name: dify-api
+      port: 5001
+    timeoutPolicy:
+      response: 5m  
+
+  # Dify OpenAI-compatible API
+  - conditions:
+    - prefix: /v1
+    services:
+    - name: dify-api
+      port: 5001
+    timeoutPolicy:
+      response: 5m  
+
+  # Dify file access
+  - conditions:
+    - prefix: /files
+    services:
+    - name: dify-api
+      port: 5001
+    timeoutPolicy:
+      response: 5m  
+
+  # Dify Web UI
+  - conditions:
+    - prefix: /
+    services:
+    - name: dify-web
+      port: 3000

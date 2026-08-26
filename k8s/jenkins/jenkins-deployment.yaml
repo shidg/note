@@ -40,8 +40,6 @@ spec:
       serviceAccountName: jenkins
       serviceAccount: jenkins
       nodeName: k8s-node2
-      imagePullSecrets:
-      - name: shidg-ali-registry
       containers:
 #        - name: dind
 #          image: 'docker:stable-dind'
@@ -55,10 +53,8 @@ spec:
 #          - mountPath: /var/run
 #            name: cache-dir
         - name: jenkins
-         #image: jenkins/jenkins:2.440.3-lts
-         #image: jenkins/jenkins:2.452.3-lts
-         # image: registry.cn-hangzhou.aliyuncs.com/shidg/jenkins:2.479.1-lts
-          image: harbor.baway.org.cn/library/jenkins:2.479.2-lts
+          #image: harbor.baway.org.cn/jenkins/jenkins:2.528.1-lts
+          image: harbor.baway.org.cn/jenkins/jenkins:2.568.2-lts
           securityContext:
             runAsUser: 0
           imagePullPolicy: IfNotPresent
@@ -96,11 +92,11 @@ spec:
             - name: jenkinsssh
               mountPath: /root/.ssh
       hostAliases:
-      - ip: 10.203.43.101
-        hostnames:
+      #- ip: 10.203.43.101
+      #  hostnames:
       #  - updates.jenkins-ci.org
       #  - mirrors.jenkins-ci.org
-        - git.baway.org.cn
+      #- git.baway.org.cn
       - ip: 127.0.0.1
         hostnames:
         - www.google.com

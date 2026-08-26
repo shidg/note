@@ -1,0 +1,11 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: git-pages
+  namespace: private
+spec:
+  ingressClassName: contour    
+  virtualhost:
+    fqdn: pages.baway.org.cn        
+  includes:
+    - name: git-routes

@@ -1,0 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-nginx
+  namespace: default
+spec:
+  tls:
+  - hosts:
+      - baway.com
+    secretName: tls-ingress
+  rules:
+  - host: baway.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 8080
+  ingressClassName: nginx

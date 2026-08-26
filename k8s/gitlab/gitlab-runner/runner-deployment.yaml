@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  namespace: gitlab-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner
+    spec:
+      serviceAccountName: gitlab-runner-sa
+      containers:
+      - name: gitlab-runner
+        image: harbor.baway.org.cn/gitlab/gitlab-runner:v18.2.1
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: runner-config
+          mountPath: /etc/gitlab-runner
+      volumes:
+      - name: runner-config
+        persistentVolumeClaim:
+          claimName: gitlab-runner-config-claim

@@ -4,7 +4,7 @@ metadata:
   labels:
     name: prometheus-deployment
   name: prometheus
-  namespace: istio-system
+  namespace: prometheus
 spec:
   replicas: 1
   selector:
@@ -15,27 +15,48 @@ spec:
       labels:
         app: prometheus
     spec:
-      imagePullSecrets:
-      - name: shidg-ali-registry
+      serviceAccountName: prometheus    
+      initContainers:
+      - name: default-prometheus-config
+        image: harbor.baway.org.cn/library/busybox
+        command:
+        - /bin/sh
+        - -c
+        - |
+          cp /etc/prometheus-template/prometheus.yml.tmpl \
+             /etc/prometheus-generated/prometheus.yml
+        volumeMounts:
+          - name: prometheus-config-template
+            mountPath: /etc/prometheus-template
+          - name: prometheus-config-generated
+            mountPath: /etc/prometheus-generated
+
       containers:
-      - image: registry.cn-hangzhou.aliyuncs.com/shidg/prometheus
+      - image: harbor.baway.org.cn/prometheus/prometheus:v3.14.0
         imagePullPolicy: IfNotPresent
         name: prometheus
         command:
         - "/bin/prometheus"
         args:
-        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--config.file=/etc/prometheus-generated/prometheus.yml"
         - "--storage.tsdb.path=/prometheus"
-        - "--storage.tsdb.retention=24h"
+        - "--storage.tsdb.retention.time=45d"
+        - "--storage.tsdb.retention.size=1GB"
+        - "--storage.tsdb.no-lockfile"
+        - "--storage.tsdb.min-block-duration=2h"
+        - "--storage.tsdb.max-block-duration=2h"
         - "--web.enable-lifecycle"
         ports:
         - containerPort: 9090
           protocol: TCP
+          name: prometheus
         volumeMounts:
         - mountPath: "/prometheus"
           name: data
-        - mountPath: "/etc/prometheus"
-          name: config-volume
+        - mountPath: "/etc/prometheus-generated"
+          name: prometheus-config-generated
+        - name: prometheus-rules
+          mountPath: /etc/prometheus/rules
         resources:
           requests:
             cpu: 100m
@@ -43,13 +64,53 @@ spec:
           limits:
             cpu: 500m
             memory: 2500Mi
-      serviceAccountName: prometheus    
+      - name: thanos
+        image: harbor.baway.org.cn/prometheus/thanos:v0.42.4
+        imagePullPolicy: IfNotPresent
+        args:
+          - sidecar
+          - --log.level=debug
+          - --tsdb.path=/prometheus
+          - --prometheus.url=http://localhost:9090
+          - --reloader.config-file=/etc/prometheus-template/prometheus.yml.tmpl
+          - --reloader.config-envsubst-file=/etc/prometheus-generated/prometheus.yml
+        ports:
+        - name: http-sidecar
+          containerPort: 10902
+        - name: thanos-grpc
+          containerPort: 10901
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+        volumeMounts:
+          - name: prometheus-config-template
+            mountPath: /etc/prometheus-template
+          - name: prometheus-config-generated
+            mountPath: /etc/prometheus-generated
+          - name: data
+            mountPath: /prometheus
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1000Mi
+          limits:
+            cpu: 500m
+            memory: 2000Mi
+
+      
       volumes:
+      - name: prometheus-config-template
+        configMap:
+          name: prometheus-config-template
+      - name: prometheus-config-generated
+        emptyDir: {}
+      - name: prometheus-rules
+        configMap:
+          name: prometheus-rules
       - name: data
         emptyDir: {}
-      - name: config-volume
-        configMap:
-          name: prometheus-config
 ---
 kind: Service
 apiVersion: v1
@@ -57,12 +118,17 @@ metadata:
   labels:
     app: prometheus
   name: prometheus
-  namespace: istio-system
+  namespace: prometheus
 spec:
   type: NodePort
   ports:
   - port: 9090
-    targetPort: 9090
+    targetPort: prometheus
+    name: prometheus
     nodePort: 30090
+  - port: 10901
+    targetPort: thanos-grpc
+    name: thanos
+    nodePort: 30901
   selector:
     app: prometheus

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-querier
+  namespace: prometheus
+  labels:
+    app: thanos-querier
+spec:
+  selector:
+    matchLabels:
+      app: thanos-querier
+  template:
+    metadata:
+      labels:
+        app: thanos-querier
+    spec:
+      containers:
+        - name: thanos
+          image: harbor.baway.org.cn/prometheus/thanos:v0.37.2
+          args:
+            - query
+            - --log.level=debug
+            - --query.replica-label=replica
+            # Discover local store APIs using DNS SRV.
+            - --store=dnssrv+prometheus:10901
+            - --store=10.203.43.160:30901
+          ports:
+            - name: http
+              containerPort: 10902
+            - name: grpc
+              containerPort: 10901
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-querier
+  namespace: prometheus
+  labels:
+    app: thanos-querier
+spec:
+  ports:
+    - port: 9090
+      protocol: TCP
+      targetPort: http
+      name: http
+  selector:
+    app: thanos-querier
+  type: ClusterIP

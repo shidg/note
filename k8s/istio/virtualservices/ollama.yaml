@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ollama
+  namespace: istio-system
+spec:
+  hosts:
+  - ollama.baway.org.cn
+  gateways:
+    - baway-gateway-http
+  http:
+  - match:
+    - uri:
+        prefix: / 
+    route:
+    - destination:
+        port:
+          number: 11434
+        host: ollama.default.svc.cluster.local

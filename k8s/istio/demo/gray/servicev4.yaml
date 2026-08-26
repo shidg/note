@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grayv4
+  namespace: public
+spec:
+  ports:
+  - port: 8008 
+    targetPort: 80
+    protocol: TCP
+    nodePort: 30080
+    name: http-8008
+  selector:
+    app: nginx
+    version: v4
+  type: NodePort
+

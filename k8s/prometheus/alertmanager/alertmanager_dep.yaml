@@ -14,11 +14,9 @@ spec:
       labels:
         app: alertmanager
     spec:
-      imagePullSecrets:
-      - name: shidg-ali-registry
       containers:
       - name: alertmanager
-        image: registry.cn-hangzhou.aliyuncs.com/shidg/alertmanager
+        image: harbor.baway.org.cn/prometheus/alertmanager:v0.34.0
         imagePullPolicy: IfNotPresent
         args:
         - "--config.file=/etc/alertmanager/config.yml"

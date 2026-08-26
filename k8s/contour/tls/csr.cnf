@@ -1,0 +1,21 @@
+[ req ]
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+prompt = no
+
+[ req_distinguished_name ]
+countryName = CN
+stateOrProvinceName = Beijing
+localityName = Beijing
+organizationName = My Company
+commonName = www.example.com
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = www.ngx.cc
+DNS.2 = ngx.cc
+DNS.3 = ngx.baway.org.cn
+IP.1 = 10.203.43.161
+IP.2 = 10.203.43.162

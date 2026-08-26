@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: tensun-consul
+  namespace: istio-system
+spec:
+  hosts:
+  - tensuns.baway.org.cn
+  gateways:
+    - baway-gateway-http
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        port:
+          number: 1026
+        host: tensuns.tensuns.svc.cluster.local

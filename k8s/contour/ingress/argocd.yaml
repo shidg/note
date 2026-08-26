@@ -1,0 +1,15 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: argocd-ingress
+  namespace: argocd
+spec:
+  ingressClassName: contour    
+  virtualhost:
+    fqdn: argocd.baway.org.cn        
+    tls:
+      passthrough: true
+  tcpproxy:
+    services:                 
+      - name: argocd-server
+        port: 443

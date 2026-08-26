@@ -1,0 +1,1036 @@
+/*
+Copyright 2016 The Rook Authors. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package object
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/pkg/errors"
+	cephv1 "github.com/rook/rook/pkg/apis/ceph.rook.io/v1"
+	rookclient "github.com/rook/rook/pkg/client/clientset/versioned/fake"
+	"github.com/rook/rook/pkg/clusterd"
+	"github.com/rook/rook/pkg/daemon/ceph/client"
+	clienttest "github.com/rook/rook/pkg/daemon/ceph/client/test"
+	cephconfig "github.com/rook/rook/pkg/operator/ceph/config"
+	cephtest "github.com/rook/rook/pkg/operator/ceph/test"
+	cephver "github.com/rook/rook/pkg/operator/ceph/version"
+	"github.com/rook/rook/pkg/operator/test"
+	exectest "github.com/rook/rook/pkg/util/exec/test"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func configureSSE(t *testing.T, c *clusterConfig, kms bool, s3 bool) {
+	c.store.Spec.Security = &cephv1.ObjectStoreSecuritySpec{}
+	if kms {
+		c.store.Spec.Security.KeyManagementService = cephv1.KeyManagementServiceSpec{ConnectionDetails: map[string]string{}}
+		c.store.Spec.Security.KeyManagementService.TokenSecretName = "vault-token"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["KMS_PROVIDER"] = "vault"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_ADDR"] = "https://1.1.1.1:8200"
+	}
+	if s3 {
+		c.store.Spec.Security.ServerSideEncryptionS3 = cephv1.KeyManagementServiceSpec{ConnectionDetails: map[string]string{}}
+		c.store.Spec.Security.ServerSideEncryptionS3.TokenSecretName = "vault-token"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["KMS_PROVIDER"] = "vault"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_ADDR"] = "https://1.1.1.1:8200"
+	}
+	s := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "vault-token",
+			Namespace: c.store.Namespace,
+		},
+		Data: map[string][]byte{
+			"token": []byte("myt-otkenbenvqrev"),
+		},
+	}
+	_, err := c.context.Clientset.CoreV1().Secrets(c.store.Namespace).Create(c.clusterInfo.Context, s, metav1.CreateOptions{})
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		assert.Error(t, err)
+	}
+}
+
+func TestPodSpecs(t *testing.T) {
+	store := simpleStore()
+	store.Spec.Gateway.Resources = v1.ResourceRequirements{
+		Limits: v1.ResourceList{
+			v1.ResourceCPU:    *resource.NewQuantity(200.0, resource.BinarySI),
+			v1.ResourceMemory: *resource.NewQuantity(1337.0, resource.BinarySI),
+		},
+		Requests: v1.ResourceList{
+			v1.ResourceCPU:    *resource.NewQuantity(100.0, resource.BinarySI),
+			v1.ResourceMemory: *resource.NewQuantity(500.0, resource.BinarySI),
+		},
+	}
+	store.Spec.Gateway.PriorityClassName = "my-priority-class"
+	info := clienttest.CreateTestClusterInfo(1)
+	info.CephVersion = cephver.Quincy
+	data := cephconfig.NewStatelessDaemonDataPathMap(cephconfig.RgwType, "default", "rook-ceph", "/var/lib/rook/")
+
+	c := &clusterConfig{
+		clusterInfo: info,
+		store:       store,
+		rookVersion: "rook/rook:myversion",
+		clusterSpec: &cephv1.ClusterSpec{
+			CephVersion: cephv1.CephVersionSpec{Image: "quay.io/ceph/ceph:v15"},
+			Network: cephv1.NetworkSpec{
+				HostNetwork: true,
+			},
+			DataDirHostPath: "/var/lib/rook",
+		},
+		DataPathMap: data,
+	}
+
+	resourceName := fmt.Sprintf("%s-%s", AppName, c.store.Name)
+	rgwConfig := &rgwConfig{
+		ResourceName: resourceName,
+		DaemonID:     "default",
+	}
+
+	s, err := c.makeRGWPodSpec(rgwConfig)
+	assert.NoError(t, err)
+
+	// Check pod anti affinity is well added to be compliant with HostNetwork setting
+	assert.Equal(t,
+		1,
+		len(s.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution))
+	assert.Equal(t,
+		getLabels(c.store.Name, c.store.Namespace, false),
+		s.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels)
+
+	podTemplate := cephtest.NewPodTemplateSpecTester(t, &s)
+	podTemplate.RunFullSuite(cephconfig.RgwType, "default", "rook-ceph-rgw", "mycluster", "quay.io/ceph/ceph:myversion",
+		"200", "100", "1337", "500", /* resources */
+		"my-priority-class", "default", "cephobjectstores.ceph.rook.io", "ceph-rgw")
+
+	t.Run(("check rgw ConfigureProbe"), func(t *testing.T) {
+		c.store.Spec.HealthCheck.StartupProbe = &cephv1.ProbeSpec{Disabled: false, Probe: &v1.Probe{InitialDelaySeconds: 1000}}
+		deployment, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.NotNil(t, deployment.StartupProbe)                                 // YES startup probe
+		assert.Equal(t, int32(1000), deployment.StartupProbe.InitialDelaySeconds) //  ^ and modified
+		assert.NotNil(t, deployment.ReadinessProbe)                               // YES readiness probe
+		assert.Nil(t, deployment.LivenessProbe)                                   // NO liveness probe
+	})
+}
+
+func TestSSLPodSpec(t *testing.T) {
+	ctx := context.TODO()
+	// Placeholder
+	context := &clusterd.Context{Clientset: test.New(t, 3)}
+
+	store := simpleStore()
+	store.Spec.Gateway.Resources = v1.ResourceRequirements{
+		Limits: v1.ResourceList{
+			v1.ResourceCPU:    *resource.NewQuantity(200.0, resource.BinarySI),
+			v1.ResourceMemory: *resource.NewQuantity(1337.0, resource.BinarySI),
+		},
+		Requests: v1.ResourceList{
+			v1.ResourceCPU:    *resource.NewQuantity(100.0, resource.BinarySI),
+			v1.ResourceMemory: *resource.NewQuantity(500.0, resource.BinarySI),
+		},
+	}
+	store.Spec.Gateway.PriorityClassName = "my-priority-class"
+	info := clienttest.CreateTestClusterInfo(1)
+	info.CephVersion = cephver.Quincy
+	info.Namespace = store.Namespace
+	data := cephconfig.NewStatelessDaemonDataPathMap(cephconfig.RgwType, "default", "rook-ceph", "/var/lib/rook/")
+	store.Spec.Gateway.SecurePort = 443
+
+	c := &clusterConfig{
+		clusterInfo: info,
+		store:       store,
+		context:     context,
+		rookVersion: "rook/rook:myversion",
+		clusterSpec: &cephv1.ClusterSpec{
+			CephVersion: cephv1.CephVersionSpec{Image: "quay.io/ceph/ceph:v17"},
+			Network: cephv1.NetworkSpec{
+				HostNetwork: true,
+			},
+			DataDirHostPath: "/var/lib/rook",
+		},
+		DataPathMap: data,
+	}
+
+	resourceName := fmt.Sprintf("%s-%s", AppName, c.store.Name)
+	rgwConfig := &rgwConfig{
+		ResourceName: resourceName,
+		DaemonID:     "default",
+	}
+	_, err := c.makeRGWPodSpec(rgwConfig)
+	// No TLS certs specified, will return error
+	assert.Error(t, err)
+
+	// Using SSLCertificateRef
+	// Opaque Secret
+	c.store.Spec.Gateway.SSLCertificateRef = "mycert"
+	rgwtlssecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      c.store.Spec.Gateway.SSLCertificateRef,
+			Namespace: c.store.Namespace,
+		},
+		Data: map[string][]byte{
+			"cert": []byte("tlssecrettesting"),
+		},
+		Type: v1.SecretTypeOpaque,
+	}
+	_, err = c.context.Clientset.CoreV1().Secrets(store.Namespace).Create(ctx, rgwtlssecret, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	secretVolSrc, err := c.generateVolumeSourceWithTLSSecret()
+	assert.NoError(t, err)
+	assert.Equal(t, secretVolSrc.SecretName, "mycert")
+	s, err := c.makeRGWPodSpec(rgwConfig)
+	assert.NoError(t, err)
+	podTemplate := cephtest.NewPodTemplateSpecTester(t, &s)
+	podTemplate.RunFullSuite(cephconfig.RgwType, "default", "rook-ceph-rgw", "mycluster", "quay.io/ceph/ceph:myversion",
+		"200", "100", "1337", "500", /* resources */
+		"my-priority-class", "default", "cephobjectstores.ceph.rook.io", "ceph-rgw")
+	// TLS Secret
+	c.store.Spec.Gateway.SSLCertificateRef = "tlscert"
+	rgwtlssecret = &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      c.store.Spec.Gateway.SSLCertificateRef,
+			Namespace: c.store.Namespace,
+		},
+		Data: map[string][]byte{
+			"tls.crt": []byte("tlssecrettestingcert"),
+			"tls.key": []byte("tlssecrettestingkey"),
+		},
+		Type: v1.SecretTypeTLS,
+	}
+	_, err = c.context.Clientset.CoreV1().Secrets(store.Namespace).Create(ctx, rgwtlssecret, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	secretVolSrc, err = c.generateVolumeSourceWithTLSSecret()
+	assert.NoError(t, err)
+	assert.Equal(t, secretVolSrc.SecretName, "tlscert")
+	s, err = c.makeRGWPodSpec(rgwConfig)
+	assert.NoError(t, err)
+	podTemplate = cephtest.NewPodTemplateSpecTester(t, &s)
+	podTemplate.RunFullSuite(cephconfig.RgwType, "default", "rook-ceph-rgw", "mycluster", "quay.io/ceph/ceph:myversion",
+		"200", "100", "1337", "500", /* resources */
+		"my-priority-class", "default", "cephobjectstores.ceph.rook.io", "ceph-rgw")
+	// Using service serving cert
+	c.store.Spec.Gateway.SSLCertificateRef = ""
+	c.store.Spec.Gateway.Service = &(cephv1.RGWServiceSpec{Annotations: cephv1.Annotations{cephv1.ServiceServingCertKey: "rgw-cert"}})
+	secretVolSrc, err = c.generateVolumeSourceWithTLSSecret()
+	assert.NoError(t, err)
+	assert.Equal(t, secretVolSrc.SecretName, "rgw-cert")
+	// Using caBundleRef
+	// Opaque Secret
+	c.store.Spec.Gateway.CaBundleRef = "mycabundle"
+	cabundlesecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      c.store.Spec.Gateway.CaBundleRef,
+			Namespace: c.store.Namespace,
+		},
+		Data: map[string][]byte{
+			"cabundle": []byte("cabundletesting"),
+		},
+		Type: v1.SecretTypeOpaque,
+	}
+	_, err = c.context.Clientset.CoreV1().Secrets(store.Namespace).Create(ctx, cabundlesecret, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	caBundleVolSrc, err := c.generateVolumeSourceWithCaBundleSecret()
+	assert.NoError(t, err)
+	assert.Equal(t, caBundleVolSrc.SecretName, "mycabundle")
+	s, err = c.makeRGWPodSpec(rgwConfig)
+	assert.NoError(t, err)
+	podTemplate = cephtest.NewPodTemplateSpecTester(t, &s)
+	podTemplate.RunFullSuite(cephconfig.RgwType, "default", "rook-ceph-rgw", "mycluster", "quay.io/ceph/ceph:myversion",
+		"200", "100", "1337", "500", /* resources */
+		"my-priority-class", "default", "cephobjectstores.ceph.rook.io", "ceph-rgw")
+
+	assert.True(t, s.Spec.HostNetwork)
+	assert.Equal(t, v1.DNSClusterFirstWithHostNet, s.Spec.DNSPolicy)
+}
+
+func TestValidateSpec(t *testing.T) {
+	executor := &exectest.MockExecutor{}
+	executor.MockExecuteCommandWithOutput = func(command string, args ...string) (string, error) {
+		logger.Infof("Command: %s %v", command, args)
+		if args[1] == "crush" && args[2] == "dump" {
+			return `{"types":[{"type_id": 0,"name": "osd"}, {"type_id": 1,"name": "host"}],"buckets":[{"id": -1,"name":"default"},{"id": -2,"name":"good"}, {"id": -3,"name":"host"}]}`, nil
+		}
+		return "", errors.Errorf("unexpected ceph command %q", args)
+	}
+	context := &clusterd.Context{Executor: executor}
+
+	r := &ReconcileCephObjectStore{
+		context: context,
+		clusterSpec: &cephv1.ClusterSpec{
+			External: cephv1.ExternalSpec{
+				Enable: false,
+			},
+		},
+		clusterInfo: &client.ClusterInfo{
+			CephCred: client.CephCred{
+				Username: "client.admin",
+			},
+		},
+	}
+
+	// valid store
+	s := simpleStore()
+	err := r.validateStore(s)
+	assert.Nil(t, err)
+
+	// no name
+	s.Name = ""
+	err = r.validateStore(s)
+	assert.NotNil(t, err)
+	s.Name = "default"
+	err = r.validateStore(s)
+	assert.Nil(t, err)
+
+	// no namespace
+	s.Namespace = ""
+	err = r.validateStore(s)
+	assert.NotNil(t, err)
+	s.Namespace = "mycluster"
+	err = r.validateStore(s)
+	assert.Nil(t, err)
+
+	// no replication or EC is valid
+	s.Spec.MetadataPool.Replicated.Size = 0
+	err = r.validateStore(s)
+	assert.Nil(t, err)
+	s.Spec.MetadataPool.Replicated.Size = 1
+	err = r.validateStore(s)
+	assert.Nil(t, err)
+
+	// external with endpoints, success
+	s.Spec.Gateway.ExternalRgwEndpoints = []cephv1.EndpointAddress{
+		{
+			IP: "192.168.0.1",
+		},
+	}
+	err = r.validateStore(s)
+	assert.Nil(t, err)
+}
+
+func TestDefaultProbes(t *testing.T) {
+	type storeSpec struct {
+		Port        int32
+		SecurePort  int32
+		HostNetwork bool
+	}
+	type want struct {
+		Port     int32
+		Protocol ProtocolType
+	}
+	type test struct {
+		probeType   ProbeType
+		name        string
+		environment storeSpec
+		want        want
+	}
+
+	tests := []test{}
+	// run the same tests for each probe type
+	// matrix:
+	//   - internal vs host net
+	//   - HTTP vs HTTPS vs both
+	for _, typ := range []ProbeType{ReadinessProbeType, StartupProbeType} {
+		tests = append(tests, []test{
+			{typ, "internal HTTP",
+				storeSpec{Port: 80},
+				want{Port: 8080, Protocol: HTTPProtocol}},
+			{typ, "host net HTTP",
+				storeSpec{Port: 8088, HostNetwork: true},
+				want{Port: 8088, Protocol: HTTPProtocol}},
+			{typ, "internal HTTPS",
+				storeSpec{SecurePort: 8443},
+				want{Port: 8443, Protocol: HTTPSProtocol}},
+			{typ, "host net HTTPS",
+				storeSpec{SecurePort: 10443, HostNetwork: true},
+				want{Port: 10443, Protocol: HTTPSProtocol}},
+			{typ, "internal HTTP+HTTPS",
+				storeSpec{Port: 80, SecurePort: 443},
+				want{Port: 8080, Protocol: HTTPProtocol}}, // uses HTTP
+			{typ, "host net HTTP+HTTPS",
+				storeSpec{Port: 10080, SecurePort: 10443, HostNetwork: true},
+				want{Port: 10080, Protocol: HTTPProtocol}}, // uses HTTP
+		}...)
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%s with %s", tt.probeType, tt.name), func(t *testing.T) {
+			store := simpleStore()
+			store.Spec.Gateway.Port = tt.environment.Port
+			store.Spec.Gateway.SecurePort = tt.environment.SecurePort
+			store.Spec.Gateway.SSLCertificateRef = "foo"
+			c := &clusterConfig{
+				store: store,
+				clusterSpec: &cephv1.ClusterSpec{
+					Network: cephv1.NetworkSpec{
+						HostNetwork: tt.environment.HostNetwork,
+					},
+				},
+			}
+
+			var got *v1.Probe
+			var err error
+			switch tt.probeType {
+			case StartupProbeType:
+				got, err = c.defaultStartupProbe()
+			case ReadinessProbeType:
+				got, err = c.defaultReadinessProbe()
+			default:
+				panic(fmt.Sprintf("unsupported probe type %q", tt.probeType))
+			}
+
+			assert.NoError(t, err)
+
+			// must be an exec command, called by bash; then validate core parts of the script.
+			// no need to validate start/period/timeout timings b/c those are business logic things
+			// that affect runtime stability & best verified by ci
+			assert.NotNil(t, got.Exec)
+			cmd := got.Exec.Command
+			assert.Equal(t, "bash", cmd[0])
+			assert.Equal(t, "-c", cmd[1])
+			script := cmd[2]
+
+			// test that script config env vars are set up correctly
+			assert.Contains(t, script, fmt.Sprintf(`PROBE_TYPE="%s"`, tt.probeType))
+			assert.Contains(t, script, fmt.Sprintf(`PROBE_PORT="%d"`, tt.want.Port))
+			assert.Contains(t, script, fmt.Sprintf(`PROBE_PROTOCOL="%s"`, tt.want.Protocol))
+		})
+	}
+}
+
+func TestCheckRGWKMS(t *testing.T) {
+	ctx := context.TODO()
+	setupTest := func() *clusterConfig {
+		context := &clusterd.Context{Clientset: test.New(t, 3)}
+		store := simpleStore()
+		return &clusterConfig{
+			context:     context,
+			store:       store,
+			clusterInfo: &client.ClusterInfo{Context: ctx},
+		}
+	}
+
+	t.Run("KMS is disabled", func(t *testing.T) {
+		c := setupTest()
+		b, err := c.CheckRGWKMS()
+		assert.False(t, b)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Vault Secret Engine is missing", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		b, err := c.CheckRGWKMS()
+		assert.False(t, b)
+		assert.Error(t, err)
+	})
+
+	t.Run("Vault Secret Engine is kv with v1", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "kv"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_BACKEND"] = "v1"
+		b, err := c.CheckRGWKMS()
+		assert.False(t, b)
+		assert.Error(t, err)
+	})
+
+	t.Run("Vault Secret Engine is kv with v2", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "kv"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_BACKEND"] = "v2"
+		b, err := c.CheckRGWKMS()
+		assert.True(t, b)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Vault Secret Engine is transit", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		b, err := c.CheckRGWKMS()
+		assert.True(t, b)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TLS is configured but secrets do not exist", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		b, err := c.CheckRGWKMS()
+		assert.False(t, b)
+		assert.Error(t, err, "")
+		assert.EqualError(t, err, "failed to validate vault connection details: failed to find TLS connection details k8s secret \"vault-ca-secret\": secrets \"vault-ca-secret\" not found")
+	})
+
+	t.Run("TLS secret exists but empty key", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		tlsSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vault-ca-secret",
+				Namespace: c.store.Namespace,
+			},
+		}
+		_, err := c.context.Clientset.CoreV1().Secrets(c.store.Namespace).Create(context.TODO(), tlsSecret, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		b, err := c.CheckRGWKMS()
+		assert.False(t, b)
+		assert.Error(t, err, "")
+		assert.EqualError(t, err, "failed to validate vault connection details: failed to find TLS connection key \"cert\" for \"VAULT_CACERT\" in k8s secret \"vault-ca-secret\"")
+	})
+
+	t.Run("TLS config is valid", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		tlsSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vault-ca-secret",
+				Namespace: c.store.Namespace,
+			},
+		}
+		tlsSecret.Data = map[string][]byte{"cert": []byte("envnrevbnbvsbjkrtn")}
+		_, err := c.context.Clientset.CoreV1().Secrets(c.store.Namespace).Create(context.TODO(), tlsSecret, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		b, err := c.CheckRGWKMS()
+		assert.True(t, b)
+		assert.NoError(t, err, "")
+	})
+}
+
+func TestCheckRGWSSES3Enabled(t *testing.T) {
+	ctx := context.TODO()
+	setupTest := func() *clusterConfig {
+		context := &clusterd.Context{Clientset: test.New(t, 3)}
+		store := simpleStore()
+		return &clusterConfig{
+			context:     context,
+			store:       store,
+			clusterInfo: &client.ClusterInfo{Context: ctx, CephVersion: cephver.CephVersion{Major: 17, Minor: 2, Extra: 3}},
+			clusterSpec: &cephv1.ClusterSpec{
+				CephVersion:     cephv1.CephVersionSpec{Image: "quay.io/ceph/ceph:v17"},
+				DataDirHostPath: "/var/lib/rook",
+			},
+		}
+	}
+
+	t.Run("KMS is disabled", func(t *testing.T) {
+		c := setupTest()
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.False(t, b)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Vault Secret Engine is missing", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.False(t, b)
+		assert.Error(t, err)
+	})
+
+	t.Run("Vault Secret Engine is kv with v1", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "kv"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_BACKEND"] = "v1"
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.False(t, b)
+		assert.Error(t, err)
+	})
+
+	t.Run("Vault Secret Engine is kv with v2", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "kv"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_BACKEND"] = "v2"
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.False(t, b)
+		assert.Error(t, err)
+	})
+
+	t.Run("Vault Secret Engine is transit", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.True(t, b)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TLS is configured but secrets do not exist", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.False(t, b)
+		assert.Error(t, err, "")
+		assert.EqualError(t, err, "failed to validate vault connection details: failed to find TLS connection details k8s secret \"vault-ca-secret\": secrets \"vault-ca-secret\" not found")
+	})
+
+	t.Run("TLS secret exists but empty key", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		tlsSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vault-ca-secret",
+				Namespace: c.store.Namespace,
+			},
+		}
+		_, err := c.context.Clientset.CoreV1().Secrets(c.store.Namespace).Create(context.TODO(), tlsSecret, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.False(t, b)
+		assert.Error(t, err, "")
+		assert.EqualError(t, err, "failed to validate vault connection details: failed to find TLS connection key \"cert\" for \"VAULT_CACERT\" in k8s secret \"vault-ca-secret\"")
+	})
+
+	t.Run("TLS config is valid", func(t *testing.T) {
+		c := setupTest()
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		tlsSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vault-ca-secret",
+				Namespace: c.store.Namespace,
+			},
+		}
+		tlsSecret.Data = map[string][]byte{"cert": []byte("envnrevbnbvsbjkrtn")}
+		_, err := c.context.Clientset.CoreV1().Secrets(c.store.Namespace).Create(context.TODO(), tlsSecret, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		b, err := c.CheckRGWSSES3Enabled()
+		assert.True(t, b)
+		assert.NoError(t, err, "")
+	})
+}
+
+func TestGetDaemonName(t *testing.T) {
+	context := &clusterd.Context{Clientset: test.New(t, 3)}
+	store := simpleStore()
+	tests := []struct {
+		storeName      string
+		testDaemonName string
+		daemonID       string
+	}{
+		{"default", "ceph-client.rgw.default.a", "a"},
+		{"my-store", "ceph-client.rgw.my.store.b", "b"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.storeName, func(t *testing.T) {
+			c := &clusterConfig{
+				context: context,
+				store:   store,
+			}
+			c.store.Name = tt.storeName
+			daemonName := fmt.Sprintf("%s-%s", c.store.Name, tt.daemonID)
+			resourceName := fmt.Sprintf("%s-%s", AppName, daemonName)
+			rgwconfig := &rgwConfig{
+				ResourceName: resourceName,
+				DaemonID:     daemonName,
+			}
+			daemon := getDaemonName(rgwconfig)
+			assert.Equal(t, tt.testDaemonName, daemon)
+		})
+	}
+}
+
+func TestMakeRGWPodSpec(t *testing.T) {
+	store := simpleStore()
+	info := clienttest.CreateTestClusterInfo(1)
+	data := cephconfig.NewStatelessDaemonDataPathMap(cephconfig.RgwType, "default", "rook-ceph", "/var/lib/rook/")
+	c := &clusterConfig{
+		store:       store,
+		rookVersion: "rook/rook:myversion",
+		clusterSpec: &cephv1.ClusterSpec{
+			CephVersion: cephv1.CephVersionSpec{Image: "quay.io/ceph/ceph:v15"},
+			Network: cephv1.NetworkSpec{
+				HostNetwork: true,
+			},
+		},
+		clusterInfo: info,
+		DataPathMap: data,
+	}
+
+	resourceName := fmt.Sprintf("%s-%s", AppName, c.store.Name)
+	rgwConfig := &rgwConfig{
+		ResourceName: resourceName,
+		DaemonID:     "default",
+	}
+	tests := []struct {
+		name    string
+		isSet   bool
+		enabled bool
+	}{
+		{"host networking is not set to rgw daemon", false, false},
+		{"host networking is set to rgw daemon but not enabled", true, false},
+		{"host networking is enabled for the rgw daemon", true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.isSet {
+				if tt.enabled {
+					c.store.Spec.Gateway.HostNetwork = func(hostNetwork bool) *bool { return &hostNetwork }(true)
+				} else {
+					c.store.Spec.Gateway.HostNetwork = new(bool)
+				}
+			}
+			podTemplateSpec, _ := c.makeRGWPodSpec(rgwConfig)
+
+			if tt.isSet {
+				assert.Equal(t, *c.store.Spec.Gateway.HostNetwork, podTemplateSpec.Spec.HostNetwork)
+			} else {
+				assert.Equal(t, c.clusterSpec.Network.IsHost(), podTemplateSpec.Spec.HostNetwork)
+			}
+		})
+	}
+}
+
+func TestAWSServerSideEncryption(t *testing.T) {
+	ctx := context.TODO()
+	// Placeholder
+	context := &clusterd.Context{Clientset: test.New(t, 3)}
+
+	store := simpleStore()
+	info := clienttest.CreateTestClusterInfo(1)
+	info.CephVersion = cephver.CephVersion{Major: 17, Minor: 2, Extra: 3}
+	info.Namespace = store.Namespace
+	data := cephconfig.NewStatelessDaemonDataPathMap(cephconfig.RgwType, "default", "rook-ceph", "/var/lib/rook/")
+
+	c := &clusterConfig{
+		clusterInfo: info,
+		store:       store,
+		context:     context,
+		rookVersion: "rook/rook:myversion",
+		clusterSpec: &cephv1.ClusterSpec{
+			CephVersion: cephv1.CephVersionSpec{Image: "quay.io/ceph/ceph:v17.3"},
+			Network: cephv1.NetworkSpec{
+				HostNetwork: true,
+			},
+		},
+		DataPathMap: data,
+	}
+
+	resourceName := fmt.Sprintf("%s-%s", AppName, c.store.Name)
+	rgwConfig := &rgwConfig{
+		ResourceName: resourceName,
+		DaemonID:     "default",
+	}
+	checkRGWOptions := func(allRGWOptions, optionsNeeded []string) bool {
+		if len(optionsNeeded) == 0 {
+			return false
+		}
+		optionMap := make(map[string]bool)
+		for _, option := range allRGWOptions {
+			optionMap[option] = true
+		}
+
+		for _, option := range optionsNeeded {
+			if _, found := optionMap[option]; !found {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	t.Run("SecuritySpec is not configured no options will be configured", func(t *testing.T) {
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(false)))
+	})
+
+	configureSSE(t, c, true, false)
+	t.Run("Invalid Security Spec configured, no options will be configured", func(t *testing.T) {
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.Error(t, err)
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(false)))
+	})
+
+	t.Run("Security Spec configured with kms only,so kms options will be configured", func(t *testing.T) {
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(false)))
+	})
+
+	t.Run("Security Spec configured with s3 only, so s3 options will be configured", func(t *testing.T) {
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(false)))
+	})
+
+	t.Run("Security Spec configured with both kms and s3 settings, so both kms and s3 options will be configured", func(t *testing.T) {
+		configureSSE(t, c, true, true)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(false)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(false)))
+	})
+
+	tlsSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "vault-ca-secret",
+			Namespace: c.store.Namespace,
+		},
+	}
+	tlsSecret.Data = map[string][]byte{"cert": []byte("envnrevbnbvsbjkrtn")}
+	_, err := c.context.Clientset.CoreV1().Secrets(c.store.Namespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	t.Run("Security Spec configured with kms along with TLS, so kms including TLS options will be configured", func(t *testing.T) {
+		configureSSE(t, c, true, false)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(false)))
+	})
+
+	t.Run("Security Spec configured with s3 along with TLS, so s3 including TLS options will be configured", func(t *testing.T) {
+		configureSSE(t, c, false, true)
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(false)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(true)))
+		assert.False(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(true)))
+	})
+
+	t.Run("Security Spec configured both kms and s3 aloong with TLS, all the serverr side encryption related options will be configured", func(t *testing.T) {
+		configureSSE(t, c, true, true)
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_SECRET_ENGINE"] = "transit"
+		c.store.Spec.Security.KeyManagementService.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		c.store.Spec.Security.ServerSideEncryptionS3.ConnectionDetails["VAULT_CACERT"] = "vault-ca-secret"
+		rgwContainer, err := c.makeDaemonContainer(rgwConfig)
+		assert.NoError(t, err)
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSDefaultOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3DefaultOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTokenOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTokenOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseKMSVaultTLSOptions(true)))
+		assert.True(t, checkRGWOptions(rgwContainer.Args, c.sseS3VaultTLSOptions(true)))
+	})
+}
+
+func TestAddDNSNamesToRGWPodSpec(t *testing.T) {
+	setupTest := func(zoneName string, cephvers cephver.CephVersion, dnsNames, customEndpoints []string) *clusterConfig {
+		store := simpleStore()
+		info := clienttest.CreateTestClusterInfo(1)
+		data := cephconfig.NewStatelessDaemonDataPathMap(cephconfig.RgwType, "default", "rook-ceph", "/var/lib/rook/")
+		ctx := &clusterd.Context{RookClientset: rookclient.NewSimpleClientset()}
+		info.CephVersion = cephvers
+		store.Spec.Hosting = &cephv1.ObjectStoreHostingSpec{
+			DNSNames: dnsNames,
+		}
+		if zoneName != "" {
+			store.Spec.Zone.Name = zoneName
+			zone := &cephv1.CephObjectZone{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      zoneName,
+					Namespace: store.Namespace,
+				},
+				Spec: cephv1.ObjectZoneSpec{},
+			}
+			if len(customEndpoints) > 0 {
+				zone.Spec.CustomEndpoints = customEndpoints
+			}
+			_, err := ctx.RookClientset.CephV1().CephObjectZones(store.Namespace).Create(context.TODO(), zone, metav1.CreateOptions{})
+			assert.NoError(t, err)
+		}
+		return &clusterConfig{
+			clusterInfo: info,
+			store:       store,
+			context:     ctx,
+			rookVersion: "rook/rook:myversion",
+			clusterSpec: &cephv1.ClusterSpec{
+				CephVersion: cephv1.CephVersionSpec{Image: "quay.io/ceph/ceph:v18"},
+			},
+			DataPathMap: data,
+		}
+	}
+	tests := []struct {
+		name            string
+		dnsNames        []string
+		expectedDNSArg  string
+		cephvers        cephver.CephVersion
+		zoneName        string
+		CustomEndpoints []string
+		wantErr         bool
+	}{
+		{"no dns names ceph v18", []string{}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"no dns names with zone ceph v18", []string{}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "myzone", []string{}, false},
+		{"no dns names with zone and custom endpoints ceph v18", []string{}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint1:80", "http://my.custom.endpoint2:80"}, false},
+		{"one dns name ceph v18", []string{"my.dns.name"}, "--rgw-dns-name=my.dns.name,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"multiple dns names ceph v18", []string{"my.dns.name1", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"duplicate dns names ceph v18", []string{"my.dns.name1", "my.dns.name2", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"invalid dns name ceph v18", []string{"!my.invalid-dns.com"}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"mixed invalid and valid dns names ceph v18", []string{"my.dns.name", "!my.invalid-dns.name"}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"dns name with zone without custom endpoints ceph v18", []string{"my.dns.name1", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "myzone", []string{}, false},
+		{"dns name with zone with custom endpoints ceph v18", []string{"my.dns.name1", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc,my.custom.endpoint1,my.custom.endpoint2", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint1:80", "http://my.custom.endpoint2:80"}, false},
+		{"dns name with zone with custom invalid endpoints ceph v18", []string{"my.dns.name1", "my.dns.name2"}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint:80", "http://!my.invalid-custom.endpoint:80"}, true},
+		{"dns name with zone with mixed invalid and valid dnsnames/custom endpoint ceph v18", []string{"my.dns.name", "!my.dns.name"}, "", cephver.CephVersion{Major: 18, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint1:80", "http://my.custom.endpoint2:80:80"}, true},
+		{"no dns names ceph v17", []string{}, "", cephver.CephVersion{Major: 17, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"one dns name ceph v17", []string{"my.dns.name"}, "", cephver.CephVersion{Major: 17, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"multiple dns names ceph v17", []string{"my.dns.name1", "my.dns.name2"}, "", cephver.CephVersion{Major: 17, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"duplicate dns names ceph v17", []string{"my.dns.name1", "my.dns.name2", "my.dns.name2"}, "", cephver.CephVersion{Major: 17, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"invalid dns name ceph v17", []string{"!my.invalid-dns.name"}, "", cephver.CephVersion{Major: 17, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"mixed invalid and valid dns names ceph v17", []string{"my.dns.name", "!my.invalid-dns.name"}, "", cephver.CephVersion{Major: 17, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"no dns names ceph v19", []string{}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"no dns names with zone ceph v19", []string{}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "myzone", []string{}, false},
+		{"no dns names with zone and custom endpoints ceph v19", []string{}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint1:80", "http://my.custom.endpoint2:80"}, false},
+		{"one dns name ceph v19", []string{"my.dns.name"}, "--rgw-dns-name=my.dns.name,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"multiple dns names ceph v19", []string{"my.dns.name1", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"duplicate dns names ceph v19", []string{"my.dns.name1", "my.dns.name2", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "", []string{}, false},
+		{"invalid dns name ceph v19", []string{"!my.invalid-dns.name"}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"mixed invalid and valid dns names ceph v19", []string{"my.dns.name", "!my.invalid-dns.name"}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "", []string{}, true},
+		{"dns name with zone without custom endpoints ceph v19", []string{"my.dns.name1", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "myzone", []string{}, false},
+		{"dns name with zone with custom endpoints ceph v19", []string{"my.dns.name1", "my.dns.name2"}, "--rgw-dns-name=my.dns.name1,my.dns.name2,rook-ceph-rgw-default.mycluster.svc,my.custom.endpoint1,my.custom.endpoint2", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint1:80", "http://my.custom.endpoint2:80"}, false},
+		{"dns name with zone with custom invalid endpoints ceph v19", []string{"my.dns.name1", "my.dns.name2"}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint:80", "http://!my.custom.invalid-endpoint:80"}, true},
+		{"dns with zone with mixed invalid and valid dnsnames/custom endpoint ceph v19", []string{"my.dns.name", "!my.invalid-dns.name"}, "", cephver.CephVersion{Major: 19, Minor: 0, Extra: 0}, "myzone", []string{"http://my.custom.endpoint1:80", "http://!my.custom.invalid-endpoint:80"}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := setupTest(tt.zoneName, tt.cephvers, tt.dnsNames, tt.CustomEndpoints)
+			res, err := c.addDNSNamesToRGWServer()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedDNSArg, res)
+
+		})
+	}
+}
+
+func TestGetHostnameFromEndpoint(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		expected string
+		wantErr  bool
+	}{
+		{"empty endpoint", "", "", true},
+		{"http endpoint", "http://my.custom.endpoint1:80", "my.custom.endpoint1", false},
+		{"https endpoint", "https://my.custom.endpoint1:80", "my.custom.endpoint1", false},
+		{"http endpoint without port", "http://my.custom.endpoint1", "my.custom.endpoint1", false},
+		{"https endpoint without port", "https://my.custom.endpoint1", "my.custom.endpoint1", false},
+		{"multiple portocol endpoint case 1", "http://https://my.custom.endpoint1:80", "", true},
+		{"multiple portocol endpoint case 2", "https://http://my.custom.endpoint1:80", "", true},
+		{"ftp endpoint", "ftp://my.custom.endpoint1:80", "my.custom.endpoint1", false},
+		{"custom protocol endpoint", "custom://my.custom.endpoint1:80", "my.custom.endpoint1", false},
+		{"custom protocol endpoint without port", "custom://my.custom.endpoint1", "my.custom.endpoint1", false},
+		{"invalid endpoint", "http://!my.custom.endpoint1:80", "", true},
+		{"invalid endpoint multiple ports", "http://my.custom.endpoint1:80:80", "", true},
+		{"invalid http endpoint with upper case", "http://MY.CUSTOM.ENDPOINT1:80", "", true},
+		{"invalid http endpoint with upper case without port", "http://MY.CUSTOM.ENDPOINT1", "", true},
+		{"invalid https endpoint with upper case", "https://MY.CUSTOM.ENDPOINT1:80", "", true},
+		{"invalid https endpoint with upper case without port", "https://MY.CUSTOM.ENDPOINT1", "", true},
+		{"invalid http endpoint with camel case", "http://myCustomEndpoint1:80", "", true},
+		{"invalid http endpoint with camel case without port", "http://myCustomEndpoint1", "", true},
+		{"invalid https endpoint with camel case", "https://myCustomEndpoint1:80", "", true},
+		{"invalid https endpoint with camel case without port", "https://myCustomEndpoint1", "", true},
+		{"endpoint without protocol", "my.custom.endpoint1:80", "my.custom.endpoint1", false},
+		{"endpoint without protocol without port", "my.custom.endpoint1", "my.custom.endpoint1", false},
+		{"invalid endpoint without protocol with upper case", "MY.CUSTOM.ENDPOINT1:80", "", true},
+		{"invalid endpoint without protocol with upper case without port", "MY.CUSTOM.ENDPOINT1", "", true},
+		{"invalid endpoint without protocol with camel case", "myCustomEndpoint1:80", "", true},
+		{"invalid endpoint without protocol with camel case without port", "myCustomEndpoint1", "", true},
+		{"invalid endpoint without protocol ending :", "my.custom.endpoint1:", "", true},
+		{"invalid endpoint without protocol and multiple ports", "my.custom.endpoint1:80:80", "", true},
+		{"http endpoint containing ip address", "http://1.1.1.1:80", "1.1.1.1", false},
+		{"http endpoint containing ip address without port", "http://1.1.1.1", "1.1.1.1", false},
+		{"https endpoint containing ip address", "https://1.1.1.1:80", "1.1.1.1", false},
+		{"https endpoint containing ip address without port", "https://1.1.1.1:80", "1.1.1.1", false},
+		{"invalid endpoint ending ://", "my.custom.endpoint1://", "", true},
+		{"invalid endpoint ending : without port", "http://my.custom.endpoint1:", "", true},
+		{"http endpoint with user and password", "http://user:password@mycustomendpoint1:80", "mycustomendpoint1", false},
+		{"http endpoint with user and password without port", "http://user:password@mycustomendpoint1", "mycustomendpoint1", false},
+		{"https endpoint with user and password", "https://user:password@mycustomendpoint1:80", "mycustomendpoint1", false},
+		{"https endpoint with user and password without port", "https://user:password@mycustomendpoint1", "mycustomendpoint1", false},
+		{"endpoint with user and password without protocol", "user:password@mycustomendpoint:80", "mycustomendpoint", false},
+		{"endpoint with user and password without protocol without port", "user:password@mycustomendpoint", "mycustomendpoint", false},
+		{"invalid endpoint with user and password ending ://", "user:password@mycustomendpoint1://", "", true},
+		{"invalid endpoint with user and password ending : without port", "user:password@mycustomendpoint1:", "", true},
+		{"invalid endpoint with user and password ending  with multiple ports", "user:password@mycustomendpoint1:80:80", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := GetHostnameFromEndpoint(tt.endpoint)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expected, res)
+
+		})
+	}
+}

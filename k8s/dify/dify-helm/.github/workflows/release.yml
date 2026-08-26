@@ -1,0 +1,53 @@
+name: Release Charts
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'charts/dify/Chart.yaml'
+  workflow_dispatch: # Add this section to enable manual triggering
+
+permissions:
+  contents: write
+
+jobs:
+  # Pauses until someone approves in repo Settings → Environments →
+  # "chart-release" (or rename below) → Required reviewers.
+  approval-gate:
+    name: Maintainer approval (chart release)
+    runs-on: ubuntu-latest
+    environment: chart-release
+    steps:
+      - name: Approval granted
+        run: echo "Chart release approved"
+
+  release:
+    needs: approval-gate
+    if: |
+      always() &&
+      needs.approval-gate.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Update dependency
+        run: find charts -mindepth 1 -maxdepth 1 -type d | xargs -I{} helm dependency update {}
+
+      - name: Add repos
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add weaviate https://weaviate.github.io/weaviate-helm
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.7.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-lifecycle
+  name: nginx-lifecycle
+  namespace: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-lifecycle
+  template:
+    metadata:
+      labels:
+        app: nginx-lifecycle
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: nginx
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx:1.26.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","echo 111 >> /usr/share/nginx/html/quit.txt"]
+        volumeMounts:
+        - name: web-root
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: web-root
+        persistentVolumeClaim:
+          claimName: nginx-lifecycle
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-lifecycle
+  namespace: public
+spec:
+  storageClassName: nfs-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-tmp
+  name: nginx-tmp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-tmp
+  template:
+    metadata:
+      labels:
+        app: nginx-tmp
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: nginx
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx:v12
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80

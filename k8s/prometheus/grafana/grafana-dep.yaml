@@ -15,7 +15,7 @@ spec:
     spec:
       nodeName: k8s-node3
       containers:
-      - image: grafana/grafana
+      - image: harbor.baway.org.cn/grafana/grafana:13.0
         imagePullPolicy: IfNotPresent
         #command:
         #  - "tail"

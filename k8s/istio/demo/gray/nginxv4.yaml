@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginxv4
+  name: nginxv4
+  namespace: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+      version: v4
+  template:
+    metadata:
+      labels:
+        app: nginx
+        version: v4
+    spec:
+      imagePullSecrets:
+      - name: shidg-ali-registry
+      containers:
+      - name: nginxv4
+        image: registry.cn-hangzhou.aliyuncs.com/shidg/nginx:1.23.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: web-root
+          mountPath: /usr/share/nginx/html
+        - name: web-conf
+          mountPath: /etc/nginx
+      volumes:
+      - name: web-root
+        persistentVolumeClaim:
+          claimName: gray-nginx-4
+      - name: web-conf
+        persistentVolumeClaim:
+          claimName: gray-nginx-4-conf
